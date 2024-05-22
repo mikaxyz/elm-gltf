@@ -1,0 +1,157 @@
+@import (inline) "../node_modules/normalize.css/normalize.css";
+
+html {
+	background-color: black;
+    color: antiquewhite;
+}
+
+body {
+	min-height: 100vh;
+	margin: 0;
+    font-size: 16px;
+}
+
+html {
+	box-sizing: border-box;
+	font-family: sans-serif;
+	font-size: 62.5%;
+}
+
+*,
+*:before,
+*:after {
+	box-sizing: inherit;
+}
+
+.app {
+	background-color: black;
+    height: 100vh;
+    width: 100vw;
+
+    &__viewport {
+        height: 100vh;
+        width: 100vw;
+
+        canvas {
+            background-color: #16161D;
+            display: block;
+            //image-rendering: pixelated;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    &__sidebar {
+    }
+}
+
+
+.panel {
+    --color-background: rgba(12, 12, 14, 0.96);
+    --color-accent: rgba(255,255,0,0.5);
+    --color-accent-muted-1: rgba(100, 100, 57, 0.5);
+    --color-accent-muted-2: rgba(82, 82, 57, 0.3);
+
+    transition: box-shadow 400ms ease-out;
+
+    color: #515451;
+    cursor: default;
+    scrollbar-width: thin;
+    scrollbar-color: #3c423c transparent;
+    background-color: var(--color-background);
+    border-radius: 3px;
+    box-shadow: 0 0 0 5px var(--color-accent-muted-2);
+
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 2em;
+    max-height: calc(100vh - 4em);
+
+    overflow-y: hidden;
+    outline: none;
+
+    &:hover,
+    &:focus-within {
+        overflow-y: auto;
+        box-shadow: 0 0 0 5px var(--color-accent-muted-1);
+
+        .panel__content {
+            max-height: calc(100vh);
+        }
+    }
+
+    &__content {
+        transition: max-height 200ms ease-out;
+        max-height: 0;
+    }
+
+    &__header {
+        transition: color 400ms ease-out;
+        position: sticky;
+        top: 0;
+        padding: 1em 2em;
+        background-color: var(--color-background);
+        color: var(--color-accent-muted-1);
+
+        .panel:hover &,
+        .panel:focus-within & {
+            h1 {
+                color: var(--color-accent);
+            }
+        }
+
+        h1 {
+            margin: 0.2em 0;
+            font-size: 1.2em;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+        p {
+            margin: 0.2em 0;
+            font-size: 0.8em;
+        }
+        &:after {
+            content: "";
+            display: block;
+            position: absolute;
+            bottom: -2px;
+            left: 2em;
+            right: 2em;
+            border-bottom: 2px solid var(--color-accent-muted-1);
+        }
+    }
+
+    ul {
+        padding: 0.5em 1em 1em 1em;
+        margin: 0;
+        list-style: none;
+    }
+
+    li {
+        padding: 0.5em 1em;
+
+
+        &.panel__current {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        button {
+            all: unset;
+        }
+        span {
+            color: #515451;
+        }
+
+        a,
+        button {
+            color: #979b97;
+            cursor: pointer;
+
+            &:hover,
+            &:focus {
+                color: var(--color-accent);
+            }
+        }
+    }
+}

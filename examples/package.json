@@ -1,0 +1,21 @@
+{
+    "name": "mikaxyz/elm-gltf-examples",
+    "version": "1.0.0",
+    "description": "Examples for mikaxyz/elm-gltf Elm package",
+    "author": "me@mika.xyz",
+    "license": "BSD-3-Clause",
+    "main": "index.html",
+    "scripts": {
+        "run": "http-server-spa . index.html 8080",
+        "build": "elm make src/Main.elm --output dist/main.js --optimize && lessc less/main.less dist/main.css"
+    },
+    "devDependencies": {
+        "elm": "^0.19.1-6",
+        "elm-format": "^0.8.7",
+        "elm-review": "^2.11.2",
+        "elm-test": "^0.19.1-revision12",
+        "http-server-spa": "^1.3.0",
+        "lessc": "^1.0.2",
+        "normalize.css": "^8.0.1"
+    }
+}
