@@ -6,6 +6,7 @@ module Page.Example.Scene exposing
     )
 
 import Color
+import Gltf exposing (Gltf)
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Page.Example.GltfHelper as GltfHelper
@@ -21,7 +22,6 @@ import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 import Xyz.Gltf.Node as Node exposing (Index(..), Node(..))
 import Xyz.Gltf.Query as Query
 import Xyz.Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 import Xyz.Gltf.Scene
 
 

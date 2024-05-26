@@ -10,6 +10,7 @@ module Page.Example.Model exposing
     )
 
 import Browser.Dom
+import Gltf exposing (Gltf)
 import Http
 import Keyboard
 import Material
@@ -20,7 +21,6 @@ import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Options as SceneOptions
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 
 
 maxResolution : number

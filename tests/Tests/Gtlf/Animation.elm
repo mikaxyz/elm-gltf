@@ -2,6 +2,7 @@ module Tests.Gtlf.Animation exposing (suite)
 
 import Array
 import Expect exposing (Expectation)
+import Gltf exposing (Gltf)
 import Json.Decode as JD
 import Test exposing (..)
 import Xyz.Gltf.Accessor as Accessor
@@ -15,7 +16,6 @@ import Xyz.Gltf.Query.Animation as Animation
         , ExtractedChannel(..)
         , ExtractedSampler(..)
         )
-import Xyz.Gltf.Raw.Gltf as Gltf exposing (Gltf)
 
 
 suite : Test

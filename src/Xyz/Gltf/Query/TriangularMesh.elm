@@ -9,6 +9,7 @@ import Bytes
 import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
+import Gltf exposing (Gltf)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Math.Vector4 as Vec4 exposing (Vec4)
 import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
@@ -16,7 +17,6 @@ import Xyz.Gltf.Buffer as Buffer exposing (Buffer(..))
 import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
 import Xyz.Gltf.Mesh exposing (Primitive)
 import Xyz.Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 
 
 type alias Vertex =

@@ -9,6 +9,7 @@ module Page.Example.GltfHelper exposing
     )
 
 import Dict exposing (Dict)
+import Gltf exposing (Gltf)
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
@@ -25,7 +26,6 @@ import Xyz.Gltf.Query.Animation as Animation
         , ExtractedSampler(..)
         )
 import Xyz.Gltf.Query.Skin exposing (Skin(..))
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 
 
 objectWithSkin : Skin -> Object a b -> Object a b

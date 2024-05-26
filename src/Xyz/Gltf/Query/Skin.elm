@@ -8,12 +8,12 @@ import Bytes
 import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
+import Gltf exposing (Gltf)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
 import Xyz.Gltf.Buffer as Buffer exposing (Buffer(..))
 import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
 import Xyz.Gltf.Node as Node
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 import Xyz.Gltf.Skin as GltfSkin
 
 

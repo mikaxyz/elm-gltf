@@ -14,6 +14,7 @@ module Xyz.Gltf.Query exposing
     )
 
 import Array
+import Gltf exposing (Gltf)
 import Json.Decode as JD
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
@@ -22,7 +23,6 @@ import Xyz.Gltf.Mesh as Mesh exposing (Mesh, Primitive)
 import Xyz.Gltf.Node as Node
 import Xyz.Gltf.Query.Skin as Skin exposing (Skin(..))
 import Xyz.Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
-import Xyz.Gltf.Raw.Gltf as Gltf exposing (Gltf)
 import Xyz.Gltf.Scene as Scene exposing (Scene(..))
 
 

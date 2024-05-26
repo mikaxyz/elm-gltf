@@ -1,9 +1,9 @@
 module Tests.Gltf exposing (suite)
 
 import Expect exposing (Expectation)
+import Gltf exposing (Gltf)
 import Json.Decode as JD
 import Test exposing (..)
-import Xyz.Gltf.Raw.Gltf as Gltf exposing (Gltf)
 
 
 suite : Test

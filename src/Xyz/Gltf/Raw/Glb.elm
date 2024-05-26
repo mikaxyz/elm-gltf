@@ -9,9 +9,11 @@ module Xyz.Gltf.Raw.Glb exposing (decoder)
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Bytes.Parser as Parser
-import Json.Decode
 import Xyz.Gltf.Buffer
-import Xyz.Gltf.Raw.Gltf as Gltf exposing (Gltf)
+
+
+type alias Chunk =
+    { length : Int, type_ : ChunkType, data : Bytes }
 
 
 type alias Header =
@@ -21,46 +23,41 @@ type alias Header =
     }
 
 
-type alias Chunk =
-    { length : Int, type_ : ChunkType, data : Bytes }
-
-
 type ChunkType
     = Json
     | Binary
 
 
-{-| Decoder
+type alias Glb =
+    { header : Header
+    , jsonString : String
+    , buffers : Xyz.Gltf.Buffer.Buffer
+    }
+
+
+{-| Bytes Decoder
 -}
-decoder : Decode.Decoder Gltf
+decoder : Decode.Decoder Glb
 decoder =
-    Decode.map3 (\header json buffers -> { header = header, chunk1 = json, chunk2 = buffers })
+    Decode.map3 Glb
         headerDecoder
-        chunkDecoder
-        chunkDecoder
-        |> Decode.andThen
-            (\{ header, chunk1, chunk2 } ->
-                case chunk1.type_ of
-                    Json ->
-                        case parseString chunk1.length chunk1.data of
-                            Ok json ->
-                                let
-                                    jsonDecoder =
-                                        Gltf.decoderWithSingleBuffer (Xyz.Gltf.Buffer.Buffer chunk2.data)
-                                in
-                                case Json.Decode.decodeString jsonDecoder json of
-                                    Ok gltf ->
-                                        Decode.succeed gltf
+        (chunkDecoder
+            |> Decode.andThen
+                (\chunk ->
+                    case chunk.type_ of
+                        Json ->
+                            case parseString chunk.length chunk.data of
+                                Ok jsonString ->
+                                    Decode.succeed jsonString
 
-                                    Err _ ->
-                                        Decode.fail
+                                Err _ ->
+                                    Decode.fail
 
-                            Err _ ->
-                                Decode.fail
-
-                    Binary ->
-                        Decode.fail
-            )
+                        Binary ->
+                            Decode.fail
+                )
+        )
+        (chunkDecoder |> Decode.map (.data >> Xyz.Gltf.Buffer.Buffer))
 
 
 headerDecoder : Decode.Decoder Header

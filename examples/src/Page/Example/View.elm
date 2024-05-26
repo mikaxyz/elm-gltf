@@ -1,5 +1,6 @@
 module Page.Example.View exposing (view)
 
+import Gltf exposing (Gltf)
 import Html exposing (Html, h1, text)
 import Html.Attributes as HA
 import Material
@@ -17,7 +18,6 @@ import XYZMika.XYZ.Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
-import Xyz.Gltf.Raw.Gltf exposing (Gltf)
 
 
 view : Model -> Html Msg
