@@ -1,4 +1,4 @@
-module Xyz.Gltf.Skin exposing
+module Internal.Skin exposing
     ( Index(..)
     , JointNodeIndex(..)
     , Skin
@@ -6,8 +6,8 @@ module Xyz.Gltf.Skin exposing
     , indexDecoder
     )
 
+import Internal.Accessor as Accessor
 import Json.Decode as JD
-import Xyz.Gltf.Accessor as Accessor
 
 
 type Index

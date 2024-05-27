@@ -1,4 +1,4 @@
-module Xyz.Gltf.Query.Animation exposing
+module Gltf.Query.Animation exposing
     ( ExtractedAnimation(..)
     , ExtractedChannel(..)
     , ExtractedSampler(..)
@@ -15,17 +15,17 @@ import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Gltf exposing (Gltf)
+import Internal.Accessor as Accessor exposing (Accessor)
+import Internal.Animation exposing (Animation(..))
+import Internal.Animation.Channel as Channel exposing (Channel(..))
+import Internal.Animation.Sampler as Sampler exposing (Sampler(..))
+import Internal.Buffer as Buffer exposing (Buffer(..))
+import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Mesh as Mesh exposing (Attribute, Primitive)
+import Internal.Node as Node exposing (Node(..))
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion
 import Tree exposing (Tree)
-import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
-import Xyz.Gltf.Animation exposing (Animation(..))
-import Xyz.Gltf.Animation.Channel as Channel exposing (Channel(..))
-import Xyz.Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
-import Xyz.Gltf.Buffer as Buffer exposing (Buffer(..))
-import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
-import Xyz.Gltf.Mesh as Mesh exposing (Attribute, Primitive)
-import Xyz.Gltf.Node as Node exposing (Node(..))
 
 
 type ExtractedAnimation

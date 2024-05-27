@@ -7,6 +7,10 @@ module Page.Example.Scene exposing
 
 import Color
 import Gltf exposing (Gltf)
+import Gltf.Query as Query
+import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
+import Internal.Node as Node exposing (Index(..), Node(..))
+import Internal.Scene
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Page.Example.GltfHelper as GltfHelper
@@ -19,10 +23,6 @@ import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
-import Xyz.Gltf.Node as Node exposing (Index(..), Node(..))
-import Xyz.Gltf.Query as Query
-import Xyz.Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Xyz.Gltf.Scene
 
 
 type ObjectId
@@ -43,7 +43,7 @@ init gltf objectIdMap config =
         nodes : List (Tree (Object objectId Material.Name))
         nodes =
             gltf
-                |> Query.sceneNodeTrees (Xyz.Gltf.Scene.Index 0)
+                |> Query.sceneNodeTrees (Internal.Scene.Index 0)
                 |> Result.withDefault []
                 |> List.map (Tree.map (Query.nodeFromNode gltf >> objectFromNode objectIdMap))
 

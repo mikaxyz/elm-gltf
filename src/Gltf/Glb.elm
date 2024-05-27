@@ -1,4 +1,4 @@
-module Xyz.Gltf.Raw.Glb exposing (decoder)
+module Gltf.Glb exposing (decoder)
 
 {-| Decoder for binary (.glb) files
 
@@ -9,7 +9,7 @@ module Xyz.Gltf.Raw.Glb exposing (decoder)
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Bytes.Parser as Parser
-import Xyz.Gltf.Buffer
+import Internal.Buffer
 
 
 type alias Chunk =
@@ -31,7 +31,7 @@ type ChunkType
 type alias Glb =
     { header : Header
     , jsonString : String
-    , buffers : Xyz.Gltf.Buffer.Buffer
+    , buffers : Internal.Buffer.Buffer
     }
 
 
@@ -57,7 +57,7 @@ decoder =
                             Decode.fail
                 )
         )
-        (chunkDecoder |> Decode.map (.data >> Xyz.Gltf.Buffer.Buffer))
+        (chunkDecoder |> Decode.map (.data >> Internal.Buffer.Buffer))
 
 
 headerDecoder : Decode.Decoder Header

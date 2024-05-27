@@ -1,14 +1,14 @@
-module Xyz.Gltf.Query.VertexBuffers exposing
+module Gltf.Query.VertexBuffers exposing
     ( VertexBuffers
     , fromPrimitive
     )
 
 import Array
 import Gltf exposing (Gltf)
-import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
-import Xyz.Gltf.Buffer as Buffer exposing (Buffer)
-import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
-import Xyz.Gltf.Mesh as Mesh exposing (Primitive)
+import Internal.Accessor as Accessor exposing (Accessor)
+import Internal.Buffer as Buffer exposing (Buffer)
+import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Mesh as Mesh exposing (Primitive)
 
 
 type alias VertexBuffers =

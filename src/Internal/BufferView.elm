@@ -1,13 +1,13 @@
-module Xyz.Gltf.BufferView exposing
+module Internal.BufferView exposing
     ( BufferView
     , Index(..)
     , decoder
     , indexDecoder
     )
 
+import Internal.Buffer as Buffer
+import Internal.Util as Util
 import Json.Decode as JD
-import Xyz.Gltf.Buffer as Buffer
-import Xyz.Gltf.Util as Util
 
 
 type Index

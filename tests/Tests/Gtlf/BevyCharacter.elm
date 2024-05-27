@@ -1,12 +1,12 @@
 module Tests.Gtlf.BevyCharacter exposing (suite)
 
 import Expect
+import Gltf.Query as Query
+import Internal.Mesh as Mesh
+import Internal.Node as Node exposing (Node(..))
+import Internal.Skin as Skin
 import Test exposing (Test, describe, test)
 import Tree exposing (Tree)
-import Xyz.Gltf.Mesh as Mesh
-import Xyz.Gltf.Node as Node exposing (Node(..))
-import Xyz.Gltf.Query as Query
-import Xyz.Gltf.Skin as Skin
 
 
 suite : Test

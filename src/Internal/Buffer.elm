@@ -1,4 +1,4 @@
-module Xyz.Gltf.Buffer exposing
+module Internal.Buffer exposing
     ( Buffer(..)
     , Index(..)
     , decoder

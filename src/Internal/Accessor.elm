@@ -1,4 +1,4 @@
-module Xyz.Gltf.Accessor exposing
+module Internal.Accessor exposing
     ( Accessor
     , ComponentType(..)
     , Index(..)
@@ -7,9 +7,9 @@ module Xyz.Gltf.Accessor exposing
     , indexDecoder
     )
 
+import Internal.BufferView as BufferView
+import Internal.Util as Util
 import Json.Decode as JD
-import Xyz.Gltf.BufferView as BufferView
-import Xyz.Gltf.Util as Util
 
 
 type Index

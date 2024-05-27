@@ -1,14 +1,14 @@
 module Gltf exposing
-    ( Gltf
-    , Asset
+    ( Gltf, Asset
+    , Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh
     , decoder, bytesDecoder
     , getBinary, getEmbedded
     )
 
 {-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
 
-@docs Gltf
-@docs Asset
+@docs Gltf, Asset
+@docs Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh
 @docs decoder, bytesDecoder
 @docs getBinary, getEmbedded
 
@@ -16,18 +16,18 @@ module Gltf exposing
 
 import Array exposing (Array)
 import Bytes.Decode
+import Gltf.Glb as Glb
 import Http
+import Internal.Accessor as Accessor
+import Internal.Animation as Animation
+import Internal.Buffer as Buffer
+import Internal.BufferView as BufferView
+import Internal.Mesh as Mesh
+import Internal.Node as Node
+import Internal.Scene as Scene
+import Internal.Skin as Skin
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
-import Xyz.Gltf.Animation as Animation exposing (Animation)
-import Xyz.Gltf.Buffer as Buffer exposing (Buffer)
-import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
-import Xyz.Gltf.Mesh as Mesh exposing (Mesh)
-import Xyz.Gltf.Node as Node exposing (Node)
-import Xyz.Gltf.Raw.Glb as Glb
-import Xyz.Gltf.Scene as Scene exposing (Scene)
-import Xyz.Gltf.Skin as Skin exposing (Skin)
 
 
 {-| Type representing raw data from a .gltf/.glb file
@@ -52,6 +52,54 @@ type alias Asset =
     , copyright : Maybe String
     , generator : Maybe String
     }
+
+
+{-| Raw Accessor data
+-}
+type alias Accessor =
+    Accessor.Accessor
+
+
+{-| Raw Animation data
+-}
+type alias Animation =
+    Animation.Animation
+
+
+{-| Raw Scene data
+-}
+type alias Scene =
+    Scene.Scene
+
+
+{-| Raw Node data
+-}
+type alias Node =
+    Node.Node
+
+
+{-| Raw Buffer data
+-}
+type alias Buffer =
+    Buffer.Buffer
+
+
+{-| Raw BufferView data
+-}
+type alias BufferView =
+    BufferView.BufferView
+
+
+{-| Raw Mesh data
+-}
+type alias Mesh =
+    Mesh.Mesh
+
+
+{-| Raw Skin data
+-}
+type alias Skin =
+    Skin.Skin
 
 
 {-| Json Decoder

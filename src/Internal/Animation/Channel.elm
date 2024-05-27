@@ -1,4 +1,4 @@
-module Xyz.Gltf.Animation.Channel exposing
+module Internal.Animation.Channel exposing
     ( Channel(..)
     , Index(..)
     , Path(..)
@@ -6,10 +6,10 @@ module Xyz.Gltf.Animation.Channel exposing
     , indexDecoder
     )
 
+import Internal.Animation.Sampler as Sampler
+import Internal.Node as Node
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Xyz.Gltf.Animation.Sampler as Sampler
-import Xyz.Gltf.Node as Node
 
 
 type Index

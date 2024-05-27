@@ -1,4 +1,4 @@
-module Xyz.Gltf.Query exposing
+module Gltf.Query exposing
     ( Error(..)
     , Node(..)
     , Properties(..)
@@ -15,15 +15,15 @@ module Xyz.Gltf.Query exposing
 
 import Array
 import Gltf exposing (Gltf)
+import Gltf.Query.Skin as Skin exposing (Skin)
+import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
+import Internal.Mesh as Mesh exposing (Mesh)
+import Internal.Node as Node
+import Internal.Scene as Scene exposing (Scene(..))
 import Json.Decode as JD
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
 import Tree exposing (Tree)
-import Xyz.Gltf.Mesh as Mesh exposing (Mesh)
-import Xyz.Gltf.Node as Node
-import Xyz.Gltf.Query.Skin as Skin exposing (Skin)
-import Xyz.Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
-import Xyz.Gltf.Scene as Scene exposing (Scene(..))
 
 
 type Error

@@ -1,4 +1,4 @@
-module Xyz.Gltf.Mesh exposing
+module Internal.Mesh exposing
     ( Attribute(..)
     , Index(..)
     , Mesh
@@ -8,9 +8,9 @@ module Xyz.Gltf.Mesh exposing
     )
 
 import Dict
+import Internal.Accessor as Accessor
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Xyz.Gltf.Accessor as Accessor
 
 
 type Index

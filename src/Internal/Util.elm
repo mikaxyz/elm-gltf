@@ -1,4 +1,4 @@
-module Xyz.Gltf.Util exposing (optionalField)
+module Internal.Util exposing (optionalField)
 
 import Json.Decode as JD
 

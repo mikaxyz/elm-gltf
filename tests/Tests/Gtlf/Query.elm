@@ -1,18 +1,18 @@
 module Tests.Gtlf.Query exposing (suite)
 
 import Expect
+import Gltf.Query as Query
+import Gltf.Query.Skin exposing (Skin(..))
+import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
+import Internal.Mesh as Mesh
+import Internal.Node as Node exposing (Node(..))
+import Internal.Scene as Scene
+import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (vec3)
 import Math.Vector4 as Vec4
 import Test exposing (Test, describe, test)
 import Tree exposing (Tree)
-import Xyz.Gltf.Mesh as Mesh
-import Xyz.Gltf.Node as Node exposing (Node(..))
-import Xyz.Gltf.Query as Query
-import Xyz.Gltf.Query.Skin exposing (Skin(..))
-import Xyz.Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
-import Xyz.Gltf.Scene as Scene
-import Xyz.Gltf.Skin as GltfSkin
 
 
 suite : Test

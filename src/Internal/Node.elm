@@ -1,16 +1,16 @@
-module Xyz.Gltf.Node exposing
+module Internal.Node exposing
     ( Index(..)
     , Node(..)
     , Quaternion
+    , Vec3
     , decoder
-    , empty
     , indexDecoder
     )
 
+import Internal.Mesh as Mesh
+import Internal.Skin as Skin
+import Internal.Util as Util
 import Json.Decode as JD
-import Xyz.Gltf.Mesh as Mesh
-import Xyz.Gltf.Skin as Skin
-import Xyz.Gltf.Util as Util
 
 
 type Index
@@ -34,23 +34,6 @@ type alias Vec3 =
     , y : Float
     , z : Float
     }
-
-
-empty : Node
-empty =
-    -- TODO: Remove this
-    Node
-        { index = Index -1
-        , name = Nothing
-        , meshIndex = Nothing
-        , skinIndex = Nothing
-        , children = []
-
-        --
-        , rotation = Nothing
-        , translation = Nothing
-        , scale = Nothing
-        }
 
 
 decoder : Int -> JD.Decoder Node

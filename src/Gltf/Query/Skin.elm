@@ -1,4 +1,4 @@
-module Xyz.Gltf.Query.Skin exposing
+module Gltf.Query.Skin exposing
     ( Skin(..)
     , skinAtIndex
     )
@@ -9,12 +9,12 @@ import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Gltf exposing (Gltf)
+import Internal.Accessor as Accessor exposing (Accessor)
+import Internal.Buffer as Buffer exposing (Buffer(..))
+import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Node as Node
+import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
-import Xyz.Gltf.Buffer as Buffer exposing (Buffer(..))
-import Xyz.Gltf.BufferView as BufferView exposing (BufferView)
-import Xyz.Gltf.Node as Node
-import Xyz.Gltf.Skin as GltfSkin
 
 
 type Skin

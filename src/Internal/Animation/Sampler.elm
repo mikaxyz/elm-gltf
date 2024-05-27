@@ -1,4 +1,4 @@
-module Xyz.Gltf.Animation.Sampler exposing
+module Internal.Animation.Sampler exposing
     ( Index(..)
     , Interpolation(..)
     , Sampler(..)
@@ -6,9 +6,9 @@ module Xyz.Gltf.Animation.Sampler exposing
     , indexDecoder
     )
 
+import Internal.Accessor as Accessor
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Xyz.Gltf.Accessor as Accessor
 
 
 type Index

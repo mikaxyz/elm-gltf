@@ -10,6 +10,15 @@ module Page.Example.GltfHelper exposing
 
 import Dict exposing (Dict)
 import Gltf exposing (Gltf)
+import Gltf.Query.Animation as Animation
+    exposing
+        ( ExtractedAnimation(..)
+        , ExtractedChannel(..)
+        , ExtractedSampler(..)
+        )
+import Gltf.Query.Skin exposing (Skin(..))
+import Internal.Animation.Channel as Channel
+import Internal.Node as Node exposing (Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
@@ -17,15 +26,6 @@ import Quaternion exposing (Quaternion)
 import Tree exposing (Tree)
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
-import Xyz.Gltf.Animation.Channel as Channel
-import Xyz.Gltf.Node as Node exposing (Node(..))
-import Xyz.Gltf.Query.Animation as Animation
-    exposing
-        ( ExtractedAnimation(..)
-        , ExtractedChannel(..)
-        , ExtractedSampler(..)
-        )
-import Xyz.Gltf.Query.Skin exposing (Skin(..))
 
 
 objectWithSkin : Skin -> Object a b -> Object a b

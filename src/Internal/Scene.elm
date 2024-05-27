@@ -1,11 +1,11 @@
-module Xyz.Gltf.Scene exposing
+module Internal.Scene exposing
     ( Index(..)
     , Scene(..)
     , decoder
     )
 
+import Internal.Node as Node
 import Json.Decode as JD
-import Xyz.Gltf.Node as Node
 
 
 type Index

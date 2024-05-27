@@ -3,19 +3,19 @@ module Tests.Gtlf.Animation exposing (suite)
 import Array
 import Expect exposing (Expectation)
 import Gltf exposing (Gltf)
-import Json.Decode as JD
-import Test exposing (Test, describe, test)
-import Xyz.Gltf.Accessor as Accessor
-import Xyz.Gltf.Animation exposing (Animation(..))
-import Xyz.Gltf.Animation.Channel as Channel exposing (Channel(..))
-import Xyz.Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
-import Xyz.Gltf.Node as Node
-import Xyz.Gltf.Query.Animation as Animation
+import Gltf.Query.Animation as Animation
     exposing
         ( ExtractedAnimation(..)
         , ExtractedChannel(..)
         , ExtractedSampler(..)
         )
+import Internal.Accessor as Accessor
+import Internal.Animation exposing (Animation(..))
+import Internal.Animation.Channel as Channel exposing (Channel(..))
+import Internal.Animation.Sampler as Sampler exposing (Sampler(..))
+import Internal.Node as Node
+import Json.Decode as JD
+import Test exposing (Test, describe, test)
 
 
 suite : Test
