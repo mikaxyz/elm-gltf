@@ -1,16 +1,15 @@
 module Gltf exposing
     ( Gltf
     , Asset
-    , decoder
+    , decoder, bytesDecoder
     , getBinary, getEmbedded
-    , bytesDecoder
     )
 
 {-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
 
 @docs Gltf
 @docs Asset
-@docs decoder, decoderWithSingleBuffer
+@docs decoder, bytesDecoder
 @docs getBinary, getEmbedded
 
 -}

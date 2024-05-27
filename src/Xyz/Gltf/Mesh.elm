@@ -11,7 +11,6 @@ import Dict
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 import Xyz.Gltf.Accessor as Accessor
-import Xyz.Gltf.Util as Util
 
 
 type Index

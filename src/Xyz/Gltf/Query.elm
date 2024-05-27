@@ -19,9 +19,9 @@ import Json.Decode as JD
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
 import Tree exposing (Tree)
-import Xyz.Gltf.Mesh as Mesh exposing (Mesh, Primitive)
+import Xyz.Gltf.Mesh as Mesh exposing (Mesh)
 import Xyz.Gltf.Node as Node
-import Xyz.Gltf.Query.Skin as Skin exposing (Skin(..))
+import Xyz.Gltf.Query.Skin as Skin exposing (Skin)
 import Xyz.Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
 import Xyz.Gltf.Scene as Scene exposing (Scene(..))
 
@@ -52,10 +52,10 @@ type Node
 meshesFromNode : Node -> List TriangularMesh
 meshesFromNode node =
     case node of
-        MeshNode triangularMeshes properties ->
+        MeshNode triangularMeshes _ ->
             triangularMeshes
 
-        SkinnedMeshNode triangularMeshes skin properties ->
+        SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
 
 
@@ -65,7 +65,7 @@ skinFromNode node =
         MeshNode _ _ ->
             Nothing
 
-        SkinnedMeshNode triangularMeshes skin properties ->
+        SkinnedMeshNode _ skin _ ->
             Just skin
 
 

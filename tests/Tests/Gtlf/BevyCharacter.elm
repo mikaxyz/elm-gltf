@@ -1,12 +1,11 @@
 module Tests.Gtlf.BevyCharacter exposing (suite)
 
-import Expect exposing (Expectation)
-import Test exposing (..)
+import Expect
+import Test exposing (Test, describe, test)
 import Tree exposing (Tree)
 import Xyz.Gltf.Mesh as Mesh
 import Xyz.Gltf.Node as Node exposing (Node(..))
 import Xyz.Gltf.Query as Query
-import Xyz.Gltf.Query.TriangularMesh exposing (TriangularMesh(..))
 import Xyz.Gltf.Skin as Skin
 
 
@@ -101,6 +100,7 @@ suite =
         ]
 
 
+json : String
 json =
     """
 {

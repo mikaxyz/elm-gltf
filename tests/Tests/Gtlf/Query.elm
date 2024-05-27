@@ -1,10 +1,10 @@
 module Tests.Gtlf.Query exposing (suite)
 
-import Expect exposing (Expectation)
+import Expect
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (vec3)
 import Math.Vector4 as Vec4
-import Test exposing (..)
+import Test exposing (Test, describe, test)
 import Tree exposing (Tree)
 import Xyz.Gltf.Mesh as Mesh
 import Xyz.Gltf.Node as Node exposing (Node(..))
@@ -25,6 +25,7 @@ suite =
                     queryResult =
                         Query.fromJson simpleSkin (Query.nodeTree (Node.Index 0))
 
+                    expected : Node
                     expected =
                         Node
                             { index = Node.Index 0
@@ -69,6 +70,7 @@ suite =
         , test "Extracts scene node trees" <|
             \_ ->
                 let
+                    nodeToIndex : Node -> Node.Index
                     nodeToIndex (Node node) =
                         node.index
 
@@ -126,6 +128,7 @@ suite =
                 let
                     -- EXPECTED DATA FROM:
                     -- https://github.khronos.org/glTF-Tutorials/gltfTutorial/gltfTutorial_020_Skins.html
+                    expectedPositions : List Vec3.Vec3
                     expectedPositions =
                         [ vec3 -0.5 0.0 0.0
                         , vec3 0.5 0.0 0.0
@@ -139,6 +142,7 @@ suite =
                         , vec3 0.5 2.0 0.0
                         ]
 
+                    expectedWeights : List Vec4.Vec4
                     expectedWeights =
                         [ Vec4.vec4 1.0 0.0 0.0 0.0
                         , Vec4.vec4 1.0 0.0 0.0 0.0
@@ -152,6 +156,7 @@ suite =
                         , Vec4.vec4 0.0 1.0 0.0 0.0
                         ]
 
+                    expectedJoints : List { j1 : number, j2 : number, j3 : number, j4 : number }
                     expectedJoints =
                         [ { j1 = 0, j2 = 0, j3 = 0, j4 = 0 }
                         , { j1 = 0, j2 = 0, j3 = 0, j4 = 0 }
@@ -165,6 +170,7 @@ suite =
                         , { j1 = 0, j2 = 1, j3 = 0, j4 = 0 }
                         ]
 
+                    expectedIndices : List ( number, number, number )
                     expectedIndices =
                         [ ( 0, 1, 3 )
                         , ( 0, 3, 2 )
@@ -190,6 +196,7 @@ suite =
                             expectedWeights
                             expectedJoints
 
+                    expected : List TriangularMesh
                     expected =
                         [ IndexedTriangularMesh
                             ( expectedVertices
@@ -216,6 +223,7 @@ suite =
                         Query.fromJson triangle (Query.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
+                    expected : List TriangularMesh
                     expected =
                         [ IndexedTriangularMesh
                             ( [ { joints = Nothing
@@ -246,7 +254,7 @@ suite =
                             ]
                             thing
 
-                    Err err ->
+                    Err _ ->
                         Expect.fail "Extract failed"
         , test "Extracts TriangularMesh from TriangleWithoutIndices" <|
             \_ ->
@@ -256,6 +264,7 @@ suite =
                         Query.fromJson triangleWithoutIndices (Query.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
+                    expected : List TriangularMesh
                     expected =
                         [ TriangularMesh
                             [ ( { joints = Nothing
@@ -285,7 +294,7 @@ suite =
                             ]
                             thing
 
-                    Err err ->
+                    Err _ ->
                         Expect.fail "Extract failed"
         , test "Extracts thing with skin" <|
             \_ ->
@@ -296,6 +305,7 @@ suite =
                             |> Result.map (Tree.label >> Query.skinFromNode)
                             |> Result.withDefault Nothing
 
+                    expected : Skin
                     expected =
                         Skin
                             { inverseBindMatrices =
@@ -316,6 +326,7 @@ suite =
         ]
 
 
+simpleSkin : String
 simpleSkin =
     -- https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/SimpleSkin
     """
@@ -453,6 +464,7 @@ simpleSkin =
 """
 
 
+triangle : String
 triangle =
     -- https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/TriangleWithoutIndices
     """
@@ -529,6 +541,7 @@ triangle =
 """
 
 
+triangleWithoutIndices : String
 triangleWithoutIndices =
     -- https://github.com/KhronosGroup/glTF-Sample-Assets/blob/main/Models/TriangleWithoutIndices/README.md
     """

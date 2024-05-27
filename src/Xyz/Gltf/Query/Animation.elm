@@ -10,15 +10,15 @@ module Xyz.Gltf.Query.Animation exposing
     )
 
 import Array exposing (Array)
-import Bytes exposing (Bytes)
+import Bytes
 import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Gltf exposing (Gltf)
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Quaternion exposing (Quaternion)
+import Quaternion
 import Tree exposing (Tree)
-import Xyz.Gltf.Accessor as Accessor exposing (Accessor, ComponentType)
+import Xyz.Gltf.Accessor as Accessor exposing (Accessor)
 import Xyz.Gltf.Animation exposing (Animation(..))
 import Xyz.Gltf.Animation.Channel as Channel exposing (Channel(..))
 import Xyz.Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
@@ -103,7 +103,6 @@ type Attribute
     | Vec3Attribute { x : Float, y : Float, z : Float }
     | Vec4FloatAttribute { x : Float, y : Float, z : Float, w : Float }
     | Vec4IntAttribute { x : Int, y : Int, z : Int, w : Int }
-    | Mat2Attribute { a : Float, b : Float }
 
 
 nodeAtIndex : Gltf -> Node.Index -> Maybe Node
@@ -232,7 +231,7 @@ primitiveTreeFromNodes gltf parentNode nodes =
                         Tree.tree ( node__, first )
                             (rest
                                 |> List.map (\x -> Tree.singleton ( parentNode, x ))
-                                |> (++) children
+                                |> List.append children
                             )
 
                     [] ->
@@ -258,30 +257,31 @@ nodeToPrimitives gltf (Node node_) =
 parseBuffer : ( Accessor, BufferView, Buffer ) -> List Attribute
 parseBuffer ( accessor, bufferView, Buffer buffer ) =
     let
-        width : Int
-        width =
-            case accessor.componentType of
-                Accessor.BYTE ->
-                    1
-
-                Accessor.UNSIGNED_BYTE ->
-                    1
-
-                Accessor.SHORT ->
-                    2
-
-                Accessor.UNSIGNED_SHORT ->
-                    2
-
-                Accessor.UNSIGNED_INT ->
-                    4
-
-                Accessor.FLOAT ->
-                    4
-
         valuesDecoder : Bytes.Decode.Decoder Attribute
         valuesDecoder =
             let
+                width : Int
+                width =
+                    case accessor.componentType of
+                        Accessor.BYTE ->
+                            1
+
+                        Accessor.UNSIGNED_BYTE ->
+                            1
+
+                        Accessor.SHORT ->
+                            2
+
+                        Accessor.UNSIGNED_SHORT ->
+                            2
+
+                        Accessor.UNSIGNED_INT ->
+                            4
+
+                        Accessor.FLOAT ->
+                            4
+
+                stride : Int -> Int
                 stride n =
                     if bufferView.byteStride > 0 then
                         bufferView.byteStride - (n * width)

@@ -42,7 +42,6 @@ type Attribute
     | Vec3Attribute { x : Float, y : Float, z : Float }
     | Vec4FloatAttribute { x : Float, y : Float, z : Float, w : Float }
     | Vec4IntAttribute { x : Int, y : Int, z : Int, w : Int }
-    | Mat2Attribute { a : Float, b : Float }
 
 
 type TriangularMesh
@@ -173,11 +172,8 @@ fromPrimitive gltf primitive =
                 )
 
         Nothing ->
-            let
-                vertices =
-                    vertexAttributesToVertices vertexAttributes
-            in
-            vertices
+            vertexAttributes
+                |> vertexAttributesToVertices
                 |> List.reverse
                 |> List.foldl
                     (\vertex ( c, a ) ->
@@ -201,65 +197,62 @@ readTriangleIndices gltf indices =
             Maybe.map2 (\bufferView buffer -> ( accessor, bufferView, buffer ))
                 (bufferViewAtIndex gltf accessor.bufferView)
                 (readBuffer gltf accessor)
-
-        triangleIndices : List ( Int, Int, Int )
-        triangleIndices =
-            accessorAtIndex gltf indices
-                |> Maybe.andThen bufferInfo
-                |> Maybe.map parseBuffer
-                |> Maybe.withDefault []
-                |> List.filterMap
-                    (\a ->
-                        case a of
-                            ScalarIntAttribute v ->
-                                Just v
-
-                            _ ->
-                                Nothing
-                    )
-                |> List.foldl
-                    (\val ( curr, acc ) ->
-                        case curr of
-                            [ y, x ] ->
-                                ( [], ( x, y, val ) :: acc )
-
-                            _ ->
-                                ( val :: curr, acc )
-                    )
-                    ( [], [] )
-                |> Tuple.second
-                |> List.reverse
     in
-    triangleIndices
+    accessorAtIndex gltf indices
+        |> Maybe.andThen bufferInfo
+        |> Maybe.map parseBuffer
+        |> Maybe.withDefault []
+        |> List.filterMap
+            (\a ->
+                case a of
+                    ScalarIntAttribute v ->
+                        Just v
+
+                    _ ->
+                        Nothing
+            )
+        |> List.foldl
+            (\val ( curr, acc ) ->
+                case curr of
+                    [ y, x ] ->
+                        ( [], ( x, y, val ) :: acc )
+
+                    _ ->
+                        ( val :: curr, acc )
+            )
+            ( [], [] )
+        |> Tuple.second
+        |> List.reverse
 
 
 parseBuffer : ( Accessor, BufferView, Buffer ) -> List Attribute
 parseBuffer ( accessor, bufferView, Buffer buffer ) =
     let
-        width : Int
-        width =
-            case accessor.componentType of
-                Accessor.BYTE ->
-                    1
-
-                Accessor.UNSIGNED_BYTE ->
-                    1
-
-                Accessor.SHORT ->
-                    2
-
-                Accessor.UNSIGNED_SHORT ->
-                    2
-
-                Accessor.UNSIGNED_INT ->
-                    4
-
-                Accessor.FLOAT ->
-                    4
-
         valuesDecoder : Bytes.Decode.Decoder Attribute
         valuesDecoder =
             let
+                width : Int
+                width =
+                    case accessor.componentType of
+                        Accessor.BYTE ->
+                            1
+
+                        Accessor.UNSIGNED_BYTE ->
+                            1
+
+                        Accessor.SHORT ->
+                            2
+
+                        Accessor.UNSIGNED_SHORT ->
+                            2
+
+                        Accessor.UNSIGNED_INT ->
+                            4
+
+                        Accessor.FLOAT ->
+                            4
+
+                stride : Int -> Int
                 stride n =
                     if bufferView.byteStride > 0 then
                         bufferView.byteStride - (n * width)

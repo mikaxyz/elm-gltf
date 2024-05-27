@@ -124,6 +124,7 @@ mat4Decoder accessor bufferView =
                 Accessor.FLOAT ->
                     4
 
+        stride : Int -> Int
         stride n =
             if bufferView.byteStride > 0 then
                 bufferView.byteStride - (n * width)

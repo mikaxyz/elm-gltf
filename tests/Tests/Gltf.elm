@@ -1,9 +1,9 @@
 module Tests.Gltf exposing (suite)
 
-import Expect exposing (Expectation)
+import Expect
 import Gltf exposing (Gltf)
 import Json.Decode as JD
-import Test exposing (..)
+import Test exposing (Test, describe, test)
 
 
 suite : Test
@@ -13,6 +13,7 @@ suite =
             [ test "decodes SimpleTriangle" <|
                 \_ ->
                     let
+                        parsed : Result JD.Error Gltf
                         parsed =
                             JD.decodeString Gltf.decoder json
                     in
@@ -20,6 +21,7 @@ suite =
             , test "decodes asset" <|
                 \_ ->
                     let
+                        parsed : Result JD.Error String
                         parsed =
                             JD.decodeString Gltf.decoder json
                                 |> Result.map (\{ asset } -> asset.version)
@@ -29,6 +31,7 @@ suite =
         ]
 
 
+json : String
 json =
     """
 {

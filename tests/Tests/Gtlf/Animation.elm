@@ -4,12 +4,12 @@ import Array
 import Expect exposing (Expectation)
 import Gltf exposing (Gltf)
 import Json.Decode as JD
-import Test exposing (..)
+import Test exposing (Test, describe, test)
 import Xyz.Gltf.Accessor as Accessor
 import Xyz.Gltf.Animation exposing (Animation(..))
 import Xyz.Gltf.Animation.Channel as Channel exposing (Channel(..))
 import Xyz.Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
-import Xyz.Gltf.Node as Node exposing (Node(..))
+import Xyz.Gltf.Node as Node
 import Xyz.Gltf.Query.Animation as Animation
     exposing
         ( ExtractedAnimation(..)
@@ -25,6 +25,7 @@ suite =
             [ test "decodes ok" <|
                 \_ ->
                     let
+                        parsed : Result JD.Error Gltf
                         parsed =
                             JD.decodeString Gltf.decoder json
                     in
@@ -32,10 +33,12 @@ suite =
             , test "decodes animations" <|
                 \_ ->
                     let
+                        parsed : Result JD.Error (Array.Array Animation)
                         parsed =
                             JD.decodeString Gltf.decoder json
                                 |> Result.map (\{ animations } -> animations)
 
+                        expected : Array.Array Animation
                         expected =
                             Animation
                                 { name = Just "CubeAction"
@@ -136,6 +139,7 @@ suite =
         ]
 
 
+json : String
 json =
     """
 {

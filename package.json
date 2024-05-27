@@ -6,7 +6,8 @@
     "license": "BSD-3-Clause",
     "main": "index.html",
     "scripts": {
-        "test": "elm-verify-examples --run-tests && elm-test"
+        "test": "elm-review && elm-test",
+        "elm-review": "elm-review --compiler ./node_modules/.bin/elm"
     },
     "devDependencies": {
         "elm": "^0.19.1-6",
