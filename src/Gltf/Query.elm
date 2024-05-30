@@ -45,13 +45,21 @@ type QueryError
 
 
 type Node
-    = MeshNode (List TriangularMesh) Properties
+    = EmptyNode Properties
+    | CameraNode Properties
+    | MeshNode (List TriangularMesh) Properties
     | SkinnedMeshNode (List TriangularMesh) Skin Properties
 
 
 meshesFromNode : Node -> List TriangularMesh
 meshesFromNode node =
     case node of
+        EmptyNode _ ->
+            []
+
+        CameraNode _ ->
+            []
+
         MeshNode triangularMeshes _ ->
             triangularMeshes
 
@@ -62,6 +70,12 @@ meshesFromNode node =
 skinFromNode : Node -> Maybe Skin
 skinFromNode node =
     case node of
+        EmptyNode _ ->
+            Nothing
+
+        CameraNode _ ->
+            Nothing
+
         MeshNode _ _ ->
             Nothing
 
@@ -78,6 +92,10 @@ treeFromNode index gltf =
 
 nodeFromNode : Gltf -> Node.Node -> Node
 nodeFromNode gltf node =
+    let
+        cameraIndex =
+            node |> (\(Node.Node x) -> x.cameraIndex)
+    in
     case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.andThen (Skin.skinAtIndex gltf) of
         Just skin ->
             node
@@ -85,9 +103,23 @@ nodeFromNode gltf node =
                 |> SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skin
 
         Nothing ->
-            node
-                |> propertiesFromNode
-                |> MeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault [])
+            case cameraIndex of
+                Just _ ->
+                    node
+                        |> propertiesFromNode
+                        |> CameraNode
+
+                Nothing ->
+                    case triangularMeshesFromNode gltf node of
+                        Just meshes ->
+                            node
+                                |> propertiesFromNode
+                                |> MeshNode meshes
+
+                        Nothing ->
+                            node
+                                |> propertiesFromNode
+                                |> EmptyNode
 
 
 propertiesFromNode : Node.Node -> Properties

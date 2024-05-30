@@ -151,6 +151,24 @@ frameScene config nodes =
 objectFromNode : (ObjectId -> objectId) -> Query.Node -> Object objectId Material.Name
 objectFromNode objectIdMap thing =
     case thing of
+        Query.EmptyNode (Query.Properties properties) ->
+            Object.group "EMPTY"
+                |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
+                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
+                |> (properties.rotation
+                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
+                        |> Maybe.withDefault identity
+                   )
+
+        Query.CameraNode (Query.Properties properties) ->
+            Object.group "CAMERA"
+                |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
+                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
+                |> (properties.rotation
+                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
+                        |> Maybe.withDefault identity
+                   )
+
         Query.MeshNode (mesh :: _) (Query.Properties properties) ->
             mesh
                 |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
