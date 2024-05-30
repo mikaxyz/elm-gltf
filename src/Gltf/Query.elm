@@ -21,8 +21,6 @@ import Internal.Mesh as Mesh exposing (Mesh)
 import Internal.Node as Node
 import Internal.Scene as Scene exposing (Scene(..))
 import Json.Decode as JD
-import Math.Vector3 as Vec3 exposing (Vec3)
-import Quaternion exposing (Quaternion)
 import Tree exposing (Tree)
 
 
@@ -127,9 +125,7 @@ propertiesFromNode (Node.Node node) =
     Properties
         { nodeIndex = node.index
         , nodeName = node.name
-        , rotation = node.rotation |> Maybe.map (\{ x, y, z, w } -> Quaternion.quaternion w x y z)
-        , translation = node.translation |> Maybe.map Vec3.fromRecord
-        , scale = node.scale |> Maybe.map Vec3.fromRecord
+        , transform = node.transform
         }
 
 
@@ -137,9 +133,7 @@ type Properties
     = Properties
         { nodeIndex : Node.Index
         , nodeName : Maybe String
-        , rotation : Maybe Quaternion
-        , translation : Maybe Vec3
-        , scale : Maybe Vec3
+        , transform : Node.Transform
         }
 
 

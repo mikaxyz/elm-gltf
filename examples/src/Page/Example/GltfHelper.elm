@@ -508,10 +508,18 @@ boneTransformsFromAnimations theta animations skin skeleton =
                         |> Maybe.withDefault ( -1, Mat4.identity )
 
                 { t, r, s } =
-                    { t = node.translation |> Maybe.map (Vec3.fromRecord >> Mat4.makeTranslate) |> Maybe.withDefault Mat4.identity
-                    , r = node.rotation |> Maybe.map (\{ x, y, z, w } -> Quaternion.quaternion w x y z |> Quaternion.toMat4) |> Maybe.withDefault Mat4.identity
-                    , s = node.scale |> Maybe.map (Vec3.fromRecord >> Mat4.makeScale) |> Maybe.withDefault Mat4.identity
-                    }
+                    case node.transform of
+                        Node.RTS { translation, rotation, scale } ->
+                            { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
+                            , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
+                            , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
+                            }
+
+                        Node.Matrix _ ->
+                            { t = Mat4.identity
+                            , r = Mat4.identity
+                            , s = Mat4.identity
+                            }
 
                 rAnimated : Mat4
                 rAnimated =

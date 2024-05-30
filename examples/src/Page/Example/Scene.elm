@@ -150,34 +150,37 @@ frameScene config nodes =
 
 objectFromNode : (ObjectId -> objectId) -> Query.Node -> Object objectId Material.Name
 objectFromNode objectIdMap thing =
+    let
+        applyTransform : Node.Transform -> Object id materialId -> Object id materialId
+        applyTransform transform object =
+            case transform of
+                Node.RTS { translation, rotation } ->
+                    object
+                        |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
+                        |> (rotation
+                                |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
+                                |> Maybe.withDefault identity
+                           )
+
+                Node.Matrix mat ->
+                    Object.withRotation mat object
+    in
     case thing of
         Query.EmptyNode (Query.Properties properties) ->
             Object.group "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                |> (properties.rotation
-                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                        |> Maybe.withDefault identity
-                   )
+                |> applyTransform properties.transform
 
         Query.CameraNode (Query.Properties properties) ->
             Object.group "CAMERA"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                |> (properties.rotation
-                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                        |> Maybe.withDefault identity
-                   )
+                |> applyTransform properties.transform
 
         Query.MeshNode (mesh :: _) (Query.Properties properties) ->
             mesh
                 |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                |> (properties.rotation
-                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                        |> Maybe.withDefault identity
-                   )
+                |> applyTransform properties.transform
                 |> Object.withColor Color.gray
                 |> Object.withMaterialName Material.Advanced
 
@@ -188,11 +191,7 @@ objectFromNode objectIdMap thing =
                         |> objectFromMesh (objectIdMap SkinnedMesh)
                         |> GltfHelper.objectWithSkin skin
                         |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                        |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                        |> (properties.rotation
-                                |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                                |> Maybe.withDefault identity
-                           )
+                        |> applyTransform properties.transform
                         |> Object.withColor Color.green
                         |> Object.withMaterialName Material.Skinned
             in
@@ -206,11 +205,7 @@ objectFromNode objectIdMap thing =
             Primitives.bone3 0.1
                 |> Object.objectWithTriangles (objectIdMap (Bone properties.nodeIndex))
                 |> Object.withName (name properties.nodeIndex)
-                |> (properties.translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                |> (properties.rotation
-                        |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                        |> Maybe.withDefault identity
-                   )
+                |> applyTransform properties.transform
                 |> Object.withColor Color.gray
                 |> Object.disable
                 |> Object.withMaterialName Material.Advanced
