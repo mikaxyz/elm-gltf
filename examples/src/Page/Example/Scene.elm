@@ -12,6 +12,7 @@ import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Node as Node exposing (Index(..), Node(..))
 import Internal.Scene
 import Material
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Page.Example.GltfHelper as GltfHelper
 import Quaternion
@@ -40,18 +41,23 @@ type alias Config =
 init : Gltf -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
 init gltf objectIdMap config =
     let
-        nodes : List (Tree (Object objectId Material.Name))
+        nodes : List (Tree Query.Node)
         nodes =
             gltf
                 |> Query.sceneNodeTrees (Internal.Scene.Index 0)
                 |> Result.withDefault []
-                |> List.map (Tree.map (Query.nodeFromNode gltf >> objectFromNode objectIdMap))
+                |> List.map (Tree.map (Query.nodeFromNode gltf))
 
-        { cameraTarget, cameraPosition, cameraProjection } =
+        { cameraTarget, cameraPosition, cameraProjection, bounds } =
             frameScene config nodes
+
+        objects : List (Tree (Object objectId Material.Name))
+        objects =
+            nodes
+                |> List.map (Tree.map (objectFromNode objectIdMap))
     in
     lights
-        :: nodes
+        :: objects
         |> Graph.graph (Object.group "")
         |> Scene.init
         |> Scene.withCameraMap (always config.camera)
@@ -61,43 +67,134 @@ init gltf objectIdMap config =
 
 frameScene :
     Config
-    -> List (Tree (Object objectId Material.Name))
+    -> List (Tree Query.Node)
     ->
         { cameraTarget : Vec3
         , cameraPosition : Vec3
         , cameraProjection : { fov : Float, near : Float, far : Float }
+        , bounds : { min : Vec3, max : Vec3 }
         }
 frameScene config nodes =
     let
+        getBounds : List TriangularMesh.Vertex -> ( Vec3, Vec3 )
+        getBounds vertices =
+            vertices
+                |> List.map .position
+                |> List.foldl
+                    (\v ( min, max ) ->
+                        ( vMin min v, vMax max v )
+                    )
+                    ( vec3 0 0 0, vec3 0 0 0 )
+
+        vMin : Vec3 -> Vec3 -> Vec3
+        vMin v1 v2 =
+            vec3
+                (min (Vec3.getX v1) (Vec3.getX v2))
+                (min (Vec3.getY v1) (Vec3.getY v2))
+                (min (Vec3.getZ v1) (Vec3.getZ v2))
+
+        vMax : Vec3 -> Vec3 -> Vec3
+        vMax v1 v2 =
+            vec3
+                (max (Vec3.getX v1) (Vec3.getX v2))
+                (max (Vec3.getY v1) (Vec3.getY v2))
+                (max (Vec3.getZ v1) (Vec3.getZ v2))
+
+        joinBoundingBoxes : List ( Vec3, Vec3 ) -> ( Vec3, Vec3 )
+        joinBoundingBoxes boundingBoxes =
+            boundingBoxes
+                |> List.foldl
+                    (\( min, max ) ( aMin, aMax ) ->
+                        ( vMin min aMin, vMax max aMax )
+                    )
+                    ( vec3 0 0 0, vec3 0 0 0 )
+
+        triangularMeshToBounds : TriangularMesh -> ( Vec3, Vec3 )
+        triangularMeshToBounds mesh =
+            case mesh of
+                TriangularMesh vertices ->
+                    vertices |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
+
+                IndexedTriangularMesh ( vertices, _ ) ->
+                    vertices |> getBounds
+
+        triangularMeshesToBounds : List TriangularMesh -> ( Vec3, Vec3 )
+        triangularMeshesToBounds meshes =
+            meshes
+                |> List.map triangularMeshToBounds
+                |> joinBoundingBoxes
+
+        nodeTransformAndBounds : Query.Node -> ( Mat4, Maybe ( Vec3, Vec3 ) )
+        nodeTransformAndBounds node =
+            let
+                transformToMat : Node.Transform -> Mat4
+                transformToMat transform =
+                    case transform of
+                        Node.RTS { translation, rotation } ->
+                            translation |> Maybe.withDefault (vec3 0 0 0) |> Mat4.makeTranslate |> Mat4.mul (rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity)
+
+                        Node.Matrix mat ->
+                            mat
+            in
+            case node of
+                Query.CameraNode (Query.Properties properties) ->
+                    ( transformToMat properties.transform, Nothing )
+
+                Query.EmptyNode (Query.Properties properties) ->
+                    ( transformToMat properties.transform, Nothing )
+
+                Query.MeshNode meshes (Query.Properties properties) ->
+                    ( transformToMat properties.transform, Just (triangularMeshesToBounds meshes) )
+
+                Query.SkinnedMeshNode meshes _ (Query.Properties properties) ->
+                    ( transformToMat properties.transform, Just (triangularMeshesToBounds meshes) )
+
+        treeWithGlobalMatrix : Mat4 -> Tree ( Mat4, Maybe ( Vec3, Vec3 ) ) -> Tree ( Mat4, Maybe ( Vec3, Vec3 ) )
+        treeWithGlobalMatrix globalMat tree =
+            let
+                mat : Mat4
+                mat =
+                    Tree.label tree |> Tuple.first |> Mat4.mul globalMat
+            in
+            tree
+                |> Tree.mapLabel (\( _, bb ) -> ( mat, bb |> Maybe.map (\( bb1, bb2 ) -> ( Mat4.transform mat bb1, Mat4.transform mat bb2 )) ))
+                |> Tree.mapChildren (List.map (treeWithGlobalMatrix mat))
+
         bounds : { min : Vec3, max : Vec3 }
         bounds =
             nodes
+                |> List.map (Tree.map nodeTransformAndBounds)
+                |> List.map (treeWithGlobalMatrix Mat4.identity >> Tree.map Tuple.second)
                 |> List.concatMap Tree.flatten
-                |> List.map Object.boundingBox
                 |> List.foldl
-                    (\( v1, v2 ) ( bMin, bMax ) ->
-                        let
-                            ( x1, x2 ) =
-                                ( Vec3.getX v1, Vec3.getX v2 )
+                    (\bb ( bMin, bMax ) ->
+                        case bb of
+                            Just ( v1, v2 ) ->
+                                let
+                                    ( x1, x2 ) =
+                                        ( Vec3.getX v1, Vec3.getX v2 )
 
-                            ( y1, y2 ) =
-                                ( Vec3.getY v1, Vec3.getY v2 )
+                                    ( y1, y2 ) =
+                                        ( Vec3.getY v1, Vec3.getY v2 )
 
-                            ( z1, z2 ) =
-                                ( Vec3.getZ v1, Vec3.getZ v2 )
+                                    ( z1, z2 ) =
+                                        ( Vec3.getZ v1, Vec3.getZ v2 )
 
-                            ( xMin, xMax ) =
-                                ( min x1 x2, max x1 x2 )
+                                    ( xMin, xMax ) =
+                                        ( min x1 x2, max x1 x2 )
 
-                            ( yMin, yMax ) =
-                                ( min y1 y2, max y1 y2 )
+                                    ( yMin, yMax ) =
+                                        ( min y1 y2, max y1 y2 )
 
-                            ( zMin, zMax ) =
-                                ( min z1 z2, max z1 z2 )
-                        in
-                        ( { bMin | x = min bMin.x xMin, y = min bMin.y yMin, z = min bMin.z zMin }
-                        , { bMax | x = max bMax.x xMax, y = max bMax.y yMax, z = max bMax.z zMax }
-                        )
+                                    ( zMin, zMax ) =
+                                        ( min z1 z2, max z1 z2 )
+                                in
+                                ( { bMin | x = min bMin.x xMin, y = min bMin.y yMin, z = min bMin.z zMin }
+                                , { bMax | x = max bMax.x xMax, y = max bMax.y yMax, z = max bMax.z zMax }
+                                )
+
+                            Nothing ->
+                                ( bMin, bMax )
                     )
                     ( Vec3.toRecord (vec3 0 0 0), Vec3.toRecord (vec3 0 0 0) )
                 |> (\( min, max ) -> { min = Vec3.fromRecord min, max = Vec3.fromRecord max })
@@ -145,6 +242,7 @@ frameScene config nodes =
     , cameraPosition = cameraPosition
     , cameraProjection =
         { projection | near = 0.01 * (camFocalDistance - boundSphereRadius), far = 100 * (camFocalDistance - boundSphereRadius) }
+    , bounds = bounds
     }
 
 
@@ -185,17 +283,13 @@ objectFromNode objectIdMap thing =
                 |> Object.withMaterialName Material.Advanced
 
         Query.SkinnedMeshNode (mesh :: _) skin (Query.Properties properties) ->
-            let
-                obj =
-                    mesh
-                        |> objectFromMesh (objectIdMap SkinnedMesh)
-                        |> GltfHelper.objectWithSkin skin
-                        |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                        |> applyTransform properties.transform
-                        |> Object.withColor Color.green
-                        |> Object.withMaterialName Material.Skinned
-            in
-            obj
+            mesh
+                |> objectFromMesh (objectIdMap SkinnedMesh)
+                |> GltfHelper.objectWithSkin skin
+                |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
+                |> applyTransform properties.transform
+                |> Object.withColor Color.green
+                |> Object.withMaterialName Material.Skinned
 
         Query.MeshNode [] (Query.Properties properties) ->
             let
