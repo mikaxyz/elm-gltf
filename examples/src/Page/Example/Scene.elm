@@ -265,7 +265,7 @@ objectFromNode objectIdMap thing =
     in
     case thing of
         Query.EmptyNode (Query.Properties properties) ->
-            Object.group "EMPTY"
+            Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
 
