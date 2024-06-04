@@ -2,6 +2,9 @@ module Page.Example.Update exposing (update)
 
 import Browser.Dom
 import Color
+import Gltf.Query as Query
+import Http
+import Internal.Scene
 import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (vec2)
@@ -61,6 +64,10 @@ update msg model =
                 |> Tuple.mapFirst (\dragon -> { model | dragon = dragon })
 
         DragonOnDrag drag ->
+            let
+                sensitivity =
+                    model.sceneSize
+            in
             ( { model
                 | scene =
                     case Model.dragTarget model of
@@ -70,17 +77,17 @@ update msg model =
                                     (XYZScene.withCameraMap
                                         (\camera ->
                                             camera
+                                                --|> XYZCamera.withOrbitY -(drag.x / 40 * sensitivity)
                                                 |> XYZCamera.withOrbitY -(drag.x / 100)
-                                                --|> Camera.orbitX -(Vec2.getY d / 100)
-                                                |> XYZCamera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (drag.y / 20)) position)
+                                                |> XYZCamera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (drag.y / 80 * sensitivity)) position)
                                         )
                                     )
 
                         Model.CameraPan ->
-                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withPan (Vec2.scale 0.01 (vec2 drag.x drag.y))))
+                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withPan (Vec2.scale (sensitivity / 100) (vec2 drag.x drag.y))))
 
                         Model.CameraZoom ->
-                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withZoom (drag.y / 20)))
+                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withZoom (drag.y / 20 * sensitivity)))
 
                         Model.Default ->
                             let
@@ -107,6 +114,7 @@ update msg model =
                                         )
                                     )
               }
+                |> setSceneSize
             , Cmd.none
             )
 
@@ -347,21 +355,78 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        FallbackTextureReceived result ->
+            case result of
+                Ok texture ->
+                    ( { model | fallbackTexture = RemoteData.Success texture }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model | fallbackTexture = RemoteData.Failure (Debug.log "FallbackTextureReceived" error) }
+                    , Cmd.none
+                    )
+
+        GltfApplyEffect effect ->
+            let
+                nodes : List (Tree.Tree Query.Node)
+                nodes =
+                    model.nodes |> List.map (Query.applyEffect effect)
+            in
+            ( { model
+                | nodes = nodes
+                , scene =
+                    model.scene
+                        |> RemoteData.map
+                            (XYZScene.map
+                                (\_ ->
+                                    Scene.graphFromNodes nodes
+                                        identity
+                                        { camera = XYZCamera.init (vec3 3 8 12) (vec3 0 0 0)
+                                        , projection = { fov = 60, near = 0.1, far = 10000 }
+                                        , sceneSize = model.sceneSize
+                                        }
+                                )
+                            )
+              }
+            , Cmd.none
+            )
+
         GltfReceived result ->
             case result of
                 Ok gltf ->
-                    ( { model
-                        | gltf = RemoteData.Success gltf
-                        , scene =
-                            Scene.init
-                                gltf
+                    let
+                        nodes : List (Tree.Tree Query.Node)
+                        nodes =
+                            gltf
+                                |> Query.sceneNodeTrees (Internal.Scene.Index 0)
+                                |> Result.withDefault []
+                                |> List.map (Tree.map (Query.nodeFromNode gltf))
+
+                        cmds : List (Cmd Msg)
+                        cmds =
+                            nodes
+                                |> List.map (Query.effectsFromNodeTree GltfApplyEffect)
+
+                        scene : XYZScene.Scene Scene.ObjectId Material.Name
+                        scene =
+                            Scene.initWithNodes
+                                nodes
                                 identity
                                 { camera = XYZCamera.init (vec3 3 8 12) (vec3 0 0 0)
                                 , projection = { fov = 60, near = 0.1, far = 10000 }
+                                , sceneSize = model.sceneSize
                                 }
-                                |> RemoteData.Success
+                    in
+                    ( { model
+                        | gltf = RemoteData.Success gltf
+                        , nodes = nodes
+                        , scene = scene |> RemoteData.Success
                       }
+                        |> setSceneSize
                     , getViewPort
+                        :: cmds
+                        |> Cmd.batch
                     )
                         |> onResize
 
@@ -369,6 +434,16 @@ update msg model =
                     ( { model | gltf = RemoteData.Failure error }
                     , Cmd.none
                     )
+
+
+setSceneSize : Model -> Model
+setSceneSize model =
+    case model.scene |> RemoteData.map XYZScene.camera of
+        RemoteData.Success camera ->
+            { model | sceneSize = XYZCamera.position camera |> Vec3.distance (XYZCamera.target camera) }
+
+        _ ->
+            model
 
 
 getViewPort : Cmd Msg

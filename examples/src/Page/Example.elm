@@ -17,6 +17,8 @@ import Page.Example.Model as Model exposing (Model, Msg(..))
 import Page.Example.Update as Update
 import Page.Example.View as View
 import SampleAssets
+import Task exposing (Task)
+import WebGL.Texture
 import XYZMika.Dragon as Dragon
 
 
@@ -28,22 +30,34 @@ type alias Model =
     Model.Model
 
 
+loadFallbackTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
+loadFallbackTexture msg =
+    WebGL.Texture.load "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAE0lEQVR4nA3AAQEAAABAIP6fJlkACgACy3XdIwAAAABJRU5ErkJggg=="
+        |> Task.attempt msg
+
+
 initWithSampleAsset : SampleAssets.Asset -> ( Model, Cmd Msg )
 initWithSampleAsset asset =
     ( Model.init (Model.SampleAsset asset)
-    , SampleAssets.toBinaryUrl asset
-        |> Maybe.map
-            (\url ->
-                Gltf.getBinary url GltfReceived
-            )
-        |> Maybe.withDefault Cmd.none
+    , Cmd.batch
+        [ SampleAssets.toBinaryUrl asset
+            |> Maybe.map
+                (\url ->
+                    Gltf.getBinary url GltfReceived
+                )
+            |> Maybe.withDefault Cmd.none
+        , loadFallbackTexture FallbackTextureReceived
+        ]
     )
 
 
 initWithLocalAsset : String -> ( Model, Cmd Msg )
 initWithLocalAsset path =
     ( Model.init (Model.Local path)
-    , Gltf.getEmbedded path GltfReceived
+    , Cmd.batch
+        [ Gltf.getEmbedded path GltfReceived
+        , loadFallbackTexture FallbackTextureReceived
+        ]
     )
 
 

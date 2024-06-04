@@ -1,5 +1,6 @@
 module Gltf.Query.TriangularMesh exposing
-    ( TriangularMesh(..)
+    ( Material(..)
+    , TriangularMesh(..)
     , Vertex
     , fromPrimitive
     )
@@ -10,11 +11,14 @@ import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Gltf exposing (Gltf)
+import Gltf.Query.Material
+import Gltf.Query.ResolvedMaterial
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.Buffer as Buffer exposing (Buffer(..))
 import Internal.BufferView as BufferView exposing (BufferView)
 import Internal.Mesh exposing (Primitive)
+import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Math.Vector4 as Vec4 exposing (Vec4)
 
@@ -24,6 +28,7 @@ type alias Vertex =
     , normal : Maybe Vec3
     , weights : Maybe Vec4
     , joints : Maybe Joints
+    , texCoords : Maybe Vec2
     }
 
 
@@ -45,8 +50,13 @@ type Attribute
 
 
 type TriangularMesh
-    = TriangularMesh (List ( Vertex, Vertex, Vertex ))
-    | IndexedTriangularMesh ( List Vertex, List ( Int, Int, Int ) )
+    = TriangularMesh (Maybe Material) (List ( Vertex, Vertex, Vertex ))
+    | IndexedTriangularMesh (Maybe Material) ( List Vertex, List ( Int, Int, Int ) )
+
+
+type Material
+    = Material Gltf.Query.Material.Material
+    | ResolvedMaterial Gltf.Query.ResolvedMaterial.Material
 
 
 type alias VertexAttributes =
@@ -54,6 +64,7 @@ type alias VertexAttributes =
     , normal : Maybe (List Attribute)
     , joints : Maybe (List Attribute)
     , weights : Maybe (List Attribute)
+    , texCoords : Maybe (List Attribute)
     }
 
 
@@ -70,6 +81,7 @@ fromPrimitive gltf primitive =
             , normal = Maybe.map parseBuffer vertexBuffers.normal
             , joints = Maybe.map parseBuffer vertexBuffers.joints
             , weights = Maybe.map parseBuffer vertexBuffers.weights
+            , texCoords = Maybe.map parseBuffer vertexBuffers.texCoords
             }
 
         attributeToWeights : Attribute -> Maybe Vec4
@@ -95,85 +107,88 @@ fromPrimitive gltf primitive =
                 _ ->
                     Nothing
 
-        vertexAttributesToVertices : VertexAttributes -> List Vertex
-        vertexAttributesToVertices a =
-            case ( a.position, a.normal, ( a.weights, a.joints ) ) of
-                ( Just positions, Just normals, ( Just weights, Just joints ) ) ->
-                    List.map4
-                        (\position normal weights_ joints_ ->
-                            { position = position
-                            , normal = Just normal
-                            , weights = weights_
-                            , joints = joints_
-                            }
-                        )
-                        (positions |> List.filterMap attributeToVec3)
-                        (normals |> List.filterMap attributeToVec3)
-                        (weights |> List.map attributeToWeights)
-                        (joints |> List.map attributeToJoints)
+        vertexAttributesToVertices2 : VertexAttributes -> List Vertex
+        vertexAttributesToVertices2 a =
+            let
+                positions : List Vertex
+                positions =
+                    a.position
+                        |> Maybe.withDefault []
+                        |> List.filterMap attributeToVec3
+                        |> List.map
+                            (\position ->
+                                { position = position
+                                , normal = Nothing
+                                , weights = Nothing
+                                , joints = Nothing
+                                , texCoords = Nothing
+                                }
+                            )
 
-                ( Just positions, Just normals, ( Just weights, Nothing ) ) ->
-                    List.map3
-                        (\position normal weights_ ->
-                            { position = position
-                            , normal = Just normal
-                            , weights = weights_
-                            , joints = Nothing
-                            }
-                        )
-                        (positions |> List.filterMap attributeToVec3)
-                        (normals |> List.filterMap attributeToVec3)
-                        (weights |> List.map attributeToWeights)
+                withNormals : List Vertex -> List Vertex
+                withNormals vertices =
+                    case a.normal |> Maybe.withDefault [] |> List.filterMap attributeToVec3 of
+                        [] ->
+                            vertices
 
-                ( Just positions, Just normals, ( Nothing, Nothing ) ) ->
-                    List.map2
-                        (\position normal ->
-                            { position = position
-                            , normal = Just normal
-                            , weights = Nothing
-                            , joints = Nothing
-                            }
-                        )
-                        (positions |> List.filterMap attributeToVec3)
-                        (normals |> List.filterMap attributeToVec3)
+                        normals ->
+                            List.map2 (\vertex x -> { vertex | normal = Just x })
+                                vertices
+                                normals
 
-                ( Just positions, Nothing, ( Just weights, Just joints ) ) ->
-                    List.map3
-                        (\position weights_ joints_ ->
-                            { position = position
-                            , normal = Nothing
-                            , weights = weights_
-                            , joints = joints_
-                            }
-                        )
-                        (positions |> List.filterMap attributeToVec3)
-                        (weights |> List.map attributeToWeights)
-                        (joints |> List.map attributeToJoints)
+                withWeights : List Vertex -> List Vertex
+                withWeights vertices =
+                    case a.weights |> Maybe.withDefault [] |> List.filterMap attributeToWeights of
+                        [] ->
+                            vertices
 
-                ( Just positions, Nothing, ( Nothing, Nothing ) ) ->
-                    List.map
-                        (\position ->
-                            { position = position
-                            , normal = Nothing
-                            , weights = Nothing
-                            , joints = Nothing
-                            }
-                        )
-                        (positions |> List.filterMap attributeToVec3)
+                        weights ->
+                            List.map2 (\vertex x -> { vertex | weights = Just x })
+                                vertices
+                                weights
 
-                _ ->
-                    []
+                withJoints : List Vertex -> List Vertex
+                withJoints vertices =
+                    case a.joints |> Maybe.withDefault [] |> List.filterMap attributeToJoints of
+                        [] ->
+                            vertices
+
+                        weights ->
+                            List.map2 (\vertex x -> { vertex | joints = Just x })
+                                vertices
+                                weights
+
+                withTexCoords : List Vertex -> List Vertex
+                withTexCoords vertices =
+                    case a.texCoords |> Maybe.withDefault [] |> List.filterMap attributeToVec2 of
+                        [] ->
+                            vertices
+
+                        texCoords ->
+                            List.map2 (\vertex x -> { vertex | texCoords = Just x })
+                                vertices
+                                texCoords
+            in
+            positions
+                |> withNormals
+                |> withWeights
+                |> withJoints
+                |> withTexCoords
+
+        material : Maybe Material
+        material =
+            Gltf.Query.Material.fromPrimitive gltf primitive |> Maybe.map Material
     in
     case primitive.indices of
         Just indices ->
-            IndexedTriangularMesh
-                ( vertexAttributesToVertices vertexAttributes
+            IndexedTriangularMesh material
+                ( vertexAttributesToVertices2 vertexAttributes
                 , readTriangleIndices gltf indices
                 )
 
         Nothing ->
             vertexAttributes
-                |> vertexAttributesToVertices
+                |> vertexAttributesToVertices2
                 |> List.reverse
                 |> List.foldl
                     (\vertex ( c, a ) ->
@@ -186,7 +201,7 @@ fromPrimitive gltf primitive =
                     )
                     ( [], [] )
                 |> Tuple.second
-                |> TriangularMesh
+                |> TriangularMesh material
 
 
 readTriangleIndices : Gltf -> Accessor.Index -> List ( Int, Int, Int )
@@ -381,6 +396,16 @@ bufferViewAtIndex gltf (BufferView.Index index) =
 accessorAtIndex : Gltf -> Accessor.Index -> Maybe Accessor
 accessorAtIndex gltf (Accessor.Index index) =
     gltf.accessors |> Array.get index
+
+
+attributeToVec2 : Attribute -> Maybe Vec2
+attributeToVec2 a =
+    case a of
+        Vec2Attribute v ->
+            Vec2.fromRecord v |> Just
+
+        _ ->
+            Nothing
 
 
 attributeToVec3 : Attribute -> Maybe Vec3

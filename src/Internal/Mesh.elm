@@ -9,6 +9,7 @@ module Internal.Mesh exposing
 
 import Dict
 import Internal.Accessor as Accessor
+import Internal.Material as Material
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 
@@ -25,6 +26,7 @@ type alias Mesh =
 type alias Primitive =
     { attributes : List Attribute
     , indices : Maybe Accessor.Index
+    , material : Maybe Material.Index
     }
 
 
@@ -33,6 +35,7 @@ type Attribute
     | Normal Accessor.Index
     | Joints Int Accessor.Index
     | Weights Int Accessor.Index
+    | TexCoord Int Accessor.Index
     | Unknown String
 
 
@@ -52,6 +55,7 @@ primitiveDecoder =
     JD.succeed Primitive
         |> JDP.required "attributes" attributesDecoder
         |> JDP.optional "indices" (JD.maybe Accessor.indexDecoder) Nothing
+        |> JDP.optional "material" (JD.maybe Material.indexDecoder) Nothing
 
 
 attributesDecoder : JD.Decoder (List Attribute)
@@ -80,6 +84,12 @@ toAttribute key accessorIndex =
                     indices
                         |> String.toInt
                         |> Maybe.map (\index -> Weights index accessorIndex)
+                        |> Maybe.withDefault (Unknown key)
+
+                "TEXCOORD" :: indices :: [] ->
+                    indices
+                        |> String.toInt
+                        |> Maybe.map (\index -> TexCoord index accessorIndex)
                         |> Maybe.withDefault (Unknown key)
 
                 _ ->

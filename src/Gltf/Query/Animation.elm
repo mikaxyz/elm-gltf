@@ -220,7 +220,7 @@ primitiveTreeFromNodes gltf parentNode nodes =
             x.meshIndex
                 |> Maybe.andThen (meshAtIndex gltf)
                 |> Maybe.andThen (.primitives >> List.head)
-                |> Maybe.withDefault (Primitive [] (Just (Accessor.Index -1)))
+                |> Maybe.withDefault (Primitive [] (Just (Accessor.Index -1)) Nothing)
     in
     nodes
         |> List.map (nodeToPrimitives gltf)
@@ -235,7 +235,7 @@ primitiveTreeFromNodes gltf parentNode nodes =
                             )
 
                     [] ->
-                        Tree.singleton ( node__, Primitive [] (Just (Accessor.Index -1)) )
+                        Tree.singleton ( node__, Primitive [] (Just (Accessor.Index -1)) Nothing )
             )
         |> Tree.tree ( parentNode, parentNodeFirstPrimitive parentNode )
 

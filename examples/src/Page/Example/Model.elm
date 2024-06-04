@@ -11,12 +11,17 @@ module Page.Example.Model exposing
 
 import Browser.Dom
 import Gltf exposing (Gltf)
+import Gltf.Query as Query
+import Gltf.Query.ResolvedMaterial
 import Http
+import Internal.Material
 import Keyboard
 import Material
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import SampleAssets
+import Tree exposing (Tree)
+import WebGL.Texture
 import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -39,7 +44,9 @@ type Msg
     | DragonMsg Dragon.Msg
     | DragonOnDrag Dragon.Vector
       --
+    | FallbackTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | GltfReceived (Result Http.Error Gltf)
+    | GltfApplyEffect Query.Effect
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
 
 
@@ -58,8 +65,11 @@ type alias Model =
     , asset : Asset
     , selectedTreeIndex : Maybe Int
     , sceneOptions : SceneOptions.Options
+    , sceneSize : Float
+    , fallbackTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
     , gltf : RemoteData Http.Error Gltf
     , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
+    , nodes : List (Tree Query.Node)
     }
 
 
@@ -73,9 +83,12 @@ init asset =
     , dragon = Dragon.init
     , asset = asset
     , selectedTreeIndex = Nothing
-    , sceneOptions = SceneOptions.create |> SceneOptions.toggle SceneOptions.showGridYOption
+    , sceneOptions = SceneOptions.create
+    , sceneSize = 999999999
+    , fallbackTexture = RemoteData.Loading
     , gltf = RemoteData.Loading
     , scene = RemoteData.Loading
+    , nodes = []
     }
 
 

@@ -1,7 +1,8 @@
 module Page.Example.Scene exposing
     ( Config
     , ObjectId(..)
-    , init
+    , graphFromNodes
+    , initWithNodes
     , modifiers
     )
 
@@ -35,34 +36,34 @@ type ObjectId
 type alias Config =
     { camera : Camera
     , projection : { fov : Float, near : Float, far : Float }
+    , sceneSize : Float
     }
 
 
-init : Gltf -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
-init gltf objectIdMap config =
+initWithNodes : List (Tree Query.Node) -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
+initWithNodes nodes objectIdMap config =
     let
-        nodes : List (Tree Query.Node)
-        nodes =
-            gltf
-                |> Query.sceneNodeTrees (Internal.Scene.Index 0)
-                |> Result.withDefault []
-                |> List.map (Tree.map (Query.nodeFromNode gltf))
-
         { cameraTarget, cameraPosition, cameraProjection, bounds } =
             frameScene config nodes
+    in
+    graphFromNodes nodes objectIdMap config
+        |> Scene.init
+        |> Scene.withCameraMap (always config.camera)
+        |> Scene.withCameraMap (Camera.withTarget cameraTarget >> Camera.withPosition cameraPosition)
+        |> Scene.withPerspectiveProjection cameraProjection
 
+
+graphFromNodes : List (Tree Query.Node) -> (ObjectId -> objectId) -> Config -> Graph (Object objectId Material.Name)
+graphFromNodes nodes objectIdMap config =
+    let
         objects : List (Tree (Object objectId Material.Name))
         objects =
             nodes
                 |> List.map (Tree.map (objectFromNode objectIdMap))
     in
-    lights
+    lights (config.sceneSize / 3)
         :: objects
         |> Graph.graph (Object.group "")
-        |> Scene.init
-        |> Scene.withCameraMap (always config.camera)
-        |> Scene.withCameraMap (Camera.withTarget cameraTarget >> Camera.withPosition cameraPosition)
-        |> Scene.withPerspectiveProjection cameraProjection
 
 
 frameScene :
@@ -112,10 +113,10 @@ frameScene config nodes =
         triangularMeshToBounds : TriangularMesh -> ( Vec3, Vec3 )
         triangularMeshToBounds mesh =
             case mesh of
-                TriangularMesh vertices ->
+                TriangularMesh _ vertices ->
                     vertices |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
 
-                IndexedTriangularMesh ( vertices, _ ) ->
+                IndexedTriangularMesh _ ( vertices, _ ) ->
                     vertices |> getBounds
 
         triangularMeshesToBounds : List TriangularMesh -> ( Vec3, Vec3 )
@@ -247,7 +248,7 @@ frameScene config nodes =
 
 
 objectFromNode : (ObjectId -> objectId) -> Query.Node -> Object objectId Material.Name
-objectFromNode objectIdMap thing =
+objectFromNode objectIdMap node =
     let
         applyTransform : Node.Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
@@ -263,7 +264,7 @@ objectFromNode objectIdMap thing =
                 Node.Matrix mat ->
                     Object.withRotation mat object
     in
-    case thing of
+    case node of
         Query.EmptyNode (Query.Properties properties) ->
             Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
@@ -279,18 +280,38 @@ objectFromNode objectIdMap thing =
                 |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-                |> Object.withColor Color.gray
-                |> Object.withMaterialName Material.Advanced
 
         Query.SkinnedMeshNode (mesh :: _) skin (Query.Properties properties) ->
+            let
+                withMaterial : Maybe TriangularMesh.Material -> Object id Material.Name -> Object id Material.Name
+                withMaterial maybeMaterial_ =
+                    case maybeMaterial_ of
+                        Just (TriangularMesh.ResolvedMaterial material) ->
+                            Object.withMaterialName (Material.PbrMaterial material)
+
+                        Just (TriangularMesh.Material _) ->
+                            Object.withMaterialName Material.Color
+
+                        Nothing ->
+                            Object.withMaterialName Material.Advanced
+
+                maybeMaterial =
+                    case mesh of
+                        TriangularMesh material _ ->
+                            material
+
+                        IndexedTriangularMesh material _ ->
+                            material
+            in
             mesh
                 |> objectFromMesh (objectIdMap SkinnedMesh)
                 |> GltfHelper.objectWithSkin skin
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-                |> Object.withColor Color.green
-                |> Object.withMaterialName Material.Skinned
+                |> withMaterial maybeMaterial
 
+        --|> Object.withColor Color.green
+        --|> Object.withMaterialName Material.Skinned
         Query.MeshNode [] (Query.Properties properties) ->
             let
                 name (Node.Index nodeIndex) =
@@ -302,7 +323,6 @@ objectFromNode objectIdMap thing =
                 |> applyTransform properties.transform
                 |> Object.withColor Color.gray
                 |> Object.disable
-                |> Object.withMaterialName Material.Advanced
 
         Query.SkinnedMeshNode [] _ (Query.Properties _) ->
             Object.group ""
@@ -310,16 +330,31 @@ objectFromNode objectIdMap thing =
 
 objectFromMesh : objectId -> TriangularMesh -> Object objectId Material.Name
 objectFromMesh objectId triangularMesh =
+    let
+        withMaterial : Maybe TriangularMesh.Material -> Object id Material.Name -> Object id Material.Name
+        withMaterial maybeMaterial =
+            case maybeMaterial of
+                Just (TriangularMesh.ResolvedMaterial material) ->
+                    Object.withMaterialName (Material.PbrMaterial material)
+
+                Just (TriangularMesh.Material _) ->
+                    Object.withMaterialName Material.Color
+
+                Nothing ->
+                    Object.withMaterialName Material.Advanced
+    in
     case triangularMesh of
-        TriangularMesh vertices ->
+        TriangularMesh material vertices ->
             vertices
                 |> List.map (\( v1, v2, v3 ) -> ( toVertex v1, toVertex v2, toVertex v3 ))
                 |> Object.objectWithTriangles objectId
+                |> withMaterial material
 
-        IndexedTriangularMesh mesh ->
+        IndexedTriangularMesh material mesh ->
             mesh
                 |> Tuple.mapFirst (List.map toVertex)
                 |> Object.objectObjectWithIndexedTriangles objectId
+                |> withMaterial material
 
 
 modifiers : Float -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
@@ -354,7 +389,7 @@ boneDeformerF theta gltf obj =
                     boneTransforms : BoneTransforms
                     boneTransforms =
                         skeleton
-                            |> Maybe.map (GltfHelper.boneTransformsFromFirstAnimation theta gltf skin)
+                            |> Maybe.map (GltfHelper.boneTransformsFromAnimationName theta "Walk" gltf skin)
                             |> Maybe.withDefault Object.boneTransformsIdentity
                 in
                 obj |> Object.withBoneTransforms boneTransforms
@@ -366,6 +401,10 @@ toVertex : TriangularMesh.Vertex -> Vertex
 toVertex v =
     v.position
         |> Vertex.vertex
+        |> (v.texCoords
+                |> Maybe.map Vertex.withUV
+                |> Maybe.withDefault identity
+           )
         |> (v.normal
                 |> Maybe.map Vertex.withNormal
                 |> Maybe.withDefault identity
@@ -384,13 +423,13 @@ toVertex v =
            )
 
 
-lights : Graph (Object objectId Material.Name)
-lights =
+lights : Float -> Graph (Object objectId Material.Name)
+lights d =
     Graph.shallow (Object.group "LIGHTS")
-        [ pointLight 3.0 (Vec3.vec3 1 2 2) (vec3 0.2 0.15 0.1)
-        , pointLight 2.0 (Vec3.vec3 -2 3 1) (vec3 0.3 0.25 0.1)
-        , pointLight 2.0 (Vec3.vec3 2 1 0) (vec3 0.4 0.1 0.05)
-        , pointLight 5.0 (Vec3.vec3 1 4 -2) (vec3 0.1 0.1 0.15)
+        [ pointLight 0.3 (Vec3.vec3 1 2 2 |> Vec3.scale d) (vec3 0.9 0.7 0.6)
+        , pointLight 0.3 (Vec3.vec3 -2 3 1 |> Vec3.scale d) (vec3 0.7 0.9 0.9)
+        , pointLight 0.3 (Vec3.vec3 2 1 0 |> Vec3.scale d) (vec3 0.9 0.5 0.5)
+        , pointLight 0.5 (Vec3.vec3 1 4 -2 |> Vec3.scale d) (vec3 0.7 0.7 0.9)
         ]
 
 

@@ -39,7 +39,7 @@ fromRoute config tagger maybeRoute =
         Just route ->
             case route of
                 Route.Root ->
-                    Page.Example.initWithLocalAsset "/assets/BevyCharacter.gltf"
+                    Page.Example.initWithLocalAsset "/assets/BevyCharacterTextured.gltf"
                         |> Tuple.mapFirst Example
                         |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
 

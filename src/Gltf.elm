@@ -1,6 +1,6 @@
 module Gltf exposing
     ( Gltf, Asset
-    , Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh
+    , Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh, Material, Sampler, Texture, Image
     , decoder, bytesDecoder
     , getBinary, getEmbedded
     )
@@ -8,7 +8,7 @@ module Gltf exposing
 {-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
 
 @docs Gltf, Asset
-@docs Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh
+@docs Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh, Material, Sampler, Texture, Image
 @docs decoder, bytesDecoder
 @docs getBinary, getEmbedded
 
@@ -22,10 +22,14 @@ import Internal.Accessor as Accessor
 import Internal.Animation as Animation
 import Internal.Buffer as Buffer
 import Internal.BufferView as BufferView
+import Internal.Image as Image
+import Internal.Material as Material
 import Internal.Mesh as Mesh
 import Internal.Node as Node
+import Internal.Sampler as Sampler
 import Internal.Scene as Scene
 import Internal.Skin as Skin
+import Internal.Texture as Texture
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 
@@ -37,6 +41,10 @@ type alias Gltf =
     , scenes : Array Scene
     , nodes : Array Node
     , meshes : Array Mesh
+    , images : Array Image
+    , materials : Array Material
+    , samplers : Array Sampler
+    , textures : Array Texture
     , skins : Array Skin
     , buffers : Array Buffer
     , bufferViews : Array BufferView
@@ -96,6 +104,30 @@ type alias Mesh =
     Mesh.Mesh
 
 
+{-| Raw Image data
+-}
+type alias Image =
+    Image.Image
+
+
+{-| Raw Material data
+-}
+type alias Material =
+    Material.Material
+
+
+{-| Raw Sampler data
+-}
+type alias Sampler =
+    Sampler.Sampler
+
+
+{-| Raw Texture data
+-}
+type alias Texture =
+    Texture.Texture
+
+
 {-| Raw Skin data
 -}
 type alias Skin =
@@ -125,6 +157,10 @@ decoder =
                     )
             )
         |> JDP.required "meshes" (JD.array Mesh.decoder)
+        |> JDP.optional "images" (JD.array Image.decoder) Array.empty
+        |> JDP.optional "materials" (JD.array Material.decoder) Array.empty
+        |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
+        |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
         |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
         |> JDP.required "buffers" (JD.array Buffer.decoder)
         |> JDP.required "bufferViews" (JD.array BufferView.decoder)
@@ -171,6 +207,10 @@ decoderWithSingleBuffer buffer =
                     )
             )
         |> JDP.required "meshes" (JD.array Mesh.decoder)
+        |> JDP.optional "images" (JD.array Image.decoder) Array.empty
+        |> JDP.optional "materials" (JD.array Material.decoder) Array.empty
+        |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
+        |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
         |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
         |> JDP.hardcoded ([ buffer ] |> Array.fromList)
         |> JDP.required "bufferViews" (JD.array BufferView.decoder)
