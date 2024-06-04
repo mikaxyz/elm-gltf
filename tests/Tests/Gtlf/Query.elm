@@ -32,10 +32,14 @@ suite =
                             , name = Nothing
                             , meshIndex = Just (Mesh.Index 0)
                             , skinIndex = Just (GltfSkin.Index 0)
+                            , cameraIndex = Nothing
                             , children = []
-                            , rotation = Nothing
-                            , translation = Nothing
-                            , scale = Nothing
+                            , transform =
+                                Node.RTS
+                                    { rotation = Nothing
+                                    , translation = Nothing
+                                    , scale = Nothing
+                                    }
                             }
                 in
                 case queryResult of
@@ -111,7 +115,7 @@ suite =
                                         |> List.filterMap
                                             (\mesh ->
                                                 case mesh of
-                                                    IndexedTriangularMesh ( indices, vertices ) ->
+                                                    IndexedTriangularMesh _ ( indices, vertices ) ->
                                                         Just ( List.length indices, List.length vertices )
 
                                                     _ ->
@@ -190,6 +194,7 @@ suite =
                                 , normal = Nothing
                                 , weights = Just weights
                                 , joints = Just joints
+                                , texCoords = Nothing
                                 }
                             )
                             expectedPositions
@@ -198,7 +203,7 @@ suite =
 
                     expected : List TriangularMesh
                     expected =
-                        [ IndexedTriangularMesh
+                        [ IndexedTriangularMesh Nothing
                             ( expectedVertices
                             , expectedIndices
                             )
@@ -225,21 +230,24 @@ suite =
 
                     expected : List TriangularMesh
                     expected =
-                        [ IndexedTriangularMesh
+                        [ IndexedTriangularMesh Nothing
                             ( [ { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               ]
                             , [ ( 0, 1, 2 ) ]
@@ -266,21 +274,24 @@ suite =
 
                     expected : List TriangularMesh
                     expected =
-                        [ TriangularMesh
+                        [ TriangularMesh Nothing
                             [ ( { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
+                                , texCoords = Nothing
                                 }
                               )
                             ]

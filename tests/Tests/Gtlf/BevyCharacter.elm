@@ -26,10 +26,14 @@ suite =
                             , name = Just "Emo"
                             , meshIndex = Just (Mesh.Index 0)
                             , skinIndex = Just (Skin.Index 0)
+                            , cameraIndex = Nothing
                             , children = []
-                            , rotation = Nothing
-                            , translation = Nothing
-                            , scale = Nothing
+                            , transform =
+                                Node.RTS
+                                    { rotation = Nothing
+                                    , translation = Nothing
+                                    , scale = Nothing
+                                    }
                             }
                 in
                 case queryResult of
