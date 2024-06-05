@@ -106,22 +106,22 @@ occlusionTextureInfoDecoder =
 
 alphaModeDecoder : JD.Decoder AlphaMode
 alphaModeDecoder =
-    let
-        get id =
-            case id of
-                "OPAQUE" ->
-                    JD.succeed Opaque
+    JD.string
+        |> JD.andThen
+            (\id ->
+                case id of
+                    "OPAQUE" ->
+                        JD.succeed Opaque
 
-                "MASK" ->
-                    JD.succeed Mask
+                    "MASK" ->
+                        JD.succeed Mask
 
-                "BLEND" ->
-                    JD.succeed Blend
+                    "BLEND" ->
+                        JD.succeed Blend
 
-                _ ->
-                    JD.fail ("unknown value for AlphaMode: " ++ id)
-    in
-    JD.string |> JD.andThen get
+                    _ ->
+                        JD.fail ("unknown value for AlphaMode: " ++ id)
+            )
 
 
 vec3Decoder : JD.Decoder Vec3

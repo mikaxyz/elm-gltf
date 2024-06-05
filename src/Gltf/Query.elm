@@ -16,14 +16,13 @@ module Gltf.Query exposing
     , triangularMeshesFromNode
     )
 
-import Array
+import Common
 import Gltf exposing (Gltf)
 import Gltf.Query.Material
 import Gltf.Query.ResolvedMaterial
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
 import Internal.Material
-import Internal.Mesh as Mesh exposing (Mesh)
 import Internal.Node as Node
 import Internal.Scene as Scene exposing (Scene(..))
 import Json.Decode as JD
@@ -301,7 +300,7 @@ type Properties
 
 sceneNodeTrees : Scene.Index -> Gltf -> Result QueryError (List (Tree Node.Node))
 sceneNodeTrees index gltf =
-    sceneAtIndex gltf index
+    Common.sceneAtIndex gltf index
         |> Maybe.map
             (\(Scene scene) ->
                 scene.nodes
@@ -321,7 +320,7 @@ nodeTree index gltf =
 
 maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree Node.Node)
 maybeNodeTree gltf index =
-    nodeAtIndex gltf index
+    Common.nodeAtIndex gltf index
         |> Maybe.map
             (\(Node.Node node_) ->
                 node_.children
@@ -333,23 +332,8 @@ maybeNodeTree gltf index =
 triangularMeshesFromNode : Gltf -> Node.Node -> Maybe (List TriangularMesh)
 triangularMeshesFromNode gltf (Node.Node node) =
     node.meshIndex
-        |> Maybe.andThen (meshAtIndex gltf)
+        |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
                 primitives |> List.map (TriangularMesh.fromPrimitive gltf)
             )
-
-
-sceneAtIndex : Gltf -> Scene.Index -> Maybe Scene
-sceneAtIndex gltf (Scene.Index index) =
-    gltf.scenes |> Array.get index
-
-
-nodeAtIndex : Gltf -> Node.Index -> Maybe Node.Node
-nodeAtIndex gltf (Node.Index index) =
-    gltf.nodes |> Array.get index
-
-
-meshAtIndex : Gltf -> Mesh.Index -> Maybe Mesh
-meshAtIndex gltf (Mesh.Index index) =
-    gltf.meshes |> Array.get index

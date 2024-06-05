@@ -16,6 +16,7 @@ import Gltf.Query.Animation as Animation
         , ExtractedChannel(..)
         , ExtractedSampler(..)
         )
+import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skin exposing (Skin(..))
 import Internal.Animation.Channel as Channel
 import Internal.Node as Node exposing (Node(..))
@@ -86,7 +87,7 @@ modifiersFromAnimations theta objectIdMap animations =
                         input : List Float
                         input =
                             sampler.input
-                                |> List.filterMap Animation.attributeToFloat
+                                |> List.filterMap Attribute.toFloat
 
                         inputMax : Float
                         inputMax =
@@ -127,7 +128,7 @@ modifiersFromAnimations theta objectIdMap animations =
                         inputMax =
                             -- TODO: Get this from BufferView
                             sampler.input
-                                |> List.filterMap Animation.attributeToFloat
+                                |> List.filterMap Attribute.toFloat
                                 |> List.maximum
                                 |> Maybe.withDefault 0.0
 
@@ -179,8 +180,8 @@ animatedProperty (ExtractedChannel channel) time =
         data =
             List.map2
                 (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Animation.attributeToFloat)
-                (sampler.output |> List.filterMap Animation.attributeToVec3)
+                (sampler.input |> List.filterMap Attribute.toFloat)
+                (sampler.output |> List.filterMap Attribute.toVec3)
 
         asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Vec3, to : Maybe Vec3 }
         asd =
@@ -246,8 +247,8 @@ animatedRotation (ExtractedChannel channel) time =
         data =
             List.map2
                 (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Animation.attributeToFloat)
-                (sampler.output |> List.filterMap Animation.attributeToQuaternion)
+                (sampler.input |> List.filterMap Attribute.toFloat)
+                (sampler.output |> List.filterMap Attribute.toQuaternion)
 
         asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Quaternion, to : Maybe Quaternion }
         asd =
@@ -357,7 +358,7 @@ channelMatrix theta (ExtractedChannel channel) =
                 input : List Float
                 input =
                     sampler.input
-                        |> List.filterMap Animation.attributeToFloat
+                        |> List.filterMap Attribute.toFloat
 
                 inputMax : Float
                 inputMax =
@@ -397,7 +398,7 @@ channelMatrix theta (ExtractedChannel channel) =
                 inputMax =
                     -- TODO: Get this from BufferView
                     sampler.input
-                        |> List.filterMap Animation.attributeToFloat
+                        |> List.filterMap Attribute.toFloat
                         |> List.maximum
                         |> Maybe.withDefault 0.0
 

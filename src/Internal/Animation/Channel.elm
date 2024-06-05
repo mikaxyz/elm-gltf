@@ -1,19 +1,13 @@
 module Internal.Animation.Channel exposing
     ( Channel(..)
-    , Index(..)
     , Path(..)
     , decoder
-    , indexDecoder
     )
 
 import Internal.Animation.Sampler as Sampler
 import Internal.Node as Node
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-
-
-type Index
-    = Index Int
 
 
 type Channel
@@ -37,11 +31,6 @@ type Path
     | Rotation
     | Scale
     | Weights
-
-
-indexDecoder : JD.Decoder Index
-indexDecoder =
-    JD.int |> JD.map Index
 
 
 decoder : JD.Decoder Channel

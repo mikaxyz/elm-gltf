@@ -8,10 +8,11 @@ import Bytes
 import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
+import Common
 import Gltf exposing (Gltf)
 import Internal.Accessor as Accessor exposing (Accessor)
-import Internal.Buffer as Buffer exposing (Buffer(..))
-import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Buffer exposing (Buffer(..))
+import Internal.BufferView exposing (BufferView)
 import Internal.Node as Node
 import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -36,8 +37,8 @@ skinAtIndex gltf (GltfSkin.Index index) =
                         skin.inverseBindMatrices
                             |> Maybe.andThen
                                 (\x ->
-                                    accessorAtIndex gltf x
-                                        |> Maybe.andThen (bufferInfo gltf)
+                                    Common.accessorAtIndex gltf x
+                                        |> Maybe.andThen (Common.bufferInfo gltf)
                                         |> Maybe.map inverseBindMatrices
                                 )
                 in
@@ -56,48 +57,6 @@ inverseBindMatrices ( accessor, bufferView, Buffer buffer ) =
         |> Bytes.Decode.decode
             (Bytes.Decode.Extra.list accessor.count (mat4Decoder accessor bufferView))
         |> Maybe.withDefault []
-
-
-bufferInfo : Gltf -> Accessor -> Maybe ( Accessor, BufferView, Buffer )
-bufferInfo gltf accessor =
-    Maybe.map2 (\bufferView buffer -> ( accessor, bufferView, buffer ))
-        (bufferViewAtIndex gltf accessor.bufferView)
-        (readBuffer gltf accessor)
-
-
-readBuffer : Gltf -> Accessor -> Maybe Buffer
-readBuffer gltf accessor =
-    let
-        maybeBufferView : BufferView.Index -> Maybe BufferView
-        maybeBufferView x =
-            bufferViewAtIndex gltf x
-
-        maybeBuffer : BufferView -> Maybe Buffer
-        maybeBuffer { buffer } =
-            bufferAtIndex gltf buffer
-    in
-    accessor.bufferView
-        |> maybeBufferView
-        |> Maybe.andThen maybeBuffer
-
-
-accessorAtIndex : Gltf -> Accessor.Index -> Maybe Accessor
-accessorAtIndex gltf (Accessor.Index index) =
-    gltf.accessors |> Array.get index
-
-
-bufferViewAtIndex : Gltf -> BufferView.Index -> Maybe BufferView
-bufferViewAtIndex gltf (BufferView.Index index) =
-    gltf.bufferViews |> Array.get index
-
-
-bufferAtIndex : Gltf -> Buffer.Index -> Maybe Buffer
-bufferAtIndex gltf (Buffer.Index index) =
-    gltf.buffers |> Array.get index
-
-
-
---
 
 
 mat4Decoder : Accessor -> BufferView -> Bytes.Decode.Decoder Mat4

@@ -4,13 +4,13 @@ module Gltf.Query.Material exposing
     , fromPrimitive
     )
 
-import Array
 import Base64.Encode
 import Bytes exposing (Bytes)
 import Bytes.Extra
+import Common
 import Gltf exposing (Gltf)
-import Internal.Buffer as Buffer exposing (Buffer(..))
-import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Buffer exposing (Buffer(..))
+import Internal.BufferView exposing (BufferView)
 import Internal.Image as Image exposing (Image)
 import Internal.Material as Internal
 import Internal.Mesh exposing (Primitive)
@@ -42,7 +42,7 @@ type MaterialImage
 
 fromPrimitive : Gltf -> Primitive -> Maybe Material
 fromPrimitive gltf primitive =
-    case Maybe.map2 Tuple.pair primitive.material (primitive.material |> Maybe.andThen (materialAtIndex gltf)) of
+    case Maybe.map2 Tuple.pair primitive.material (primitive.material |> Maybe.andThen (Common.materialAtIndex gltf)) of
         Just ( index, material ) ->
             let
                 baseColorTexture : Maybe Texture
@@ -54,7 +54,7 @@ fromPrimitive gltf primitive =
                 image =
                     baseColorTexture
                         |> Maybe.andThen .source
-                        |> Maybe.andThen (imageAtIndex gltf)
+                        |> Maybe.andThen (Common.imageAtIndex gltf)
 
                 materialImage : Maybe MaterialImage
                 materialImage =
@@ -74,12 +74,12 @@ materialImageFromImage gltf image =
                 bufferView_ : Maybe BufferView
                 bufferView_ =
                     bufferView
-                        |> bufferViewAtIndex gltf
+                        |> Common.bufferViewAtIndex gltf
 
                 buffer_ : Maybe Buffer
                 buffer_ =
                     bufferView_
-                        |> Maybe.andThen (\{ buffer } -> bufferAtIndex gltf buffer)
+                        |> Maybe.andThen (\{ buffer } -> Common.bufferAtIndex gltf buffer)
 
                 bytes : Maybe Bytes
                 bytes =
@@ -135,31 +135,6 @@ fromMaterial index material baseColorTexture =
         }
 
 
-imageAtIndex : Gltf -> Image.Index -> Maybe Image
-imageAtIndex gltf (Image.Index index) =
-    gltf.images |> Array.get index
-
-
-bufferViewAtIndex : Gltf -> BufferView.Index -> Maybe BufferView
-bufferViewAtIndex gltf (BufferView.Index index) =
-    gltf.bufferViews |> Array.get index
-
-
-bufferAtIndex : Gltf -> Buffer.Index -> Maybe Buffer
-bufferAtIndex gltf (Buffer.Index index) =
-    gltf.buffers |> Array.get index
-
-
 textureFromTextureInfo : Gltf -> TextureInfo -> Maybe Internal.Texture.Texture
 textureFromTextureInfo gltf textureInfo =
-    textureAtIndex gltf textureInfo.index
-
-
-materialAtIndex : Gltf -> Internal.Index -> Maybe Internal.Material
-materialAtIndex gltf (Internal.Index index) =
-    gltf.materials |> Array.get index
-
-
-textureAtIndex : Gltf -> Internal.Texture.Index -> Maybe Internal.Texture.Texture
-textureAtIndex gltf (Internal.Texture.Index index) =
-    gltf.textures |> Array.get index
+    Common.textureAtIndex gltf textureInfo.index
