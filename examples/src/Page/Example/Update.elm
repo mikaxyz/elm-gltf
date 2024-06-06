@@ -3,6 +3,7 @@ module Page.Example.Update exposing (update)
 import Browser.Dom
 import Color
 import Gltf.Query as Query
+import Gltf.Query.Animation as Animation
 import Http
 import Internal.Scene
 import Keyboard
@@ -132,7 +133,7 @@ update msg model =
                             }
                         , viewPortElement = viewPortElement
                         }
-                        (model.gltf |> RemoteData.map (Scene.modifiers model.time) |> RemoteData.withDefault [])
+                        (model.gltf |> RemoteData.map (Scene.modifiers model.time model.animations) |> RemoteData.withDefault [])
                         scene
                         ( pos.x, pos.y )
                         |> Maybe.map Tuple.first
@@ -421,6 +422,7 @@ update msg model =
                     ( { model
                         | gltf = RemoteData.Success gltf
                         , nodes = nodes
+                        , animations = Animation.extractAnimations gltf
                         , scene = scene |> RemoteData.Success
                       }
                         |> setSceneSize

@@ -9,6 +9,7 @@ module Page.Example.Scene exposing
 import Color
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
+import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Node as Node exposing (Index(..), Node(..))
 import Material
@@ -356,11 +357,11 @@ objectFromMesh objectId triangularMesh =
                 |> withMaterial material
 
 
-modifiers : Float -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
-modifiers theta gltf =
+modifiers : Float -> List ExtractedAnimation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
+modifiers theta animations gltf =
     boneDeformer theta SkinnedMesh gltf
-        :: GltfHelper.modifiers theta Mesh gltf
-        ++ GltfHelper.modifiers theta Bone gltf
+        :: GltfHelper.modifiersFromAnimations theta Mesh animations
+        ++ GltfHelper.modifiersFromAnimations theta Bone animations
 
 
 boneDeformer : Float -> objectId -> Gltf -> Scene.Modifier objectId Material.Name

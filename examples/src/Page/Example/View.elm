@@ -62,7 +62,7 @@ sceneView model gltf scene fallbackTexture =
         model.viewport
         (renderer fallbackTexture)
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time gltf)
+        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time model.animations gltf)
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions
         |> XYZMika.XYZ.withRenderOptions
             (\graph ->

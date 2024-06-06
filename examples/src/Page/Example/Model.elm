@@ -12,6 +12,7 @@ module Page.Example.Model exposing
 import Browser.Dom
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
+import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.ResolvedMaterial
 import Http
 import Internal.Material
@@ -70,6 +71,7 @@ type alias Model =
     , gltf : RemoteData Http.Error Gltf
     , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
     , nodes : List (Tree Query.Node)
+    , animations : List ExtractedAnimation
     }
 
 
@@ -89,6 +91,7 @@ init asset =
     , gltf = RemoteData.Loading
     , scene = RemoteData.Loading
     , nodes = []
+    , animations = []
     }
 
 

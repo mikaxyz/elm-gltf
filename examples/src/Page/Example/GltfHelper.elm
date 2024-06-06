@@ -1,9 +1,6 @@
 module Page.Example.GltfHelper exposing
     ( boneTransformsFromAnimationName
     , boneTransformsFromAnimations
-    , boneTransformsFromFirstAnimation
-    , modifiers
-    , modifiersFromAnimationWithName
     , modifiersFromAnimations
     , objectWithSkin
     )
@@ -54,18 +51,6 @@ type alias TRS =
     , tAnimated : Mat4
     , sAnimated : Mat4
     }
-
-
-modifiers : Float -> (Node.Index -> objectId) -> Gltf -> List (Scene.Modifier objectId Material.Name)
-modifiers theta objectIdMap gltf =
-    Animation.extractAnimations gltf
-        |> modifiersFromAnimations theta objectIdMap
-
-
-modifiersFromAnimationWithName : Float -> (Node.Index -> objectId) -> String -> Gltf -> List (Scene.Modifier objectId Material.Name)
-modifiersFromAnimationWithName theta objectIdMap animationName gltf =
-    Animation.extractAnimationWithName animationName gltf
-        |> modifiersFromAnimations theta objectIdMap
 
 
 modifiersFromAnimations : Float -> (Node.Index -> objectId) -> List ExtractedAnimation -> List (Scene.Modifier objectId Material.Name)
@@ -431,16 +416,6 @@ channelMatrix theta (ExtractedChannel channel) =
 
         Channel.Weights ->
             Mat4.identity
-
-
-boneTransformsFromFirstAnimation : Float -> Gltf -> Object.Skin -> Tree Node -> BoneTransforms
-boneTransformsFromFirstAnimation theta gltf skin skeleton =
-    let
-        animations : List ExtractedAnimation
-        animations =
-            Animation.extractAnimations gltf |> List.take 1
-    in
-    boneTransformsFromAnimations theta animations skin skeleton
 
 
 boneTransformsFromAnimationName : Float -> String -> Gltf -> Object.Skin -> Tree Node -> BoneTransforms
