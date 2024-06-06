@@ -1,56 +1,27 @@
 module Gltf exposing
     ( Gltf, Asset
-    , Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh, Material, Sampler, Texture, Image
-    , decoder, bytesDecoder
     , getBinary, getEmbedded
+    , decoder, bytesDecoder
     )
 
 {-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
 
 @docs Gltf, Asset
-@docs Animation, Scene, Node, Accessor, Buffer, BufferView, Skin, Mesh, Material, Sampler, Texture, Image
-@docs decoder, bytesDecoder
 @docs getBinary, getEmbedded
+@docs decoder, bytesDecoder
 
 -}
 
-import Array exposing (Array)
 import Bytes.Decode
-import Gltf.Glb as Glb
 import Http
-import Internal.Accessor as Accessor
-import Internal.Animation as Animation
-import Internal.Buffer as Buffer
-import Internal.BufferView as BufferView
-import Internal.Image as Image
-import Internal.Material as Material
-import Internal.Mesh as Mesh
-import Internal.Node as Node
-import Internal.Sampler as Sampler
-import Internal.Scene as Scene
-import Internal.Skin as Skin
-import Internal.Texture as Texture
+import Internal.Gltf
 import Json.Decode as JD
-import Json.Decode.Pipeline as JDP
 
 
 {-| Type representing raw data from a .gltf/.glb file
 -}
 type alias Gltf =
-    { asset : Asset
-    , scenes : Array Scene
-    , nodes : Array Node
-    , meshes : Array Mesh
-    , images : Array Image
-    , materials : Array Material
-    , samplers : Array Sampler
-    , textures : Array Texture
-    , skins : Array Skin
-    , buffers : Array Buffer
-    , bufferViews : Array BufferView
-    , accessors : Array Accessor
-    , animations : Array Animation
-    }
+    Internal.Gltf.Gltf
 
 
 {-| Information about the file
@@ -62,168 +33,18 @@ type alias Asset =
     }
 
 
-{-| Raw Accessor data
--}
-type alias Accessor =
-    Accessor.Accessor
-
-
-{-| Raw Animation data
--}
-type alias Animation =
-    Animation.Animation
-
-
-{-| Raw Scene data
--}
-type alias Scene =
-    Scene.Scene
-
-
-{-| Raw Node data
--}
-type alias Node =
-    Node.Node
-
-
-{-| Raw Buffer data
--}
-type alias Buffer =
-    Buffer.Buffer
-
-
-{-| Raw BufferView data
--}
-type alias BufferView =
-    BufferView.BufferView
-
-
-{-| Raw Mesh data
--}
-type alias Mesh =
-    Mesh.Mesh
-
-
-{-| Raw Image data
--}
-type alias Image =
-    Image.Image
-
-
-{-| Raw Material data
--}
-type alias Material =
-    Material.Material
-
-
-{-| Raw Sampler data
--}
-type alias Sampler =
-    Sampler.Sampler
-
-
-{-| Raw Texture data
--}
-type alias Texture =
-    Texture.Texture
-
-
-{-| Raw Skin data
--}
-type alias Skin =
-    Skin.Skin
-
-
 {-| Json Decoder
 -}
 decoder : JD.Decoder Gltf
 decoder =
-    JD.succeed Gltf
-        |> JDP.required "asset" assetDecoder
-        |> JDP.required "scenes" (JD.array Scene.decoder)
-        |> JDP.required "nodes"
-            (JD.list JD.value
-                |> JD.map
-                    (\values ->
-                        values
-                            |> List.indexedMap
-                                (\index value ->
-                                    value
-                                        |> JD.decodeValue (Node.decoder index)
-                                        |> Result.toMaybe
-                                )
-                            |> List.filterMap identity
-                            |> Array.fromList
-                    )
-            )
-        |> JDP.required "meshes" (JD.array Mesh.decoder)
-        |> JDP.optional "images" (JD.array Image.decoder) Array.empty
-        |> JDP.optional "materials" (JD.array Material.decoder) Array.empty
-        |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
-        |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
-        |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
-        |> JDP.required "buffers" (JD.array Buffer.decoder)
-        |> JDP.required "bufferViews" (JD.array BufferView.decoder)
-        |> JDP.required "accessors" (JD.array Accessor.decoder)
-        |> JDP.optional "animations" (JD.array Animation.decoder) Array.empty
+    Internal.Gltf.decoder
 
 
 {-| Bytes Decoder
 -}
 bytesDecoder : Bytes.Decode.Decoder Gltf
 bytesDecoder =
-    Glb.decoder
-        |> Bytes.Decode.andThen
-            (\{ jsonString, buffers } ->
-                case JD.decodeString (decoderWithSingleBuffer buffers) jsonString of
-                    Ok gltf ->
-                        Bytes.Decode.succeed gltf
-
-                    Err _ ->
-                        Bytes.Decode.fail
-            )
-
-
-{-| Decoder for when buffer data exists
--}
-decoderWithSingleBuffer : Buffer -> JD.Decoder Gltf
-decoderWithSingleBuffer buffer =
-    JD.succeed Gltf
-        |> JDP.required "asset" assetDecoder
-        |> JDP.required "scenes" (JD.array Scene.decoder)
-        |> JDP.required "nodes"
-            (JD.list JD.value
-                |> JD.map
-                    (\values ->
-                        values
-                            |> List.indexedMap
-                                (\index value ->
-                                    value
-                                        |> JD.decodeValue (Node.decoder index)
-                                        |> Result.toMaybe
-                                )
-                            |> List.filterMap identity
-                            |> Array.fromList
-                    )
-            )
-        |> JDP.required "meshes" (JD.array Mesh.decoder)
-        |> JDP.optional "images" (JD.array Image.decoder) Array.empty
-        |> JDP.optional "materials" (JD.array Material.decoder) Array.empty
-        |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
-        |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
-        |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
-        |> JDP.hardcoded ([ buffer ] |> Array.fromList)
-        |> JDP.required "bufferViews" (JD.array BufferView.decoder)
-        |> JDP.required "accessors" (JD.array Accessor.decoder)
-        |> JDP.optional "animations" (JD.array Animation.decoder) Array.empty
-
-
-assetDecoder : JD.Decoder Asset
-assetDecoder =
-    JD.map3 Asset
-        (JD.field "version" JD.string)
-        (JD.field "copyright" JD.string |> JD.maybe)
-        (JD.field "generator" JD.string |> JD.maybe)
+    Internal.Gltf.bytesDecoder
 
 
 {-| Get contents of a file of type .glb
