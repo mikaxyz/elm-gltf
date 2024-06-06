@@ -1,4 +1,11 @@
 @import (inline) "../node_modules/normalize.css/normalize.css";
+@import (inline) "../node_modules/boxicons/css/boxicons.min.css";
+
+:root {
+    --color-accent: rgba(255,255,0,0.5);
+    --color-accent-muted-1: rgba(100, 100, 57, 0.5);
+    --color-accent-muted-2: rgba(82, 82, 57, 0.3);
+}
 
 html {
 	background-color: black;
@@ -23,6 +30,51 @@ html {
 	box-sizing: inherit;
 }
 
+::backdrop {
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.modal {
+    padding: 0;
+    border: 0;
+    border-radius: 0.3em;
+    box-shadow: 0 0 2em 0.5em #e4e4e442;
+
+    a {
+        color: #2eb944;
+    }
+
+    &__close {
+        position: sticky;
+        overflow-anchor: none;
+        top: 0;
+        display: flex;
+        justify-content: flex-end;
+        background: #2eb944;
+
+        button {
+            all: unset;
+            display: flex;
+            font-size: 2em;
+            padding: 0.2em;
+            cursor: pointer;
+            color: #16161D;
+
+            &:hover,
+            &:focus {
+                color: white;
+            }
+        }
+    }
+    &__content {
+        padding: 1em 2em;
+        max-width: 52ch;;
+        max-height: 50vh;
+    }
+}
+
+
 .app {
 	background-color: black;
     height: 100vh;
@@ -41,6 +93,45 @@ html {
         }
     }
 
+    &__navigation {
+        position: fixed;
+        z-index: 1;
+        top: 1em;
+        left: 2em;
+
+        ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1em;
+        }
+
+        a, button {
+            all: unset;
+            cursor: pointer;
+            color: whitesmoke;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1em;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 0.7em;
+            letter-spacing: 0.12em;
+
+            &:hover {
+                color: var(--color-accent);
+            }
+
+            i {
+                font-size: 2em;
+            }
+        }
+    }
+
     &__sidebar {
     }
 }
@@ -48,10 +139,6 @@ html {
 
 .panel {
     --color-background: rgba(12, 12, 14, 0.96);
-    --color-accent: rgba(255,255,0,0.5);
-    --color-accent-muted-1: rgba(100, 100, 57, 0.5);
-    --color-accent-muted-2: rgba(82, 82, 57, 0.3);
-
     transition: box-shadow 400ms ease-out;
 
     color: #515451;

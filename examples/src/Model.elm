@@ -1,5 +1,6 @@
 module Model exposing
-    ( Model
+    ( Modal(..)
+    , Model
     , Msg(..)
     , init
     )
@@ -18,18 +19,26 @@ type Msg
     | SpaMsg Spa.Msg
     | PageMsg Page.Msg
     | SampleAssetsReceived (Result Http.Error SampleAssets)
+    | ShowModal (Maybe Modal)
+    | ShowShareSheet
 
 
 type alias Model =
     { spa : Spa Route
     , page : Maybe Page
+    , modal : Maybe Modal
     , sampleAssets : RemoteData Http.Error SampleAssets
     }
+
+
+type Modal
+    = Help
 
 
 init : Spa Route -> Model
 init spa =
     { spa = spa
     , page = Nothing
+    , modal = Nothing
     , sampleAssets = RemoteData.Loading
     }

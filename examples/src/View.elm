@@ -2,7 +2,10 @@ module View exposing (doc)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes as HA exposing (..)
+import Html.Events exposing (onClick)
+import Icon
+import Modal
 import Model exposing (Model, Msg(..))
 import Page exposing (Page)
 import Page.Example
@@ -14,7 +17,10 @@ import SampleAssets exposing (SampleAssets)
 doc : Model -> Browser.Document Msg
 doc model =
     { title = "Elm glTF Examples"
-    , body = [ view model ]
+    , body =
+        [ view model
+        , Modal.view (modalView model.modal)
+        ]
     }
 
 
@@ -51,6 +57,38 @@ appView model sampleAssets =
             [ model.page |> Maybe.map pageView |> Maybe.withDefault (text "")
             ]
         , sampleAssetNavigationView currentAsset sampleAssets
+        , navigationView
+        ]
+
+
+modalView : Maybe Model.Modal -> Html Msg
+modalView modal =
+    case modal of
+        Just Model.Help ->
+            Modal.helpPage |> div []
+
+        Nothing ->
+            text ""
+
+
+navigationView : Html Msg
+navigationView =
+    let
+        link : { url : String, icon : Html msg, label : String } -> Html msg
+        link { url, icon, label } =
+            a [ href url ] [ icon, span [] [ text label ] ]
+
+        action : { msg : msg, icon : Html msg, label : String } -> Html msg
+        action { msg, icon, label } =
+            button [ onClick msg ] [ icon, span [] [ text label ] ]
+    in
+    nav [ class "app__navigation" ]
+        [ [ link { url = "/", icon = Icon.home, label = "Home" }
+          , action { msg = ShowModal (Just Model.Help), icon = Icon.help, label = "About" }
+          , action { msg = ShowShareSheet, icon = Icon.share, label = "Share" }
+          ]
+            |> List.map (\x -> li [] [ x ])
+            |> ul []
         ]
 
 

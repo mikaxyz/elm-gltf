@@ -7,9 +7,12 @@
     "main": "index.html",
     "scripts": {
         "run": "http-server-spa . index.html 8080",
-        "build": "elm make src/Main.elm --output dist/main.js --optimize && lessc less/main.less dist/main.css"
+        "fonts": "cp -r node_modules/boxicons/fonts dist/fonts",
+        "less": "lessc less/main.less dist/css/main.css",
+        "build": "elm make src/Main.elm --output dist/main.js --optimize && npm run fonts && npm run less"
     },
     "devDependencies": {
+        "boxicons": "^2.1.4",
         "elm": "^0.19.1-6",
         "elm-format": "^0.8.7",
         "elm-review": "^2.11.2",

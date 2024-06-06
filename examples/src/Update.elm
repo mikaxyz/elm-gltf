@@ -5,6 +5,7 @@ module Update exposing
 
 import Model exposing (Model, Msg(..))
 import Page
+import Ports
 import RemoteData
 import Route exposing (Route)
 import Xyz.Mika.Spa as Spa
@@ -63,3 +64,11 @@ update msg model =
                     ( { model | sampleAssets = RemoteData.Failure error }
                     , Cmd.none
                     )
+
+        ShowModal modal ->
+            ( { model | modal = modal }
+            , Ports.openDialog "modal"
+            )
+
+        ShowShareSheet ->
+            ( model, Ports.share { title = "Elm glTF package" } )
