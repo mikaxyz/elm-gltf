@@ -33,6 +33,7 @@ type alias Primitive =
 type Attribute
     = Position Accessor.Index
     | Normal Accessor.Index
+    | Color Int Accessor.Index
     | Joints Int Accessor.Index
     | Weights Int Accessor.Index
     | TexCoord Int Accessor.Index
@@ -74,6 +75,12 @@ toAttribute key accessorIndex =
 
         _ ->
             case String.split "_" key of
+                "COLOR" :: indices :: [] ->
+                    indices
+                        |> String.toInt
+                        |> Maybe.map (\index -> Color index accessorIndex)
+                        |> Maybe.withDefault (Unknown key)
+
                 "JOINTS" :: indices :: [] ->
                     indices
                         |> String.toInt

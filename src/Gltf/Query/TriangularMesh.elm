@@ -14,13 +14,14 @@ import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
 import Internal.Accessor as Accessor
 import Internal.Mesh exposing (Primitive)
 import Math.Vector2 exposing (Vec2)
-import Math.Vector3 exposing (Vec3)
-import Math.Vector4 exposing (Vec4)
+import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector4 as Vec4 exposing (Vec4)
 
 
 type alias Vertex =
     { position : Vec3
     , normal : Maybe Vec3
+    , color : Maybe Vec4
     , weights : Maybe Vec4
     , joints : Maybe Joints
     , texCoords : Maybe Vec2
@@ -48,6 +49,7 @@ type Material
 type alias VertexAttributes =
     { position : Maybe (List Attribute)
     , normal : Maybe (List Attribute)
+    , color : Maybe (List Attribute)
     , joints : Maybe (List Attribute)
     , weights : Maybe (List Attribute)
     , texCoords : Maybe (List Attribute)
@@ -65,6 +67,7 @@ fromPrimitive gltf primitive =
         vertexAttributes =
             { position = Maybe.map Attribute.parseBuffer vertexBuffers.position
             , normal = Maybe.map Attribute.parseBuffer vertexBuffers.normal
+            , color = Maybe.map Attribute.parseBuffer vertexBuffers.color
             , joints = Maybe.map Attribute.parseBuffer vertexBuffers.joints
             , weights = Maybe.map Attribute.parseBuffer vertexBuffers.weights
             , texCoords = Maybe.map Attribute.parseBuffer vertexBuffers.texCoords
@@ -96,6 +99,7 @@ fromPrimitive gltf primitive =
                             (\position ->
                                 { position = position
                                 , normal = Nothing
+                                , color = Nothing
                                 , weights = Nothing
                                 , joints = Nothing
                                 , texCoords = Nothing
@@ -112,6 +116,31 @@ fromPrimitive gltf primitive =
                             List.map2 (\vertex x -> { vertex | normal = Just x })
                                 vertices
                                 normals
+
+                withColors : List Vertex -> List Vertex
+                withColors vertices =
+                    case a.color |> Maybe.withDefault [] |> List.filterMap Attribute.toVec4 of
+                        [] ->
+                            case a.color |> Maybe.withDefault [] |> List.filterMap Attribute.toVec3 of
+                                [] ->
+                                    vertices
+
+                                colors ->
+                                    List.map2
+                                        (\vertex color ->
+                                            let
+                                                { x, y, z } =
+                                                    Vec3.toRecord color
+                                            in
+                                            { vertex | color = Just (Vec4.vec4 x y z 1) }
+                                        )
+                                        vertices
+                                        colors
+
+                        colors ->
+                            List.map2 (\vertex x -> { vertex | color = Just x })
+                                vertices
+                                colors
 
                 withWeights : List Vertex -> List Vertex
                 withWeights vertices =
@@ -148,6 +177,7 @@ fromPrimitive gltf primitive =
             in
             positions
                 |> withNormals
+                |> withColors
                 |> withWeights
                 |> withJoints
                 |> withTexCoords

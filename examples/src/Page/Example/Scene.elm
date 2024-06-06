@@ -15,6 +15,7 @@ import Internal.Node as Node exposing (Index(..), Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector4 as Vec4
 import Page.Example.GltfHelper as GltfHelper
 import Quaternion
 import Tree exposing (Tree)
@@ -407,6 +408,17 @@ toVertex v =
            )
         |> (v.normal
                 |> Maybe.map Vertex.withNormal
+                |> Maybe.withDefault identity
+           )
+        |> (v.color
+                |> Maybe.map
+                    (\color ->
+                        let
+                            { x, y, z } =
+                                Vec4.toRecord color
+                        in
+                        vec3 x y z |> Vertex.withColor
+                    )
                 |> Maybe.withDefault identity
            )
         -- TODO: Time to remove concrete Vertex type?

@@ -14,6 +14,7 @@ import Internal.Mesh as Mesh exposing (Primitive)
 type alias VertexBuffers =
     { position : Maybe ( Accessor, BufferView, Buffer )
     , normal : Maybe ( Accessor, BufferView, Buffer )
+    , color : Maybe ( Accessor, BufferView, Buffer )
     , joints : Maybe ( Accessor, BufferView, Buffer )
     , weights : Maybe ( Accessor, BufferView, Buffer )
     , texCoords : Maybe ( Accessor, BufferView, Buffer )
@@ -45,6 +46,13 @@ fromPrimitive gltf { attributes } =
                                     |> Maybe.andThen bufferInfo
                         }
 
+                    Mesh.Color _ accessorIndex ->
+                        { acc
+                            | color =
+                                Common.accessorAtIndex gltf accessorIndex
+                                    |> Maybe.andThen bufferInfo
+                        }
+
                     Mesh.Joints _ accessorIndex ->
                         { acc
                             | joints =
@@ -71,6 +79,7 @@ fromPrimitive gltf { attributes } =
             )
             { position = Nothing
             , normal = Nothing
+            , color = Nothing
             , joints = Nothing
             , weights = Nothing
             , texCoords = Nothing
