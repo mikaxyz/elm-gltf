@@ -12,7 +12,7 @@ import Gltf exposing (Gltf)
 import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
 import Internal.Image as Image exposing (Image)
-import Internal.Material as Internal
+import Internal.Material as Internal exposing (NormalTextureInfo)
 import Internal.Mesh exposing (Primitive)
 import Internal.Texture exposing (Texture)
 import Internal.TextureInfo exposing (TextureInfo)
@@ -24,6 +24,7 @@ type Material
         { name : Maybe String
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
+        , normalTexture : Maybe MaterialImage
         }
 
 
@@ -50,17 +51,24 @@ fromPrimitive gltf primitive =
                     material.pbrMetallicRoughness.baseColorTexture
                         |> Maybe.andThen (textureFromTextureInfo gltf)
 
-                image : Maybe Image
-                image =
-                    baseColorTexture
+                normalTexture : Maybe Texture
+                normalTexture =
+                    material.normalTexture
+                        |> Maybe.andThen (textureFromNormalTextureInfo gltf)
+
+                image : Maybe Texture -> Maybe Image
+                image texture =
+                    texture
                         |> Maybe.andThen .source
                         |> Maybe.andThen (Common.imageAtIndex gltf)
-
-                materialImage : Maybe MaterialImage
-                materialImage =
-                    image |> Maybe.andThen (materialImageFromImage gltf)
             in
-            Just (fromMaterial index material materialImage)
+            Just
+                (fromMaterial index
+                    material
+                    { baseColorTexture = image baseColorTexture |> Maybe.andThen (materialImageFromImage gltf)
+                    , normalTexture = image normalTexture |> Maybe.andThen (materialImageFromImage gltf)
+                    }
+                )
 
         Nothing ->
             Nothing
@@ -121,11 +129,19 @@ bytesFromBuffer bufferView (Buffer buffer) =
         |> Bytes.Extra.take bufferView.byteLength
 
 
-fromMaterial : Internal.Index -> Internal.Material -> Maybe MaterialImage -> Material
-fromMaterial index material baseColorTexture =
+fromMaterial :
+    Internal.Index
+    -> Internal.Material
+    ->
+        { baseColorTexture : Maybe MaterialImage
+        , normalTexture : Maybe MaterialImage
+        }
+    -> Material
+fromMaterial index material { baseColorTexture, normalTexture } =
     Material
         { name = material.name
         , index = index
+        , normalTexture = normalTexture
         , pbrMetallicRoughness =
             { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
             , baseColorTexture = baseColorTexture
@@ -137,4 +153,9 @@ fromMaterial index material baseColorTexture =
 
 textureFromTextureInfo : Gltf -> TextureInfo -> Maybe Internal.Texture.Texture
 textureFromTextureInfo gltf textureInfo =
+    Common.textureAtIndex gltf textureInfo.index
+
+
+textureFromNormalTextureInfo : Gltf -> NormalTextureInfo -> Maybe Internal.Texture.Texture
+textureFromNormalTextureInfo gltf textureInfo =
     Common.textureAtIndex gltf textureInfo.index

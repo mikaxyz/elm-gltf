@@ -33,6 +33,7 @@ type alias Primitive =
 type Attribute
     = Position Accessor.Index
     | Normal Accessor.Index
+    | Tangent Accessor.Index
     | Color Int Accessor.Index
     | Joints Int Accessor.Index
     | Weights Int Accessor.Index
@@ -72,6 +73,9 @@ toAttribute key accessorIndex =
 
         "NORMAL" ->
             Normal accessorIndex
+
+        "TANGENT" ->
+            Tangent accessorIndex
 
         _ ->
             case String.split "_" key of

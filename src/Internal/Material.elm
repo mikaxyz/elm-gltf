@@ -1,6 +1,7 @@
 module Internal.Material exposing
     ( Index(..)
     , Material
+    , NormalTextureInfo
     , decoder
     , indexDecoder
     )

@@ -410,6 +410,17 @@ toVertex v =
                 |> Maybe.map Vertex.withNormal
                 |> Maybe.withDefault identity
            )
+        |> (v.tangent
+                |> Maybe.map
+                    (\tangent ->
+                        let
+                            { x, y, z } =
+                                Vec4.toRecord tangent
+                        in
+                        vec3 x y z |> Vertex.withTangent
+                    )
+                |> Maybe.withDefault identity
+           )
         |> (v.color
                 |> Maybe.map
                     (\color ->

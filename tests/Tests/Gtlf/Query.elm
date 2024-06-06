@@ -192,6 +192,8 @@ suite =
                             (\position weights joints ->
                                 { position = position
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , weights = Just weights
                                 , joints = Just joints
                                 , texCoords = Nothing
@@ -233,18 +235,24 @@ suite =
                         [ IndexedTriangularMesh Nothing
                             ( [ { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
                                 , texCoords = Nothing
@@ -277,18 +285,24 @@ suite =
                         [ TriangularMesh Nothing
                             [ ( { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
+                                , tangent = Nothing
+                                , color = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
                                 , texCoords = Nothing

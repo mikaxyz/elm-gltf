@@ -111,11 +111,11 @@ treeFromNode index gltf =
 -}
 type Effect
     = Noop
-    | ResolveMaterial ResolveMaterialEffect
+    | ResolveTexture ResolveTextureEffect
 
 
-type ResolveMaterialEffect
-    = ResolveMaterialEffect Gltf.Query.ResolvedMaterial.Material
+type ResolveTextureEffect
+    = ResolveTextureEffect Internal.Material.Index Gltf.Query.ResolvedMaterial.Texture
 
 
 {-| TODO: Docs
@@ -126,25 +126,29 @@ applyEffect effect nodes =
         Noop ->
             nodes
 
-        ResolveMaterial x ->
-            applyResolveMaterialEffect x nodes
+        ResolveTexture texture ->
+            applyResolveTextureEffect texture nodes
 
 
-applyResolveMaterialEffect : ResolveMaterialEffect -> Tree Node -> Tree Node
-applyResolveMaterialEffect (ResolveMaterialEffect (Gltf.Query.ResolvedMaterial.Material resolved)) nodes =
+applyResolveTextureEffect : ResolveTextureEffect -> Tree Node -> Tree Node
+applyResolveTextureEffect (ResolveTextureEffect index texture) nodes =
     let
         applyToMaterial : TriangularMesh.Material -> TriangularMesh.Material
         applyToMaterial material =
             case material of
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    if unresolvedMaterial.index == resolved.index then
-                        TriangularMesh.ResolvedMaterial (Gltf.Query.ResolvedMaterial.Material resolved)
+                    if unresolvedMaterial.index == index then
+                        Gltf.Query.Material.Material unresolvedMaterial
+                            |> Gltf.Query.ResolvedMaterial.fromUnresolved texture
+                            |> TriangularMesh.ResolvedMaterial
 
                     else
                         material
 
-                TriangularMesh.ResolvedMaterial _ ->
-                    material
+                TriangularMesh.ResolvedMaterial resolvedMaterial ->
+                    resolvedMaterial
+                        |> Gltf.Query.ResolvedMaterial.updateTexture texture
+                        |> TriangularMesh.ResolvedMaterial
 
         applyToMesh : TriangularMesh -> TriangularMesh
         applyToMesh mesh =
@@ -193,29 +197,45 @@ effectsFromNodeTree msg nodes =
                 SkinnedMeshNode meshes _ _ ->
                     Just meshes
 
-        updateMaterialWithIndex : Internal.Material.Index -> TriangularMesh.Material -> WebGL.Texture.Texture -> Maybe Effect
+        meshMaterial : TriangularMesh -> Maybe TriangularMesh.Material
+        meshMaterial mesh =
+            case mesh of
+                TriangularMesh.TriangularMesh material _ ->
+                    material
+
+                TriangularMesh.IndexedTriangularMesh material _ ->
+                    material
+
+        updateMaterialWithIndex : Internal.Material.Index -> TriangularMesh.Material -> Gltf.Query.ResolvedMaterial.Texture -> Maybe Effect
         updateMaterialWithIndex materialIndex material texture =
             case material of
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
                     if unresolvedMaterial.index == materialIndex then
-                        Gltf.Query.Material.Material unresolvedMaterial
-                            |> Gltf.Query.ResolvedMaterial.fromUnresolved texture
-                            |> ResolveMaterialEffect
-                            |> ResolveMaterial
+                        texture
+                            |> ResolveTextureEffect materialIndex
+                            |> ResolveTexture
                             |> Just
 
                     else
                         Nothing
 
-                TriangularMesh.ResolvedMaterial _ ->
-                    Nothing
+                TriangularMesh.ResolvedMaterial (Gltf.Query.ResolvedMaterial.Material resolvedMaterial) ->
+                    if resolvedMaterial.index == materialIndex then
+                        texture
+                            |> ResolveTextureEffect materialIndex
+                            |> ResolveTexture
+                            |> Just
+
+                    else
+                        Nothing
 
         cmdFromMaterial : TriangularMesh.Material -> Maybe (Cmd msg)
         cmdFromMaterial material =
-            case material of
-                TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    case unresolvedMaterial.pbrMetallicRoughness.baseColorTexture of
-                        Just (Gltf.Query.Material.DataUri dataUri) ->
+            let
+                toCmd : Gltf.Query.Material.Material -> (WebGL.Texture.Texture -> Gltf.Query.ResolvedMaterial.Texture) -> Gltf.Query.Material.MaterialImage -> Maybe (Cmd msg)
+                toCmd (Gltf.Query.Material.Material unresolvedMaterial) toTexture unresolvedTexture =
+                    case unresolvedTexture of
+                        Gltf.Query.Material.DataUri dataUri ->
                             let
                                 defaultOptions : WebGL.Texture.Options
                                 defaultOptions =
@@ -241,33 +261,43 @@ effectsFromNodeTree msg nodes =
                                 (WebGL.Texture.loadWith
                                     options
                                     dataUri
+                                    |> Task.map toTexture
                                 )
                                 |> Just
 
-                        Just (Gltf.Query.Material.Uri _) ->
+                        Gltf.Query.Material.Uri _ ->
                             -- TODO: Report Effect ResolveMaterialError?
                             Nothing
+            in
+            case material of
+                TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
+                    case ( unresolvedMaterial.pbrMetallicRoughness.baseColorTexture, unresolvedMaterial.normalTexture ) of
+                        ( Just baseColorTexture, Just normalTextureMaterialImage ) ->
+                            [ toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture baseColorTexture
+                            , toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture normalTextureMaterialImage
+                            ]
+                                |> List.filterMap identity
+                                |> Cmd.batch
+                                |> Just
 
-                        Nothing ->
+                        ( Just baseColorTexture, Nothing ) ->
+                            toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture baseColorTexture
+
+                        ( Nothing, Just normalTextureMaterialImage ) ->
+                            toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture normalTextureMaterialImage
+
+                        ( Nothing, Nothing ) ->
                             Nothing
 
                 TriangularMesh.ResolvedMaterial _ ->
                     Nothing
-
-        meshEffect : TriangularMesh -> Maybe (Cmd msg)
-        meshEffect mesh =
-            case mesh of
-                TriangularMesh.TriangularMesh material _ ->
-                    material |> Maybe.andThen cmdFromMaterial
-
-                TriangularMesh.IndexedTriangularMesh material _ ->
-                    material |> Maybe.andThen cmdFromMaterial
     in
     nodes
         |> Tree.flatten
         |> List.filterMap toMeshes
         |> List.concat
-        |> List.filterMap meshEffect
+        |> List.filterMap meshMaterial
+        |> List.filterMap cmdFromMaterial
         |> Cmd.batch
 
 

@@ -21,6 +21,7 @@ import Math.Vector4 as Vec4 exposing (Vec4)
 type alias Vertex =
     { position : Vec3
     , normal : Maybe Vec3
+    , tangent : Maybe Vec4
     , color : Maybe Vec4
     , weights : Maybe Vec4
     , joints : Maybe Joints
@@ -49,6 +50,7 @@ type Material
 type alias VertexAttributes =
     { position : Maybe (List Attribute)
     , normal : Maybe (List Attribute)
+    , tangent : Maybe (List Attribute)
     , color : Maybe (List Attribute)
     , joints : Maybe (List Attribute)
     , weights : Maybe (List Attribute)
@@ -67,6 +69,7 @@ fromPrimitive gltf primitive =
         vertexAttributes =
             { position = Maybe.map Attribute.parseBuffer vertexBuffers.position
             , normal = Maybe.map Attribute.parseBuffer vertexBuffers.normal
+            , tangent = Maybe.map Attribute.parseBuffer vertexBuffers.tangent
             , color = Maybe.map Attribute.parseBuffer vertexBuffers.color
             , joints = Maybe.map Attribute.parseBuffer vertexBuffers.joints
             , weights = Maybe.map Attribute.parseBuffer vertexBuffers.weights
@@ -99,6 +102,7 @@ fromPrimitive gltf primitive =
                             (\position ->
                                 { position = position
                                 , normal = Nothing
+                                , tangent = Nothing
                                 , color = Nothing
                                 , weights = Nothing
                                 , joints = Nothing
@@ -142,6 +146,17 @@ fromPrimitive gltf primitive =
                                 vertices
                                 colors
 
+                withTangents : List Vertex -> List Vertex
+                withTangents vertices =
+                    case a.tangent |> Maybe.withDefault [] |> List.filterMap Attribute.toVec4 of
+                        [] ->
+                            vertices
+
+                        weights ->
+                            List.map2 (\vertex x -> { vertex | tangent = Just x })
+                                vertices
+                                weights
+
                 withWeights : List Vertex -> List Vertex
                 withWeights vertices =
                     case a.weights |> Maybe.withDefault [] |> List.filterMap Attribute.toVec4 of
@@ -177,6 +192,7 @@ fromPrimitive gltf primitive =
             in
             positions
                 |> withNormals
+                |> withTangents
                 |> withColors
                 |> withWeights
                 |> withJoints

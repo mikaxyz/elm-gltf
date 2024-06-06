@@ -27,6 +27,10 @@ type alias Uniforms =
     , pbrBaseColorTexture : Texture
 
     --
+    , hasNormalTexture : Bool
+    , normalTexture : Texture
+
+    --
     , directionalLight : Vec4
     , pointLight1 : Vec4
     , pointLight1Color : Vec3
@@ -144,6 +148,10 @@ renderer fallbackTexture (Gltf.Query.ResolvedMaterial.Material pbr) options unif
         , pbrBaseColorTexture = pbr.pbrMetallicRoughness.baseColorTexture |> Maybe.withDefault fallbackTexture
 
         --
+        , hasNormalTexture = pbr.normalTexture /= Nothing
+        , normalTexture = pbr.normalTexture |> Maybe.withDefault fallbackTexture
+
+        --
         , directionalLight = directionalLight
         , pointLight1 = pointLight 1 |> .light
         , pointLight1Color = pointLight 1 |> .color
@@ -236,7 +244,7 @@ vertexShader =
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
-        uniform vec4 pbrBaseColorFactor;
+        uniform mat4 sceneRotationMatrix;
 
         uniform mat4 joint0;
         uniform mat4 joint1;
@@ -384,9 +392,10 @@ vertexShader =
 
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * skinDeform * vec4(position, 1.0);
             v_fragPos = vec3(sceneMatrix * vec4(position, 1.0));
-            v_normal = normal;
             v_uv = uv;
-            v_color = color * pbrBaseColorFactor.xyz;
+            v_color = color;
+
+            v_normal = normal;
         }
     |]
 
@@ -416,7 +425,10 @@ fragmentShader =
         uniform vec3 pointLight5Color;
 
         uniform bool pbrHasBaseColorTexture;
+        uniform vec4 pbrBaseColorFactor;
         uniform sampler2D pbrBaseColorTexture;
+        uniform bool hasNormalTexture;
+        uniform sampler2D normalTexture;
 
         vec3 f_pointLight (vec3 normal, vec3 lightPosition) {
             highp vec3 color = vec3(1.0, 1.0, 1.0);
@@ -436,8 +448,14 @@ fragmentShader =
         }
 
         void main () {
-            vec3 lighting = vec3(0,0,0);
-            vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            vec3 normal;
+            if(hasNormalTexture) {
+                normal = texture2D(normalTexture, v_uv).xyz;
+            } else {
+                normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            }
+
+            vec3 lighting = vec3(0);
 
             if (pointLight1.w > 0.0) {
                lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz) * pointLight1Color;
@@ -462,7 +480,7 @@ fragmentShader =
 
             vec3 baseColor = vec3(1);
             if(pbrHasBaseColorTexture) {
-                baseColor = texture2D(pbrBaseColorTexture, v_uv).rgb;
+                baseColor = (texture2D(pbrBaseColorTexture, v_uv) * pbrBaseColorFactor).rgb;
             }
 
             gl_FragColor =  vec4(lighting * v_color * baseColor, 1.0);
