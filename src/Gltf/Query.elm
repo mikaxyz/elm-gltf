@@ -1,20 +1,18 @@
 module Gltf.Query exposing
-    ( Effect
-    , Error(..)
-    , Node(..)
-    , Properties(..)
-    , QueryError(..)
-    , applyEffect
-    , effectsFromNodeTree
-    , fromJson
-    , meshesFromNode
-    , nodeFromNode
-    , nodeTree
-    , sceneNodeTrees
-    , skinFromNode
-    , treeFromNode
-    , triangularMeshesFromNode
+    ( Error(..), Node(..), Properties(..), QueryError(..)
+    , fromJson, nodeTree, sceneNodeTrees
+    , Effect, effectsFromNodeTree, applyEffect
+    , nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
     )
+
+{-| Query contents of Gltf
+
+@docs Error, Node, Properties, QueryError
+@docs fromJson, nodeTree, sceneNodeTrees
+@docs Effect, effectsFromNodeTree, applyEffect
+@docs nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
+
+-}
 
 import Common
 import Gltf exposing (Gltf)
@@ -31,11 +29,15 @@ import Tree exposing (Tree)
 import WebGL.Texture
 
 
+{-| TODO: Needed?
+-}
 type Error
     = DecodeError JD.Error
     | QueryError QueryError
 
 
+{-| TODO: Needed?
+-}
 fromJson : String -> (Gltf -> Result QueryError b) -> Result Error b
 fromJson json f =
     json
@@ -44,11 +46,15 @@ fromJson json f =
         |> Result.andThen (\gltf -> f gltf |> Result.mapError QueryError)
 
 
+{-| TODO: Needed?
+-}
 type QueryError
     = SceneNotFound
     | NodeNotFound
 
 
+{-| TODO: Docs
+-}
 type Node
     = EmptyNode Properties
     | CameraNode Properties
@@ -56,6 +62,8 @@ type Node
     | SkinnedMeshNode (List TriangularMesh) Skin Properties
 
 
+{-| TODO: Needed?
+-}
 meshesFromNode : Node -> List TriangularMesh
 meshesFromNode node =
     case node of
@@ -72,6 +80,8 @@ meshesFromNode node =
             triangularMeshes
 
 
+{-| TODO: Needed?
+-}
 skinFromNode : Node -> Maybe Skin
 skinFromNode node =
     case node of
@@ -88,6 +98,8 @@ skinFromNode node =
             Just skin
 
 
+{-| TODO: Needed?
+-}
 treeFromNode : Node.Index -> Gltf -> Result QueryError (Tree Node)
 treeFromNode index gltf =
     maybeNodeTree gltf index
@@ -95,6 +107,8 @@ treeFromNode index gltf =
         |> Result.fromMaybe NodeNotFound
 
 
+{-| TODO: Docs
+-}
 type Effect
     = Noop
     | ResolveMaterial ResolveMaterialEffect
@@ -104,6 +118,8 @@ type ResolveMaterialEffect
     = ResolveMaterialEffect Gltf.Query.ResolvedMaterial.Material
 
 
+{-| TODO: Docs
+-}
 applyEffect : Effect -> Tree Node -> Tree Node
 applyEffect effect nodes =
     case effect of
@@ -157,6 +173,8 @@ applyResolveMaterialEffect (ResolveMaterialEffect (Gltf.Query.ResolvedMaterial.M
             )
 
 
+{-| TODO: Docs
+-}
 effectsFromNodeTree : (Effect -> msg) -> Tree Node -> Cmd msg
 effectsFromNodeTree msg nodes =
     let
@@ -253,6 +271,8 @@ effectsFromNodeTree msg nodes =
         |> Cmd.batch
 
 
+{-| TODO: Docs
+-}
 nodeFromNode : Gltf -> Node.Node -> Node
 nodeFromNode gltf node =
     case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.andThen (Skin.skinAtIndex gltf) of
@@ -290,6 +310,8 @@ propertiesFromNode (Node.Node node) =
         }
 
 
+{-| TODO: Docs
+-}
 type Properties
     = Properties
         { nodeIndex : Node.Index
@@ -298,6 +320,8 @@ type Properties
         }
 
 
+{-| TODO: Needed?
+-}
 sceneNodeTrees : Scene.Index -> Gltf -> Result QueryError (List (Tree Node.Node))
 sceneNodeTrees index gltf =
     Common.sceneAtIndex gltf index
@@ -313,6 +337,8 @@ sceneNodeTrees index gltf =
         |> Result.fromMaybe SceneNotFound
 
 
+{-| TODO: Needed?
+-}
 nodeTree : Node.Index -> Gltf -> Result QueryError (Tree Node.Node)
 nodeTree index gltf =
     maybeNodeTree gltf index |> Result.fromMaybe NodeNotFound
@@ -329,6 +355,8 @@ maybeNodeTree gltf index =
             )
 
 
+{-| TODO: Needed?
+-}
 triangularMeshesFromNode : Gltf -> Node.Node -> Maybe (List TriangularMesh)
 triangularMeshesFromNode gltf (Node.Node node) =
     node.meshIndex
