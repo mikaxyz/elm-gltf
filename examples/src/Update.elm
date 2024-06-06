@@ -37,8 +37,8 @@ update msg model =
         OnRouteChange maybeRoute ->
             updateWithRoute maybeRoute model
 
-        OnHistoryChange _ ->
-            ( model, Cmd.none )
+        OnHistoryChange route ->
+            updateWithRoute (Just route) model
 
         SpaMsg msg_ ->
             Spa.update spaConfig msg_ model.spa
