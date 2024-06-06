@@ -11,7 +11,6 @@ import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Node as Node exposing (Index(..), Node(..))
-import Internal.Scene
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -61,7 +60,7 @@ graphFromNodes nodes objectIdMap config =
             nodes
                 |> List.map (Tree.map (objectFromNode objectIdMap))
     in
-    lights (config.sceneSize / 3)
+    lights config.sceneSize
         :: objects
         |> Graph.graph (Object.group "")
 
@@ -426,10 +425,11 @@ toVertex v =
 lights : Float -> Graph (Object objectId Material.Name)
 lights d =
     Graph.shallow (Object.group "LIGHTS")
-        [ pointLight 0.3 (Vec3.vec3 1 2 2 |> Vec3.scale d) (vec3 0.9 0.7 0.6)
-        , pointLight 0.3 (Vec3.vec3 -2 3 1 |> Vec3.scale d) (vec3 0.7 0.9 0.9)
-        , pointLight 0.3 (Vec3.vec3 2 1 0 |> Vec3.scale d) (vec3 0.9 0.5 0.5)
-        , pointLight 0.5 (Vec3.vec3 1 4 -2 |> Vec3.scale d) (vec3 0.7 0.7 0.9)
+        [ pointLight 0.8 (Vec3.vec3 1 2 2 |> Vec3.scale (max 1 d)) (vec3 0.9 0.7 0.6)
+        , pointLight 0.3 (Vec3.vec3 -2 3 1 |> Vec3.scale (max 1 d)) (vec3 0.7 0.9 0.9)
+        , pointLight 0.3 (Vec3.vec3 2 1 0 |> Vec3.scale (max 1 d)) (vec3 0.9 0.5 0.5)
+        , pointLight 0.4 (Vec3.vec3 1 4 -2 |> Vec3.scale (max 1 d)) (vec3 0.7 0.7 0.9)
+        , pointLight 0.5 (Vec3.vec3 -2 -1 -3 |> Vec3.scale (max 1 d)) (vec3 0.6 0.8 0.9)
         ]
 
 
