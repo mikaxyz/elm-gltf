@@ -368,6 +368,42 @@ update msg model =
                     , Cmd.none
                     )
 
+        EnvironmentTextureReceived result ->
+            case result of
+                Ok texture ->
+                    ( { model | environmentTexture = RemoteData.Success texture }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model | environmentTexture = RemoteData.Failure error }
+                    , Cmd.none
+                    )
+
+        SpecularEnvironmentTextureReceived result ->
+            case result of
+                Ok texture ->
+                    ( { model | specularEnvironmentTexture = RemoteData.Success texture }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model | specularEnvironmentTexture = RemoteData.Failure error }
+                    , Cmd.none
+                    )
+
+        BrdfLUTTextureReceived result ->
+            case result of
+                Ok texture ->
+                    ( { model | brdfLUTTexture = RemoteData.Success texture }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model | brdfLUTTexture = RemoteData.Failure error }
+                    , Cmd.none
+                    )
+
         GltfApplyEffect effect ->
             let
                 nodes : List (Tree.Tree Query.Node)

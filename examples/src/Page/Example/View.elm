@@ -16,6 +16,7 @@ import XYZMika.XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene exposing (Scene)
+import XYZMika.XYZ.Scene.Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -34,33 +35,68 @@ view model =
             h1 [] [ text <| "Error" ]
 
         RemoteData.Success ( gltf, scene ) ->
-            model.fallbackTexture
+            RemoteData.map3
+                (\fallbackTexture ( environmentTexture, specularEnvironmentTexture ) brdfLUTTexture ->
+                    { fallbackTexture = fallbackTexture
+                    , environmentTexture = environmentTexture
+                    , specularEnvironmentTexture = specularEnvironmentTexture
+                    , brdfLUTTexture = brdfLUTTexture
+                    }
+                )
+                model.fallbackTexture
+                (RemoteData.map2 Tuple.pair
+                    model.environmentTexture
+                    model.specularEnvironmentTexture
+                )
+                model.brdfLUTTexture
                 |> RemoteData.toMaybe
                 |> Maybe.map (sceneView model gltf scene)
-                |> Maybe.withDefault (h1 [] [ text <| "Loading fallbackTexture" ])
+                |> Maybe.withDefault (h1 [] [ text <| "Loading textures" ])
 
 
 renderer :
-    WebGL.Texture.Texture
+    { fallbackTexture : WebGL.Texture.Texture
+    , environmentTexture : WebGL.Texture.Texture
+    , specularEnvironmentTexture : WebGL.Texture.Texture
+    , brdfLUTTexture : WebGL.Texture.Texture
+    , camera : Camera
+    }
     -> Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
     -> Object a Material.Name
     -> WebGL.Entity
-renderer fallbackTexture name =
+renderer textures name =
     case name of
         Just materialName ->
-            Material.renderer fallbackTexture materialName
+            Material.renderer textures materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sceneView : Model -> Gltf -> Scene Scene.ObjectId Material.Name -> WebGL.Texture.Texture -> Html Msg
-sceneView model gltf scene fallbackTexture =
+sceneView :
+    Model
+    -> Gltf
+    -> Scene Scene.ObjectId Material.Name
+    ->
+        { fallbackTexture : WebGL.Texture.Texture
+        , environmentTexture : WebGL.Texture.Texture
+        , specularEnvironmentTexture : WebGL.Texture.Texture
+        , brdfLUTTexture : WebGL.Texture.Texture
+        }
+    -> Html Msg
+sceneView model gltf scene textures =
     XYZMika.XYZ.view
         model.viewport
-        (renderer fallbackTexture)
+        (renderer
+            { fallbackTexture = textures.fallbackTexture
+            , environmentTexture = textures.environmentTexture
+            , specularEnvironmentTexture = textures.specularEnvironmentTexture
+            , brdfLUTTexture = textures.brdfLUTTexture
+            , camera = XYZMika.XYZ.Scene.camera scene
+            }
+        )
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
         |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time model.animations gltf)
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions

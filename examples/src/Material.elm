@@ -8,6 +8,7 @@ import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.Color
 import XYZMika.XYZ.Material.Simple
+import XYZMika.XYZ.Scene.Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -20,13 +21,18 @@ type Name
 
 
 renderer :
-    WebGL.Texture.Texture
+    { fallbackTexture : WebGL.Texture.Texture
+    , environmentTexture : WebGL.Texture.Texture
+    , specularEnvironmentTexture : WebGL.Texture.Texture
+    , brdfLUTTexture : WebGL.Texture.Texture
+    , camera : Camera
+    }
     -> Name
     -> Material.Options
     -> Uniforms u
     -> Object objectId materialId
     -> Entity
-renderer fallbackTexture name =
+renderer textures name =
     case name of
         Simple ->
             XYZMika.XYZ.Material.Simple.renderer
@@ -38,4 +44,4 @@ renderer fallbackTexture name =
             XYZMika.XYZ.Material.Advanced.renderer
 
         PbrMaterial pbr ->
-            Page.Example.PbrMaterial.renderer fallbackTexture pbr
+            Page.Example.PbrMaterial.renderer textures pbr

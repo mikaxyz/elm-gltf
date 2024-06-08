@@ -46,6 +46,9 @@ type Msg
     | DragonOnDrag Dragon.Vector
       --
     | FallbackTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | EnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | SpecularEnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | GltfReceived (Result Http.Error Gltf)
     | GltfApplyEffect Query.Effect
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
@@ -68,6 +71,9 @@ type alias Model =
     , sceneOptions : SceneOptions.Options
     , sceneSize : Float
     , fallbackTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
+    , environmentTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
+    , specularEnvironmentTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
+    , brdfLUTTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
     , gltf : RemoteData Http.Error Gltf
     , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
     , nodes : List (Tree Query.Node)
@@ -88,6 +94,9 @@ init asset =
     , sceneOptions = SceneOptions.create
     , sceneSize = 999999999
     , fallbackTexture = RemoteData.Loading
+    , environmentTexture = RemoteData.Loading
+    , specularEnvironmentTexture = RemoteData.Loading
+    , brdfLUTTexture = RemoteData.Loading
     , gltf = RemoteData.Loading
     , scene = RemoteData.Loading
     , nodes = []

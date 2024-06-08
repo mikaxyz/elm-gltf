@@ -36,6 +36,41 @@ loadFallbackTexture msg =
         |> Task.attempt msg
 
 
+loadBrdfLUTTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
+loadBrdfLUTTexture msg =
+    --WebGL.Texture.loadWith
+    --    (WebGL.Texture.defaultOptions |> (\options -> { options | flipY = False }))
+    WebGL.Texture.load
+        "/assets/brdfLUT.png"
+        |> Task.attempt msg
+
+
+loadEnvironmentTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
+loadEnvironmentTexture msg =
+    WebGL.Texture.loadCubeMap
+        { xPos = "/assets/papermill/diffuse/diffuse_right_0.jpg"
+        , xNeg = "/assets/papermill/diffuse/diffuse_left_0.jpg"
+        , yPos = "/assets/papermill/diffuse/diffuse_top_0.jpg"
+        , yNeg = "/assets/papermill/diffuse/diffuse_bottom_0.jpg"
+        , zPos = "/assets/papermill/diffuse/diffuse_front_0.jpg"
+        , zNeg = "/assets/papermill/diffuse/diffuse_back_0.jpg"
+        }
+        |> Task.attempt msg
+
+
+loadSpecularEnvironmentTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
+loadSpecularEnvironmentTexture msg =
+    WebGL.Texture.loadCubeMap
+        { xPos = "/assets/papermill/specular/specular_right_0.jpg"
+        , xNeg = "/assets/papermill/specular/specular_left_0.jpg"
+        , yPos = "/assets/papermill/specular/specular_top_0.jpg"
+        , yNeg = "/assets/papermill/specular/specular_bottom_0.jpg"
+        , zPos = "/assets/papermill/specular/specular_front_0.jpg"
+        , zNeg = "/assets/papermill/specular/specular_back_0.jpg"
+        }
+        |> Task.attempt msg
+
+
 initWithSampleAsset : SampleAssets.Asset -> ( Model, Cmd Msg )
 initWithSampleAsset asset =
     ( Model.init (Model.SampleAsset asset)
@@ -47,6 +82,9 @@ initWithSampleAsset asset =
                 )
             |> Maybe.withDefault Cmd.none
         , loadFallbackTexture FallbackTextureReceived
+        , loadEnvironmentTexture EnvironmentTextureReceived
+        , loadSpecularEnvironmentTexture SpecularEnvironmentTextureReceived
+        , loadBrdfLUTTexture BrdfLUTTextureReceived
         ]
     )
 
@@ -57,6 +95,9 @@ initWithLocalAsset path =
     , Cmd.batch
         [ Gltf.getEmbedded path GltfReceived
         , loadFallbackTexture FallbackTextureReceived
+        , loadEnvironmentTexture EnvironmentTextureReceived
+        , loadSpecularEnvironmentTexture SpecularEnvironmentTextureReceived
+        , loadBrdfLUTTexture BrdfLUTTextureReceived
         ]
     )
 
