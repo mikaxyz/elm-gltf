@@ -360,7 +360,7 @@ update msg model =
             case result of
                 Ok texture ->
                     ( { model | fallbackTexture = RemoteData.Success texture }
-                    , Cmd.none
+                    , getViewPort
                     )
 
                 Err error ->
@@ -372,7 +372,7 @@ update msg model =
             case result of
                 Ok texture ->
                     ( { model | environmentTexture = RemoteData.Success texture }
-                    , Cmd.none
+                    , getViewPort
                     )
 
                 Err error ->
@@ -384,7 +384,7 @@ update msg model =
             case result of
                 Ok texture ->
                     ( { model | specularEnvironmentTexture = RemoteData.Success texture }
-                    , Cmd.none
+                    , getViewPort
                     )
 
                 Err error ->
@@ -396,7 +396,7 @@ update msg model =
             case result of
                 Ok texture ->
                     ( { model | brdfLUTTexture = RemoteData.Success texture }
-                    , Cmd.none
+                    , getViewPort
                     )
 
                 Err error ->
@@ -426,7 +426,7 @@ update msg model =
                                 )
                             )
               }
-            , Cmd.none
+            , getViewPort
             )
 
         GltfReceived result ->
@@ -466,7 +466,6 @@ update msg model =
                         :: cmds
                         |> Cmd.batch
                     )
-                        |> onResize
 
                 Err error ->
                     ( { model | gltf = RemoteData.Failure error }
@@ -487,10 +486,3 @@ setSceneSize model =
 getViewPort : Cmd Msg
 getViewPort =
     Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement
-
-
-onResize : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-onResize ( model, cmd ) =
-    ( model
-    , Cmd.batch [ cmd, Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement ]
-    )
