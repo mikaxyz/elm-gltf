@@ -68,12 +68,12 @@ loadEnvironmentTexture msg =
 loadSpecularEnvironmentTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
 loadSpecularEnvironmentTexture msg =
     WebGL.Texture.loadCubeMap
-        { xPos = "/assets/papermill/specular/specular_right_0.jpg"
-        , xNeg = "/assets/papermill/specular/specular_left_0.jpg"
-        , yPos = "/assets/papermill/specular/specular_top_0.jpg"
-        , yNeg = "/assets/papermill/specular/specular_bottom_0.jpg"
-        , zPos = "/assets/papermill/specular/specular_front_0.jpg"
-        , zNeg = "/assets/papermill/specular/specular_back_0.jpg"
+        { xPos = "/assets/hospital_room_2/px.png"
+        , xNeg = "/assets/hospital_room_2/nx.png"
+        , yPos = "/assets/hospital_room_2/py.png"
+        , yNeg = "/assets/hospital_room_2/ny.png"
+        , zPos = "/assets/hospital_room_2/pz.png"
+        , zNeg = "/assets/hospital_room_2/nz.png"
         }
         |> Task.attempt msg
 
