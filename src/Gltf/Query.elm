@@ -115,7 +115,7 @@ type Effect
 
 
 type ResolveTextureEffect
-    = ResolveTextureEffect Internal.Material.Index Gltf.Query.ResolvedMaterial.Texture
+    = ResolveTextureEffect Internal.Material.Index (Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture)
 
 
 {-| TODO: Docs
@@ -206,7 +206,7 @@ effectsFromNodeTree msg nodes =
                 TriangularMesh.IndexedTriangularMesh material _ ->
                     material
 
-        updateMaterialWithIndex : Internal.Material.Index -> TriangularMesh.Material -> Gltf.Query.ResolvedMaterial.Texture -> Maybe Effect
+        updateMaterialWithIndex : Internal.Material.Index -> TriangularMesh.Material -> Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture -> Maybe Effect
         updateMaterialWithIndex materialIndex material texture =
             case material of
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
@@ -232,7 +232,7 @@ effectsFromNodeTree msg nodes =
         cmdFromMaterial : TriangularMesh.Material -> Maybe (Cmd msg)
         cmdFromMaterial material =
             let
-                toCmd : Gltf.Query.Material.Material -> (WebGL.Texture.Texture -> Gltf.Query.ResolvedMaterial.Texture) -> Gltf.Query.Material.MaterialImage -> Maybe (Cmd msg)
+                toCmd : Gltf.Query.Material.Material -> (WebGL.Texture.Texture -> Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture) -> Gltf.Query.Material.MaterialImage -> Maybe (Cmd msg)
                 toCmd (Gltf.Query.Material.Material unresolvedMaterial) toTexture unresolvedTexture =
                     case unresolvedTexture of
                         Gltf.Query.Material.DataUri dataUri ->
@@ -271,23 +271,30 @@ effectsFromNodeTree msg nodes =
             in
             case material of
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    case ( unresolvedMaterial.pbrMetallicRoughness.baseColorTexture, unresolvedMaterial.normalTexture ) of
-                        ( Just baseColorTexture, Just normalTextureMaterialImage ) ->
-                            [ toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture baseColorTexture
-                            , toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture normalTextureMaterialImage
-                            ]
-                                |> List.filterMap identity
-                                |> Cmd.batch
-                                |> Just
+                    [ Gltf.Query.ResolvedMaterial.BaseColorTexture unresolvedMaterial.pbrMetallicRoughness.baseColorTexture
+                    , Gltf.Query.ResolvedMaterial.NormalTexture unresolvedMaterial.normalTexture
+                    , Gltf.Query.ResolvedMaterial.EmissiveTexture unresolvedMaterial.emissiveTexture
+                    ]
+                        |> List.filterMap
+                            (\texture ->
+                                case texture of
+                                    Gltf.Query.ResolvedMaterial.BaseColorTexture maybeMaterialImage ->
+                                        maybeMaterialImage
+                                            |> Maybe.andThen
+                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture)
 
-                        ( Just baseColorTexture, Nothing ) ->
-                            toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture baseColorTexture
+                                    Gltf.Query.ResolvedMaterial.NormalTexture maybeMaterialImage ->
+                                        maybeMaterialImage
+                                            |> Maybe.andThen
+                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture)
 
-                        ( Nothing, Just normalTextureMaterialImage ) ->
-                            toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture normalTextureMaterialImage
-
-                        ( Nothing, Nothing ) ->
-                            Nothing
+                                    Gltf.Query.ResolvedMaterial.EmissiveTexture maybeMaterialImage ->
+                                        maybeMaterialImage
+                                            |> Maybe.andThen
+                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.EmissiveTexture)
+                            )
+                        |> Cmd.batch
+                        |> Just
 
                 TriangularMesh.ResolvedMaterial _ ->
                     Nothing

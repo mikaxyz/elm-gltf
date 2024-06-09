@@ -2,12 +2,12 @@ module Gltf.Query.ResolvedMaterial exposing
     ( Material(..)
     , Texture(..)
     , fromUnresolved
-    , fromUnresolvedWithBaseColorTexture
     , updateTexture
     )
 
 import Gltf.Query.Material
 import Internal.Material as Internal
+import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
 import WebGL.Texture
 
@@ -18,6 +18,8 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe WebGL.Texture.Texture
+        , emissiveTexture : Maybe WebGL.Texture.Texture
+        , emissiveFactor : Vec3
         }
 
 
@@ -29,12 +31,13 @@ type alias BbrMetallicRoughness =
     }
 
 
-type Texture
-    = BaseColorTexture WebGL.Texture.Texture
-    | NormalTexture WebGL.Texture.Texture
+type Texture a
+    = BaseColorTexture a
+    | NormalTexture a
+    | EmissiveTexture a
 
 
-updateTexture : Texture -> Material -> Material
+updateTexture : Texture WebGL.Texture.Texture -> Material -> Material
 updateTexture texture (Material material) =
     case texture of
         BaseColorTexture x ->
@@ -48,38 +51,18 @@ updateTexture texture (Material material) =
         NormalTexture x ->
             Material { material | normalTexture = Just x }
 
-
-fromUnresolved : Texture -> Gltf.Query.Material.Material -> Material
-fromUnresolved texture material =
-    case texture of
-        BaseColorTexture x ->
-            fromUnresolvedWithBaseColorTexture x material
-
-        NormalTexture x ->
-            fromUnresolvedWithNormalTexture x material
+        EmissiveTexture x ->
+            Material { material | emissiveTexture = Just x }
 
 
-fromUnresolvedWithBaseColorTexture : WebGL.Texture.Texture -> Gltf.Query.Material.Material -> Material
-fromUnresolvedWithBaseColorTexture texture (Gltf.Query.Material.Material material) =
+fromUnresolved : Texture WebGL.Texture.Texture -> Gltf.Query.Material.Material -> Material
+fromUnresolved texture (Gltf.Query.Material.Material material) =
     Material
         { name = material.name
         , index = material.index
         , normalTexture = Nothing
-        , pbrMetallicRoughness =
-            { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
-            , baseColorTexture = Just texture
-            , metallicFactor = material.pbrMetallicRoughness.metallicFactor
-            , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
-            }
-        }
-
-
-fromUnresolvedWithNormalTexture : WebGL.Texture.Texture -> Gltf.Query.Material.Material -> Material
-fromUnresolvedWithNormalTexture texture (Gltf.Query.Material.Material material) =
-    Material
-        { name = material.name
-        , index = material.index
-        , normalTexture = Just texture
+        , emissiveTexture = Nothing
+        , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =
             { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
             , baseColorTexture = Nothing
@@ -87,3 +70,4 @@ fromUnresolvedWithNormalTexture texture (Gltf.Query.Material.Material material) 
             , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
             }
         }
+        |> updateTexture texture

@@ -16,6 +16,7 @@ import Internal.Material as Internal exposing (NormalTextureInfo)
 import Internal.Mesh exposing (Primitive)
 import Internal.Texture exposing (Texture)
 import Internal.TextureInfo exposing (TextureInfo)
+import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
 
 
@@ -25,6 +26,8 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe MaterialImage
+        , emissiveTexture : Maybe MaterialImage
+        , emissiveFactor : Vec3
         }
 
 
@@ -56,6 +59,11 @@ fromPrimitive gltf primitive =
                     material.normalTexture
                         |> Maybe.andThen (textureFromNormalTextureInfo gltf)
 
+                emissiveTexture : Maybe Texture
+                emissiveTexture =
+                    material.emissiveTexture
+                        |> Maybe.andThen (textureFromTextureInfo gltf)
+
                 image : Maybe Texture -> Maybe Image
                 image texture =
                     texture
@@ -67,6 +75,7 @@ fromPrimitive gltf primitive =
                     material
                     { baseColorTexture = image baseColorTexture |> Maybe.andThen (materialImageFromImage gltf)
                     , normalTexture = image normalTexture |> Maybe.andThen (materialImageFromImage gltf)
+                    , emissiveTexture = image emissiveTexture |> Maybe.andThen (materialImageFromImage gltf)
                     }
                 )
 
@@ -135,13 +144,16 @@ fromMaterial :
     ->
         { baseColorTexture : Maybe MaterialImage
         , normalTexture : Maybe MaterialImage
+        , emissiveTexture : Maybe MaterialImage
         }
     -> Material
-fromMaterial index material { baseColorTexture, normalTexture } =
+fromMaterial index material { baseColorTexture, normalTexture, emissiveTexture } =
     Material
         { name = material.name
         , index = index
         , normalTexture = normalTexture
+        , emissiveTexture = emissiveTexture
+        , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =
             { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
             , baseColorTexture = baseColorTexture

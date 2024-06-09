@@ -83,7 +83,7 @@ decoder =
         |> JDP.optional "normalTexture" (JD.maybe normalTextureInfoDecoder) Nothing
         |> JDP.optional "occlusionTexture" (JD.maybe occlusionTextureInfoDecoder) Nothing
         |> JDP.optional "emissiveTexture" (JD.maybe TextureInfo.decoder) Nothing
-        |> JDP.optional "baseColorFactor" vec3Decoder (vec3 0 0 0)
+        |> JDP.optional "emissiveFactor" vec3Decoder (vec3 0 0 0)
         |> JDP.optional "alphaMode" alphaModeDecoder Opaque
         |> JDP.optional "alphaCutoff" JD.float 0.5
         |> JDP.optional "doubleSided" JD.bool False

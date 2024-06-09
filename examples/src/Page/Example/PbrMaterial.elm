@@ -36,6 +36,11 @@ type alias Uniforms =
     , u_NormalScale : Float
 
     --
+    , u_hasEmissiveSampler : Bool
+    , u_EmissiveSampler : Texture
+    , u_EmissiveFactor : Vec3
+
+    --
     , u_brdfLUT : Texture
     , u_DiffuseEnvSampler : Texture
     , u_SpecularEnvSampler : Texture
@@ -131,6 +136,11 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         , u_NormalScale = 1.0
 
         --
+        , u_hasEmissiveSampler = pbr.emissiveTexture /= Nothing
+        , u_EmissiveSampler = pbr.emissiveTexture |> Maybe.withDefault config.fallbackTexture
+        , u_EmissiveFactor = pbr.emissiveFactor
+
+        --
         , u_brdfLUT = config.brdfLUTTexture
         , u_DiffuseEnvSampler = config.environmentTexture
         , u_SpecularEnvSampler = config.specularEnvironmentTexture
@@ -224,6 +234,10 @@ fragmentShader =
         uniform bool u_hasNormalSampler;
         uniform sampler2D u_NormalSampler;
         uniform float u_NormalScale;
+
+        uniform bool u_hasEmissiveSampler;
+        uniform sampler2D u_EmissiveSampler;
+        uniform vec3 u_EmissiveFactor;
 
         uniform vec3 u_Camera;
 
@@ -615,6 +629,10 @@ fragmentShader =
 //    color += emissive;
 //    #endif
 
+            if (u_hasEmissiveSampler) {
+                vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
+                color += emissive;
+            }
 
             float f_specularReflection = 0.5;
             float f_geometricOcclusion = 0.5;
@@ -625,17 +643,17 @@ fragmentShader =
             float f_metallic = 0.5;
             float f_perceptualRoughness = 0.1;
 
-            color = mix(color, F, f_specularReflection);
-            color = mix(color, vec3(G), f_geometricOcclusion);
-            color = mix(color, vec3(D), f_microfacetDistribution);
+//            color = mix(color, F, f_specularReflection);
+//            color = mix(color, vec3(G), f_geometricOcclusion);
+//            color = mix(color, vec3(D), f_microfacetDistribution);
 //            color = mix(color, specContrib, f_specContrib);
-//
+
 //            color = mix(color, diffuseContrib, f_diffuseContrib);
 //            color = mix(color, baseColor.rgb, f_baseColor);
 //            color = mix(color, vec3(metallic), f_metallic);
 //            color = mix(color, vec3(perceptualRoughness), f_perceptualRoughness);
 
-//            gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
-            gl_FragColor = vec4(getIBLContribution(pbrInputs, n, reflection), 1.0);
+            gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
+//            gl_FragColor = vec4(getIBLContribution(pbrInputs, n, reflection), 1.0);
         }
     |]
