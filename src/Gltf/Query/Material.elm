@@ -26,7 +26,9 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe MaterialImage
+        , normalTextureScale : Float
         , occlusionTexture : Maybe MaterialImage
+        , occlusionTextureStrength : Float
         , emissiveTexture : Maybe MaterialImage
         , emissiveFactor : Vec3
         }
@@ -168,7 +170,9 @@ fromMaterial index material textures =
         { name = material.name
         , index = index
         , normalTexture = textures.normalTexture
+        , normalTextureScale = material.normalTexture |> Maybe.map .scale |> Maybe.withDefault 1.0
         , occlusionTexture = textures.occlusionTexture
+        , occlusionTextureStrength = material.occlusionTexture |> Maybe.map .strength |> Maybe.withDefault 1.0
         , emissiveTexture = textures.emissiveTexture
         , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =

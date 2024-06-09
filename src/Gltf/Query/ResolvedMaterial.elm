@@ -18,7 +18,9 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe WebGL.Texture.Texture
+        , normalTextureScale : Float
         , occlusionTexture : Maybe WebGL.Texture.Texture
+        , occlusionTextureStrength : Float
         , emissiveTexture : Maybe WebGL.Texture.Texture
         , emissiveFactor : Vec3
         }
@@ -76,7 +78,9 @@ fromUnresolved texture (Gltf.Query.Material.Material material) =
         { name = material.name
         , index = material.index
         , normalTexture = Nothing
+        , normalTextureScale = material.normalTextureScale
         , occlusionTexture = Nothing
+        , occlusionTextureStrength = material.occlusionTextureStrength
         , emissiveTexture = Nothing
         , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =

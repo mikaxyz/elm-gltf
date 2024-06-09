@@ -146,12 +146,12 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         --
         , u_hasNormalSampler = pbr.normalTexture /= Nothing
         , u_NormalSampler = pbr.normalTexture |> Maybe.withDefault config.fallbackTexture
-        , u_NormalScale = 1.0
+        , u_NormalScale = pbr.normalTextureScale
 
         --
         , u_hasOcclusionSampler = pbr.occlusionTexture /= Nothing
         , u_OcclusionSampler = pbr.occlusionTexture |> Maybe.withDefault config.fallbackTexture
-        , u_OcclusionStrength = 1.0
+        , u_OcclusionStrength = pbr.occlusionTextureStrength
 
         --
         , u_hasEmissiveSampler = pbr.emissiveTexture /= Nothing
