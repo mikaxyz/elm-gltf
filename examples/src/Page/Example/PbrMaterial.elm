@@ -131,9 +131,7 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         , u_MetallicRoughnessValues =
             vec2 pbr.pbrMetallicRoughness.metallicFactor
                 pbr.pbrMetallicRoughness.roughnessFactor
-
-        --, u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
-        , u_BaseColorFactor = vec4 1 1 1 1
+        , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture /= Nothing
         , u_BaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> Maybe.withDefault config.fallbackTexture
 
