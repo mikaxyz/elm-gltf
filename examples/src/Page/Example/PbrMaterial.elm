@@ -72,8 +72,6 @@ type alias Uniforms =
 type alias Varyings =
     { v_Position : Vec3
     , v_UV : Vec2
-
-    --, v_TBN : Vec2
     , v_Normal : Vec3
     }
 
@@ -203,29 +201,13 @@ vertexShader =
 
         varying vec3 v_Position;
         varying vec2 v_UV;
-//        varying mat3 v_TBN;
         varying vec3 v_Normal;
 
         void main () {
             vec4 pos = u_ModelMatrix * vec4(position, 1.0);
             v_Position = vec3(pos.xyz) / pos.w;
-
-//            #ifdef HAS_NORMALS
-//            #ifdef HAS_TANGENTS
-//            vec3 normalW = normalize(vec3(u_NormalMatrix * vec4(normal.xyz, 0.0)));
-//            vec3 tangentW = normalize(vec3(u_ModelMatrix * vec4(tangent.xyz, 0.0)));
-//            vec3 bitangentW = cross(normalW, tangentW) * tangent.w;
-//            v_TBN = mat3(tangentW, bitangentW, normalW);
-//            #else // HAS_TANGENTS != 1
             v_Normal = normalize(vec3(u_ModelMatrix * vec4(normal.xyz, 0.0)));
-//            #endif
-//            #endif
-
-//            #ifdef HAS_UV
             v_UV = uv;
-//            #else
-//            v_UV = vec2(0.,0.);
-//            #endif
 
             gl_Position = u_MVPMatrix * vec4(position, 1.0); // needs w for proper perspective correction
         }
@@ -268,7 +250,6 @@ fragmentShader =
 
         varying vec3 v_Position;
         varying vec2 v_UV;
-//        varying mat3 v_TBN;
         varying vec3 v_Normal;
 
         // Encapsulate the various inputs used by the various functions in the shading equation
@@ -296,27 +277,10 @@ fragmentShader =
 
         vec4 SRGBtoLINEAR(vec4 srgbIn)
         {
-//            #ifdef MANUAL_SRGB
-//                #ifdef SRGB_FAST_APPROXIMATION
-//                    vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-//                #else //SRGB_FAST_APPROXIMATION
-//                    vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-//                    vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-//                #endif //SRGB_FAST_APPROXIMATION
-//            return vec4(linOut,srgbIn.w);;
-//            #else //MANUAL_SRGB
-//                return srgbIn;
-//            #endif //MANUAL_SRGB
-
-
-//            return srgbIn;
-
             vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
             vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
             return vec4(linOut,srgbIn.w);
         }
-
-
 
 //        vec3 f_pointLight (vec3 normal, vec3 lightPosition) {
 //            highp vec3 color = vec3(1.0, 1.0, 1.0);
@@ -334,75 +298,21 @@ fragmentShader =
 //            highp float intensity = max(dot(normal, directionalVector), 0.0);
 //            return color * intensity;
 //        }
-//        vec3 f_environmentReflection (vec3 normal) {
-//            vec3 dir = v_fragPos;
-////            dir = normalize((sceneMatrix * vec4(v_fragPos, 1.0)).xyz);
-//
-//
-//            vec3 normal_ = vec3(sceneRotationMatrix * vec4(v_normal, 0.0));
-//
-//            dir = normalize((scenePerspective * sceneCamera * vec4(v_fragPos,0.0)).xyz);
-//
-//            vec3 dirn = normalize((sceneMatrix * vec4(normal_,0.0)).xyz);
-//
-//            float intensity = dot(dirn, dir);
-////            intensity = 1.0;
-//
-//            vec3 environment = textureCube(environmentTexture, dir).xyz;
-//
-//            return environment  * intensity * 0.1;
-//        }
 
         // Find the normal for this fragment, pulling either from a predefined normal map
         // or from the interpolated mesh normal and tangent attributes.
         vec3 getNormal()
         {
-//            // Retrieve the tangent space matrix
-//            #ifndef HAS_TANGENTS
-//                vec3 pos_dx = dFdx(v_Position);
-//                vec3 pos_dy = dFdy(v_Position);
-//                vec3 tex_dx = dFdx(vec3(v_UV, 0.0));
-//                vec3 tex_dy = dFdy(vec3(v_UV, 0.0));
-//                vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
-//
-//                #ifdef HAS_NORMALS
-//                    vec3 ng = normalize(v_Normal);
-//                #else
-//                    vec3 ng = cross(pos_dx, pos_dy);
-//                #endif
-//
-//                t = normalize(t - ng * dot(ng, t));
-//                vec3 b = normalize(cross(ng, t));
-//                mat3 tbn = mat3(t, b, ng);
-//            #else // HAS_TANGENTS
-//                mat3 tbn = v_TBN;
-//            #endif
-//
-//            #ifdef HAS_NORMALMAP
-//                vec3 n = texture2D(u_NormalSampler, v_UV).rgb;
-//                n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
-//            #else
-//                // The tbn matrix is linearly interpolated, so we need to re-normalize
-//                vec3 n = normalize(tbn[2].xyz);
-//            #endif
-
-
-
-
             vec3 pos_dx = dFdx(v_Position);
             vec3 pos_dy = dFdy(v_Position);
             vec3 tex_dx = dFdx(vec3(v_UV, 0.0));
             vec3 tex_dy = dFdy(vec3(v_UV, 0.0));
             vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
 
-
             vec3 ng = normalize(v_Normal);
-
-
             t = normalize(t - ng * dot(ng, t));
             vec3 b = normalize(cross(ng, t));
             mat3 tbn = mat3(t, b, ng);
-
 
             vec3 n;
             if (u_hasNormalSampler) {
@@ -416,16 +326,9 @@ fragmentShader =
             return n;
         }
 
-
-
-
-
-
-
         // Calculation of the lighting contribution from an optional Image Based Light source.
         // Precomputed Environment Maps are required uniform inputs and are computed as outlined in [1].
         // See our README.md on Environment Maps [3] for additional discussion.
-//        #ifdef USE_IBL
         vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
         {
             float mipCount = 9.0; // resolution of 512x512
@@ -433,33 +336,12 @@ fragmentShader =
             // retrieve a scale and bias to F0. See [1], Figure 3
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
             vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
-
-//            #ifdef USE_TEX_LOD
-//            vec3 specularLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, reflection, lod)).rgb;
-//            #else
             vec3 specularLight = SRGBtoLINEAR(textureCube(u_SpecularEnvSampler, reflection)).rgb;
-//            #endif
-
-//            vec3 specularLight = vec3(1.0);
-
             vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
-//            vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
             vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
 
-            // For presentation, this allows us to disable IBL terms
-//            diffuse *= u_ScaleIBLAmbient.x;
-//            specular *= u_ScaleIBLAmbient.y;
-
-//            return diffuseLight + specular;
             return diffuse + specular;
         }
-//        #endif
-
-
-
-
-
-
 
         // Basic Lambertian diffuse
         // Implementation from Lambert's Photometria https://archive.org/details/lambertsphotome00lambgoog
@@ -502,13 +384,6 @@ fragmentShader =
         }
 
         void main () {
-//            vec3 normal;
-//            if(hasNormalTexture) {
-//                normal = texture2D(normalTexture, v_uv).xyz;
-//            } else {
-//                normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
-//            }
-//
 //            vec3 lighting = vec3(0);
 //
 //            if (pointLight1.w > 0.0) {
@@ -530,29 +405,6 @@ fragmentShader =
 //            if (directionalLight.w > 0.0) {
 //                lighting += f_directionalLight(normal);
 //            }
-//
-//
-//            vec3 baseColor = vec3(1);
-//            if(pbrHasBaseColorTexture) {
-//                baseColor = (texture2D(pbrBaseColorTexture, v_uv) * pbrBaseColorFactor).rgb;
-//            }
-//
-//            vec3 n = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
-//            vec3 environment = f_environmentReflection(n);
-//
-////            gl_FragColor =  vec4(environment, 1.0);
-//
-//            gl_FragColor =  vec4(lighting * v_color * baseColor, 1.0);
-
-
-//            vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
-
-
-//            gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
-
-
-
-
 
 
             // Metallic and Roughness material properties are packed together
@@ -560,13 +412,6 @@ fragmentShader =
             // or from a metallic-roughness map
             float perceptualRoughness = u_MetallicRoughnessValues.y;
             float metallic = u_MetallicRoughnessValues.x;
-//            #ifdef HAS_METALROUGHNESSMAP
-//            // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
-//            // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-//            vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
-//            perceptualRoughness = mrSample.g * perceptualRoughness;
-//            metallic = mrSample.b * metallic;
-//            #endif
 
             if (u_hasMetallicRoughnessSampler) {
                 vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
@@ -580,12 +425,7 @@ fragmentShader =
             // convert to material roughness by squaring the perceptual roughness [2].
             float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
-//    // The albedo may be defined from a base texture or a flat color
-//    #ifdef HAS_BASECOLORMAP
-//    vec4 baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
-//    #else
-//    vec4 baseColor = u_BaseColorFactor;
-//    #endif
+            // The albedo may be defined from a base texture or a flat color
             vec4 baseColor = u_BaseColorFactor;
             if (u_hasBaseColorSampler) {
                 baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
@@ -645,22 +485,8 @@ fragmentShader =
             vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
 
 
-//    // Calculate lighting contribution from image based lighting source (IBL)
-//    #ifdef USE_IBL
-//    color += getIBLContribution(pbrInputs, n, reflection);
+            // Calculate lighting contribution from image based lighting source (IBL)
             color += getIBLContribution(pbrInputs, n, reflection);
-//    #endif
-
-//    // Apply optional PBR terms for additional (optional) shading
-//    #ifdef HAS_OCCLUSIONMAP
-//    float ao = texture2D(u_OcclusionSampler, v_UV).r;
-//    color = mix(color, color * ao, u_OcclusionStrength);
-//    #endif
-//
-//    #ifdef HAS_EMISSIVEMAP
-//    vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
-//    color += emissive;
-//    #endif
 
             if (u_hasOcclusionSampler) {
                 float ao = texture2D(u_OcclusionSampler, v_UV).r;
@@ -681,18 +507,6 @@ fragmentShader =
             float f_metallic = 0.5;
             float f_perceptualRoughness = 0.1;
 
-//            color = mix(color, F, f_specularReflection);
-//            color = mix(color, vec3(G), f_geometricOcclusion);
-//            color = mix(color, vec3(D), f_microfacetDistribution);
-//            color = mix(color, specContrib, f_specContrib);
-
-//            color = mix(color, diffuseContrib, f_diffuseContrib);
-//            color = mix(color, baseColor.rgb, f_baseColor);
-//            color = mix(color, vec3(metallic), f_metallic);
-//            color = mix(color, vec3(perceptualRoughness), f_perceptualRoughness);
-
             gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
-//            gl_FragColor = vec4(getIBLContribution(pbrInputs, n, reflection), 1.0);
-
         }
     |]
