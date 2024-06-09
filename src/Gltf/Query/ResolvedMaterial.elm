@@ -29,11 +29,13 @@ type alias BbrMetallicRoughness =
     , baseColorTexture : Maybe WebGL.Texture.Texture
     , metallicFactor : Float
     , roughnessFactor : Float
+    , metallicRoughnessTexture : Maybe WebGL.Texture.Texture
     }
 
 
 type Texture a
     = BaseColorTexture a
+    | MetallicRoughnessTexture a
     | NormalTexture a
     | OcclusionTexture a
     | EmissiveTexture a
@@ -48,6 +50,14 @@ updateTexture texture (Material material) =
                     | pbrMetallicRoughness =
                         material.pbrMetallicRoughness
                             |> (\pbrMetallicRoughness -> { pbrMetallicRoughness | baseColorTexture = Just x })
+                }
+
+        MetallicRoughnessTexture x ->
+            Material
+                { material
+                    | pbrMetallicRoughness =
+                        material.pbrMetallicRoughness
+                            |> (\pbrMetallicRoughness -> { pbrMetallicRoughness | metallicRoughnessTexture = Just x })
                 }
 
         NormalTexture x ->
@@ -74,6 +84,7 @@ fromUnresolved texture (Gltf.Query.Material.Material material) =
             , baseColorTexture = Nothing
             , metallicFactor = material.pbrMetallicRoughness.metallicFactor
             , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
+            , metallicRoughnessTexture = Nothing
             }
         }
         |> updateTexture texture

@@ -23,6 +23,10 @@ type alias Uniforms =
     , u_Camera : Vec3
     , u_LightDirection : Vec3
     , u_LightColor : Vec3
+
+    --
+    , u_hasMetallicRoughnessSampler : Bool
+    , u_MetallicRoughnessSampler : Texture
     , u_MetallicRoughnessValues : Vec2
 
     --
@@ -127,10 +131,14 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
 
         --
         , u_LightDirection = directionalLight3
-        , u_LightColor = vec3 1 0 0
-        , u_MetallicRoughnessValues =
-            vec2 pbr.pbrMetallicRoughness.metallicFactor
-                pbr.pbrMetallicRoughness.roughnessFactor
+        , u_LightColor = vec3 1 1 1
+
+        --
+        , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
+        , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture /= Nothing
+        , u_MetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.withDefault config.fallbackTexture
+
+        --
         , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture /= Nothing
         , u_BaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> Maybe.withDefault config.fallbackTexture
@@ -231,11 +239,14 @@ fragmentShader =
 
         uniform vec3 u_LightDirection;
         uniform vec3 u_LightColor;
-        uniform vec2 u_MetallicRoughnessValues;
 
         uniform sampler2D u_brdfLUT;
         uniform samplerCube u_DiffuseEnvSampler;
         uniform samplerCube u_SpecularEnvSampler;
+
+        uniform vec2 u_MetallicRoughnessValues;
+        uniform bool u_hasMetallicRoughnessSampler;
+        uniform sampler2D u_MetallicRoughnessSampler;
 
         uniform vec4 u_BaseColorFactor;
         uniform bool u_hasBaseColorSampler;
@@ -300,7 +311,8 @@ fragmentShader =
 
 //            return srgbIn;
 
-            vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
+            vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
+            vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
             return vec4(linOut,srgbIn.w);
         }
 
@@ -555,6 +567,13 @@ fragmentShader =
 //            perceptualRoughness = mrSample.g * perceptualRoughness;
 //            metallic = mrSample.b * metallic;
 //            #endif
+
+            if (u_hasMetallicRoughnessSampler) {
+                vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
+                perceptualRoughness = mrSample.g * perceptualRoughness;
+                metallic = mrSample.b * metallic;
+            }
+
             perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
             metallic = clamp(metallic, 0.0, 1.0);
             // Roughness is authored as perceptual roughness; as is convention,
@@ -674,5 +693,6 @@ fragmentShader =
 
             gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
 //            gl_FragColor = vec4(getIBLContribution(pbrInputs, n, reflection), 1.0);
+
         }
     |]

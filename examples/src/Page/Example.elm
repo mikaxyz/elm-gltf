@@ -38,9 +38,16 @@ loadFallbackTexture msg =
 
 loadBrdfLUTTexture : (Result WebGL.Texture.Error WebGL.Texture.Texture -> Msg) -> Cmd Msg
 loadBrdfLUTTexture msg =
-    --WebGL.Texture.loadWith
-    --    (WebGL.Texture.defaultOptions |> (\options -> { options | flipY = False }))
-    WebGL.Texture.load
+    WebGL.Texture.loadWith
+        (WebGL.Texture.defaultOptions
+            |> (\options ->
+                    { options
+                        | flipY = False
+                        , magnify = WebGL.Texture.nearest
+                        , minify = WebGL.Texture.linearMipmapLinear
+                    }
+               )
+        )
         "/assets/brdfLUT.png"
         |> Task.attempt msg
 

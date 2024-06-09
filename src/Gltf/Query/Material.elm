@@ -37,6 +37,7 @@ type alias BbrMetallicRoughness =
     , baseColorTexture : Maybe MaterialImage
     , metallicFactor : Float
     , roughnessFactor : Float
+    , metallicRoughnessTexture : Maybe MaterialImage
     }
 
 
@@ -70,6 +71,11 @@ fromPrimitive gltf primitive =
                     material.emissiveTexture
                         |> Maybe.andThen (textureFromTextureInfo gltf)
 
+                metallicRoughnessTexture : Maybe Texture
+                metallicRoughnessTexture =
+                    material.pbrMetallicRoughness.metallicRoughnessTexture
+                        |> Maybe.andThen (textureFromTextureInfo gltf)
+
                 image : Maybe Texture -> Maybe Image
                 image texture =
                     texture
@@ -83,6 +89,7 @@ fromPrimitive gltf primitive =
                     , normalTexture = image normalTexture |> Maybe.andThen (materialImageFromImage gltf)
                     , occlusionTexture = image occlusionTexture |> Maybe.andThen (materialImageFromImage gltf)
                     , emissiveTexture = image emissiveTexture |> Maybe.andThen (materialImageFromImage gltf)
+                    , metallicRoughnessTexture = image metallicRoughnessTexture |> Maybe.andThen (materialImageFromImage gltf)
                     }
                 )
 
@@ -153,21 +160,23 @@ fromMaterial :
         , normalTexture : Maybe MaterialImage
         , occlusionTexture : Maybe MaterialImage
         , emissiveTexture : Maybe MaterialImage
+        , metallicRoughnessTexture : Maybe MaterialImage
         }
     -> Material
-fromMaterial index material { baseColorTexture, normalTexture, occlusionTexture, emissiveTexture } =
+fromMaterial index material textures =
     Material
         { name = material.name
         , index = index
-        , normalTexture = normalTexture
-        , occlusionTexture = occlusionTexture
-        , emissiveTexture = emissiveTexture
+        , normalTexture = textures.normalTexture
+        , occlusionTexture = textures.occlusionTexture
+        , emissiveTexture = textures.emissiveTexture
         , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =
             { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
-            , baseColorTexture = baseColorTexture
+            , baseColorTexture = textures.baseColorTexture
             , metallicFactor = material.pbrMetallicRoughness.metallicFactor
             , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
+            , metallicRoughnessTexture = textures.metallicRoughnessTexture
             }
         }
 
