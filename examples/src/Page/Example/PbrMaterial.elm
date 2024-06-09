@@ -128,7 +128,9 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         --
         , u_LightDirection = directionalLight3
         , u_LightColor = vec3 1 0 0
-        , u_MetallicRoughnessValues = vec2 0 0.5
+        , u_MetallicRoughnessValues =
+            vec2 pbr.pbrMetallicRoughness.metallicFactor
+                pbr.pbrMetallicRoughness.roughnessFactor
 
         --, u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_BaseColorFactor = vec4 1 1 1 1
