@@ -12,7 +12,7 @@ import Gltf exposing (Gltf)
 import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
 import Internal.Image as Image exposing (Image)
-import Internal.Material as Internal exposing (NormalTextureInfo)
+import Internal.Material as Internal exposing (NormalTextureInfo, OcclusionTextureInfo)
 import Internal.Mesh exposing (Primitive)
 import Internal.Texture exposing (Texture)
 import Internal.TextureInfo exposing (TextureInfo)
@@ -26,6 +26,7 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe MaterialImage
+        , occlusionTexture : Maybe MaterialImage
         , emissiveTexture : Maybe MaterialImage
         , emissiveFactor : Vec3
         }
@@ -59,6 +60,11 @@ fromPrimitive gltf primitive =
                     material.normalTexture
                         |> Maybe.andThen (textureFromNormalTextureInfo gltf)
 
+                occlusionTexture : Maybe Texture
+                occlusionTexture =
+                    material.occlusionTexture
+                        |> Maybe.andThen (textureFromOcclusionTextureInfo gltf)
+
                 emissiveTexture : Maybe Texture
                 emissiveTexture =
                     material.emissiveTexture
@@ -75,6 +81,7 @@ fromPrimitive gltf primitive =
                     material
                     { baseColorTexture = image baseColorTexture |> Maybe.andThen (materialImageFromImage gltf)
                     , normalTexture = image normalTexture |> Maybe.andThen (materialImageFromImage gltf)
+                    , occlusionTexture = image occlusionTexture |> Maybe.andThen (materialImageFromImage gltf)
                     , emissiveTexture = image emissiveTexture |> Maybe.andThen (materialImageFromImage gltf)
                     }
                 )
@@ -144,14 +151,16 @@ fromMaterial :
     ->
         { baseColorTexture : Maybe MaterialImage
         , normalTexture : Maybe MaterialImage
+        , occlusionTexture : Maybe MaterialImage
         , emissiveTexture : Maybe MaterialImage
         }
     -> Material
-fromMaterial index material { baseColorTexture, normalTexture, emissiveTexture } =
+fromMaterial index material { baseColorTexture, normalTexture, occlusionTexture, emissiveTexture } =
     Material
         { name = material.name
         , index = index
         , normalTexture = normalTexture
+        , occlusionTexture = occlusionTexture
         , emissiveTexture = emissiveTexture
         , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =
@@ -170,4 +179,9 @@ textureFromTextureInfo gltf textureInfo =
 
 textureFromNormalTextureInfo : Gltf -> NormalTextureInfo -> Maybe Internal.Texture.Texture
 textureFromNormalTextureInfo gltf textureInfo =
+    Common.textureAtIndex gltf textureInfo.index
+
+
+textureFromOcclusionTextureInfo : Gltf -> OcclusionTextureInfo -> Maybe Internal.Texture.Texture
+textureFromOcclusionTextureInfo gltf textureInfo =
     Common.textureAtIndex gltf textureInfo.index

@@ -18,6 +18,7 @@ type Material
         , index : Internal.Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe WebGL.Texture.Texture
+        , occlusionTexture : Maybe WebGL.Texture.Texture
         , emissiveTexture : Maybe WebGL.Texture.Texture
         , emissiveFactor : Vec3
         }
@@ -34,6 +35,7 @@ type alias BbrMetallicRoughness =
 type Texture a
     = BaseColorTexture a
     | NormalTexture a
+    | OcclusionTexture a
     | EmissiveTexture a
 
 
@@ -51,6 +53,9 @@ updateTexture texture (Material material) =
         NormalTexture x ->
             Material { material | normalTexture = Just x }
 
+        OcclusionTexture x ->
+            Material { material | occlusionTexture = Just x }
+
         EmissiveTexture x ->
             Material { material | emissiveTexture = Just x }
 
@@ -61,6 +66,7 @@ fromUnresolved texture (Gltf.Query.Material.Material material) =
         { name = material.name
         , index = material.index
         , normalTexture = Nothing
+        , occlusionTexture = Nothing
         , emissiveTexture = Nothing
         , emissiveFactor = material.emissiveFactor
         , pbrMetallicRoughness =

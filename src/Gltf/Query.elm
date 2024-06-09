@@ -273,6 +273,7 @@ effectsFromNodeTree msg nodes =
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
                     [ Gltf.Query.ResolvedMaterial.BaseColorTexture unresolvedMaterial.pbrMetallicRoughness.baseColorTexture
                     , Gltf.Query.ResolvedMaterial.NormalTexture unresolvedMaterial.normalTexture
+                    , Gltf.Query.ResolvedMaterial.OcclusionTexture unresolvedMaterial.occlusionTexture
                     , Gltf.Query.ResolvedMaterial.EmissiveTexture unresolvedMaterial.emissiveTexture
                     ]
                         |> List.filterMap
@@ -287,6 +288,11 @@ effectsFromNodeTree msg nodes =
                                         maybeMaterialImage
                                             |> Maybe.andThen
                                                 (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture)
+
+                                    Gltf.Query.ResolvedMaterial.OcclusionTexture maybeMaterialImage ->
+                                        maybeMaterialImage
+                                            |> Maybe.andThen
+                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.OcclusionTexture)
 
                                     Gltf.Query.ResolvedMaterial.EmissiveTexture maybeMaterialImage ->
                                         maybeMaterialImage

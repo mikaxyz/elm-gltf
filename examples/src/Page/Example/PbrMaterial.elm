@@ -36,6 +36,11 @@ type alias Uniforms =
     , u_NormalScale : Float
 
     --
+    , u_hasOcclusionSampler : Bool
+    , u_OcclusionSampler : Texture
+    , u_OcclusionStrength : Float
+
+    --
     , u_hasEmissiveSampler : Bool
     , u_EmissiveSampler : Texture
     , u_EmissiveFactor : Vec3
@@ -136,6 +141,11 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         , u_NormalScale = 1.0
 
         --
+        , u_hasOcclusionSampler = pbr.occlusionTexture /= Nothing
+        , u_OcclusionSampler = pbr.occlusionTexture |> Maybe.withDefault config.fallbackTexture
+        , u_OcclusionStrength = 1.0
+
+        --
         , u_hasEmissiveSampler = pbr.emissiveTexture /= Nothing
         , u_EmissiveSampler = pbr.emissiveTexture |> Maybe.withDefault config.fallbackTexture
         , u_EmissiveFactor = pbr.emissiveFactor
@@ -234,6 +244,10 @@ fragmentShader =
         uniform bool u_hasNormalSampler;
         uniform sampler2D u_NormalSampler;
         uniform float u_NormalScale;
+
+        uniform bool u_hasOcclusionSampler;
+        uniform sampler2D u_OcclusionSampler;
+        uniform float u_OcclusionStrength;
 
         uniform bool u_hasEmissiveSampler;
         uniform sampler2D u_EmissiveSampler;
@@ -628,6 +642,11 @@ fragmentShader =
 //    vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
 //    color += emissive;
 //    #endif
+
+            if (u_hasOcclusionSampler) {
+                float ao = texture2D(u_OcclusionSampler, v_UV).r;
+                color = mix(color, color * ao, u_OcclusionStrength);
+            }
 
             if (u_hasEmissiveSampler) {
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
