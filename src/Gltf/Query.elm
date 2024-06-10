@@ -145,10 +145,14 @@ applyResolveTextureEffect (ResolveTextureEffect index texture) nodes =
                     else
                         material
 
-                TriangularMesh.ResolvedMaterial resolvedMaterial ->
-                    resolvedMaterial
-                        |> Gltf.Query.ResolvedMaterial.updateTexture texture
-                        |> TriangularMesh.ResolvedMaterial
+                TriangularMesh.ResolvedMaterial (Gltf.Query.ResolvedMaterial.Material resolvedMaterial) ->
+                    if resolvedMaterial.index == index then
+                        Gltf.Query.ResolvedMaterial.Material resolvedMaterial
+                            |> Gltf.Query.ResolvedMaterial.updateTexture texture
+                            |> TriangularMesh.ResolvedMaterial
+
+                    else
+                        material
 
         applyToMesh : TriangularMesh -> TriangularMesh
         applyToMesh mesh =
