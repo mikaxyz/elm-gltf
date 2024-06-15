@@ -1,8 +1,8 @@
 module Page.Example.View exposing (view)
 
 import Gltf exposing (Gltf)
-import Html exposing (Html, h1, text)
-import Html.Attributes as HA
+import Html exposing (Html, div, h1, label, progress, span, text)
+import Html.Attributes as HA exposing (class, id)
 import Material
 import Math.Vector3 exposing (vec3)
 import Page.Example.Model exposing (Model, Msg(..))
@@ -26,10 +26,10 @@ view : Model -> Html Msg
 view model =
     case RemoteData.map2 Tuple.pair model.gltf model.scene of
         RemoteData.NotAsked ->
-            h1 [] [ text <| "ERROR" ]
+            progressIndicatorView "Loading"
 
         RemoteData.Loading ->
-            h1 [] [ text <| "Loading" ]
+            progressIndicatorView "Loading"
 
         RemoteData.Failure _ ->
             h1 [] [ text <| "Error" ]
@@ -51,7 +51,15 @@ view model =
                 model.brdfLUTTexture
                 |> RemoteData.toMaybe
                 |> Maybe.map (sceneView model gltf scene)
-                |> Maybe.withDefault (h1 [] [ text <| "Loading textures" ])
+                |> Maybe.withDefault (progressIndicatorView "Loading textures")
+
+
+progressIndicatorView : String -> Html msg
+progressIndicatorView message =
+    label [ class "progress-bar" ]
+        [ span [ class "progress-bar__message" ] [ text message ]
+        , progress [ class "progress-bar__indicator" ] []
+        ]
 
 
 renderer :

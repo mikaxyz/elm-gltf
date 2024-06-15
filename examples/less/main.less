@@ -74,6 +74,17 @@ html {
     }
 }
 
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+
+    &__message {
+        font-family: "Source Code Pro", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 0.7em;
+        color: dimgray;
+    }
+    &__indicator {}
+}
 
 .app {
 	background-color: black;
@@ -82,7 +93,9 @@ html {
 
     &__viewport {
         height: 100vh;
-        width: 100vw;
+        width: 100vw;display: flex;
+        justify-content: center;
+        align-items: center;
 
         canvas {
             background-color: #16161D;
