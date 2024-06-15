@@ -10,6 +10,7 @@ import Color
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
+import Gltf.Query.ResolvedMaterial
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Node as Node exposing (Index(..), Node(..))
 import Material
@@ -356,8 +357,10 @@ objectFromMesh objectId triangularMesh =
                 Just (TriangularMesh.ResolvedMaterial material) ->
                     Object.withMaterialName (Material.PbrMaterial material)
 
-                Just (TriangularMesh.Material _) ->
-                    Object.withMaterialName Material.Color
+                Just (TriangularMesh.Material material) ->
+                    Gltf.Query.ResolvedMaterial.fromUnresolved material
+                        |> Material.PbrMaterial
+                        |> Object.withMaterialName
 
                 Nothing ->
                     Object.withMaterialName Material.Advanced

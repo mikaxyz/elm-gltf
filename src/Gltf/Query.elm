@@ -139,7 +139,8 @@ applyResolveTextureEffect (ResolveTextureEffect index texture) nodes =
                 TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
                     if unresolvedMaterial.index == index then
                         Gltf.Query.Material.Material unresolvedMaterial
-                            |> Gltf.Query.ResolvedMaterial.fromUnresolved texture
+                            |> Gltf.Query.ResolvedMaterial.fromUnresolved
+                            |> Gltf.Query.ResolvedMaterial.updateTexture texture
                             |> TriangularMesh.ResolvedMaterial
 
                     else

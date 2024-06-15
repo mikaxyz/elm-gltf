@@ -72,8 +72,8 @@ updateTexture texture (Material material) =
             Material { material | emissiveTexture = Just x }
 
 
-fromUnresolved : Texture WebGL.Texture.Texture -> Gltf.Query.Material.Material -> Material
-fromUnresolved texture (Gltf.Query.Material.Material material) =
+fromUnresolved : Gltf.Query.Material.Material -> Material
+fromUnresolved (Gltf.Query.Material.Material material) =
     Material
         { name = material.name
         , index = material.index
@@ -91,4 +91,3 @@ fromUnresolved texture (Gltf.Query.Material.Material material) =
             , metallicRoughnessTexture = Nothing
             }
         }
-        |> updateTexture texture
