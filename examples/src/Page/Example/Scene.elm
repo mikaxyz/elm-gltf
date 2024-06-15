@@ -55,12 +55,20 @@ initWithNodes nodes objectIdMap config =
 
 
 graphFromNodes : List (Tree Query.Node) -> (ObjectId -> objectId) -> Config -> Graph (Object objectId Material.Name)
-graphFromNodes nodes objectIdMap config =
+graphFromNodes nodeTrees objectIdMap config =
     let
+        nodesToObjects : Tree Query.Node -> Tree (Object objectId Material.Name)
+        nodesToObjects nodes =
+            nodes
+                |> Tree.map (objectsFromNode objectIdMap)
+                |> Tree.restructure identity
+                    (\( mesh, childMeshes ) c ->
+                        Tree.tree mesh (childMeshes |> List.map Tree.singleton |> List.append c)
+                    )
+
         objects : List (Tree (Object objectId Material.Name))
         objects =
-            nodes
-                |> List.map (Tree.map (objectFromNode objectIdMap))
+            nodeTrees |> List.map nodesToObjects
     in
     lights config.sceneSize
         :: objects
@@ -248,8 +256,8 @@ frameScene config nodes =
     }
 
 
-objectFromNode : (ObjectId -> objectId) -> Query.Node -> Object objectId Material.Name
-objectFromNode objectIdMap node =
+objectsFromNode : (ObjectId -> objectId) -> Query.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
+objectsFromNode objectIdMap node =
     let
         applyTransform : Node.Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
@@ -267,22 +275,28 @@ objectFromNode objectIdMap node =
     in
     case node of
         Query.EmptyNode (Query.Properties properties) ->
-            Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
+            ( Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
+            , []
+            )
 
         Query.CameraNode (Query.Properties properties) ->
-            Object.group "CAMERA"
+            ( Object.group "CAMERA"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
+            , []
+            )
 
-        Query.MeshNode (mesh :: _) (Query.Properties properties) ->
-            mesh
+        Query.MeshNode (mesh :: rest) (Query.Properties properties) ->
+            ( mesh
                 |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
+            , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
+            )
 
-        Query.SkinnedMeshNode (mesh :: _) skin (Query.Properties properties) ->
+        Query.SkinnedMeshNode (mesh :: rest) skin (Query.Properties properties) ->
             let
                 withMaterial : Maybe TriangularMesh.Material -> Object id Material.Name -> Object id Material.Name
                 withMaterial maybeMaterial_ =
@@ -304,29 +318,33 @@ objectFromNode objectIdMap node =
                         IndexedTriangularMesh material _ ->
                             material
             in
-            mesh
+            ( mesh
                 |> objectFromMesh (objectIdMap SkinnedMesh)
                 |> GltfHelper.objectWithSkin skin
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
                 |> withMaterial maybeMaterial
+            , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
+            )
 
-        --|> Object.withColor Color.green
-        --|> Object.withMaterialName Material.Skinned
         Query.MeshNode [] (Query.Properties properties) ->
             let
                 name (Node.Index nodeIndex) =
                     Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
             in
-            Primitives.bone3 0.1
+            ( Primitives.bone3 0.1
                 |> Object.objectWithTriangles (objectIdMap (Bone properties.nodeIndex))
                 |> Object.withName (name properties.nodeIndex)
                 |> applyTransform properties.transform
                 |> Object.withColor Color.gray
                 |> Object.disable
+            , []
+            )
 
         Query.SkinnedMeshNode [] _ (Query.Properties _) ->
-            Object.group ""
+            ( Object.group ""
+            , []
+            )
 
 
 objectFromMesh : objectId -> TriangularMesh -> Object objectId Material.Name
