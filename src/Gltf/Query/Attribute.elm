@@ -171,10 +171,10 @@ parseBuffer ( accessor, bufferView, Buffer buffer ) =
 
                         Accessor.UNSIGNED_INT ->
                             Bytes.Decode.map5 (\x y z w _ -> Vec4IntAttribute { x = x, y = y, z = z, w = w })
-                                (Bytes.Decode.unsignedInt16 Bytes.LE)
-                                (Bytes.Decode.unsignedInt16 Bytes.LE)
-                                (Bytes.Decode.unsignedInt16 Bytes.LE)
-                                (Bytes.Decode.unsignedInt16 Bytes.LE)
+                                (Bytes.Decode.unsignedInt32 Bytes.LE)
+                                (Bytes.Decode.unsignedInt32 Bytes.LE)
+                                (Bytes.Decode.unsignedInt32 Bytes.LE)
+                                (Bytes.Decode.unsignedInt32 Bytes.LE)
                                 (Bytes.Decode.bytes (stride 4))
 
                         Accessor.UNSIGNED_BYTE ->
