@@ -128,6 +128,11 @@ parseBuffer ( accessor, bufferView, Buffer buffer ) =
                                 (Bytes.Decode.unsignedInt16 Bytes.LE)
                                 (Bytes.Decode.bytes (stride 1))
 
+                        Accessor.UNSIGNED_INT ->
+                            Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
+                                (Bytes.Decode.unsignedInt32 Bytes.LE)
+                                (Bytes.Decode.bytes (stride 1))
+
                         _ ->
                             Bytes.Decode.fail
 
