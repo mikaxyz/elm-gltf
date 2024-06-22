@@ -576,6 +576,11 @@ fragmentShader =
             return n;
         }
 
+        vec3 invertY(vec3 v)
+        {
+            return v * vec3(1, -1, 1);
+        }
+
         // Calculation of the lighting contribution from an optional Image Based Light source.
         // Precomputed Environment Maps are required uniform inputs and are computed as outlined in [1].
         // See our README.md on Environment Maps [3] for additional discussion.
@@ -585,8 +590,8 @@ fragmentShader =
             float lod = (pbrInputs.perceptualRoughness * mipCount);
             // retrieve a scale and bias to F0. See [1], Figure 3
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
-            vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
-            vec3 specularLight = SRGBtoLINEAR(textureCube(u_SpecularEnvSampler, reflection)).rgb;
+            vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, invertY(n))).rgb;
+            vec3 specularLight = SRGBtoLINEAR(textureCube(u_SpecularEnvSampler, invertY(reflection))).rgb;
             vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
             vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
 
@@ -747,15 +752,6 @@ fragmentShader =
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
                 color += emissive;
             }
-
-            float f_specularReflection = 0.5;
-            float f_geometricOcclusion = 0.5;
-            float f_microfacetDistribution = 0.5;
-            float f_specContrib = 0.5;
-            float f_diffuseContrib = 0.2;
-            float f_baseColor = 0.2;
-            float f_metallic = 0.5;
-            float f_perceptualRoughness = 0.1;
 
             gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
         }
