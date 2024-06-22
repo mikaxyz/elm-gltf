@@ -2,6 +2,7 @@ module Page.Example.View exposing (view)
 
 import Array
 import Gltf exposing (Gltf)
+import Gltf.Query.Animation as Animation
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
@@ -39,7 +40,7 @@ view model =
 
         RemoteData.Success ( gltf, scene ) ->
             div [ style "display" "contents" ]
-                [ sceneOptionsView gltf
+                [ sceneOptionsView gltf model
                 , RemoteData.map3
                     (\fallbackTexture ( environmentTexture, specularEnvironmentTexture ) brdfLUTTexture ->
                         { fallbackTexture = fallbackTexture
@@ -55,7 +56,12 @@ view model =
                     )
                     model.brdfLUTTexture
                     |> RemoteData.toMaybe
-                    |> Maybe.map (sceneView model gltf scene)
+                    |> Maybe.map
+                        (sceneView model
+                            model.activeAnimation
+                            gltf
+                            scene
+                        )
                     |> Maybe.withDefault (progressIndicatorView "Loading textures")
                 ]
 
@@ -68,8 +74,8 @@ progressIndicatorView message =
         ]
 
 
-sceneOptionsView : Gltf -> Html Msg
-sceneOptionsView gltf =
+sceneOptionsView : Gltf -> Model -> Html Msg
+sceneOptionsView gltf model =
     aside [ class "options" ]
         [ case
             gltf.cameras
@@ -97,6 +103,34 @@ sceneOptionsView gltf =
                                     ]
                             )
                         |> select [ onChange (String.toInt >> Maybe.map Internal.Camera.Index >> UserSelectedCamera) ]
+                    ]
+        , case model.animations of
+            [] ->
+                text ""
+
+            animations ->
+                fieldset [ class "options__title" ]
+                    [ legend [ class "options__title" ] [ text "Animation" ]
+                    , { name = Just "Disabled", index = Nothing, selected = model.activeAnimation == Nothing }
+                        :: (animations
+                                |> List.indexedMap
+                                    (\index (Animation.ExtractedAnimation animation) ->
+                                        { name = animation.name
+                                        , index = Just index
+                                        , selected = model.activeAnimation == Just (Animation.ExtractedAnimation animation)
+                                        }
+                                    )
+                           )
+                        |> List.map
+                            (\{ name, index, selected } ->
+                                option
+                                    [ index |> Maybe.map String.fromInt |> Maybe.withDefault "default" |> value
+                                    , HA.selected selected
+                                    ]
+                                    [ text (name |> Maybe.withDefault ("Animation " ++ (index |> Maybe.map String.fromInt |> Maybe.withDefault "-1")))
+                                    ]
+                            )
+                        |> select [ onChange (String.toInt >> UserSelectedAnimation) ]
                     ]
         ]
 
@@ -128,6 +162,7 @@ renderer textures name =
 
 sceneView :
     Model
+    -> Maybe Animation.ExtractedAnimation
     -> Gltf
     -> Scene Scene.ObjectId Material.Name
     ->
@@ -137,7 +172,7 @@ sceneView :
         , brdfLUTTexture : WebGL.Texture.Texture
         }
     -> Html Msg
-sceneView model gltf scene textures =
+sceneView model animation gltf scene textures =
     XYZMika.XYZ.view
         model.viewport
         (renderer
@@ -148,7 +183,7 @@ sceneView model gltf scene textures =
             }
         )
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time model.animations gltf)
+        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation gltf)
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions
         |> XYZMika.XYZ.withRenderOptions
             (\graph ->

@@ -21,7 +21,8 @@ import Tree exposing (Tree)
 
 type ExtractedAnimation
     = ExtractedAnimation
-        { samplers : Array ExtractedSampler
+        { name : Maybe String
+        , samplers : Array ExtractedSampler
         , channels : List ExtractedChannel
         }
 
@@ -124,7 +125,8 @@ extractAnimation gltf (Animation x) =
                 |> Array.fromList
     in
     ExtractedAnimation
-        { samplers = samplers
+        { name = x.name
+        , samplers = samplers
         , channels =
             x.channels
                 |> Array.toList

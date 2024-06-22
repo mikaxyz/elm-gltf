@@ -401,20 +401,25 @@ objectFromMesh objectId triangularMesh =
                 |> withMaterial material
 
 
-modifiers : Float -> List ExtractedAnimation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
-modifiers theta animations gltf =
-    boneDeformer theta SkinnedMesh gltf
-        :: GltfHelper.modifiersFromAnimations theta Mesh animations
-        ++ GltfHelper.modifiersFromAnimations theta Bone animations
+modifiers : Float -> Maybe ExtractedAnimation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
+modifiers theta maybeAnimation gltf =
+    case maybeAnimation of
+        Just animation ->
+            boneDeformer theta SkinnedMesh [ animation ] gltf
+                :: GltfHelper.modifiersFromAnimations theta Mesh [ animation ]
+                ++ GltfHelper.modifiersFromAnimations theta Bone [ animation ]
+
+        Nothing ->
+            []
 
 
-boneDeformer : Float -> objectId -> Gltf -> Scene.Modifier objectId Material.Name
-boneDeformer theta objectId gltf =
-    Scene.ObjectModifier objectId (boneDeformerF theta gltf)
+boneDeformer : Float -> objectId -> List ExtractedAnimation -> Gltf -> Scene.Modifier objectId Material.Name
+boneDeformer theta objectId animations gltf =
+    Scene.ObjectModifier objectId (boneDeformerF theta animations gltf)
 
 
-boneDeformerF : Float -> Gltf -> Object objectId Material.Name -> Object objectId Material.Name
-boneDeformerF theta gltf obj =
+boneDeformerF : Float -> List ExtractedAnimation -> Gltf -> Object objectId Material.Name -> Object objectId Material.Name
+boneDeformerF theta animations gltf obj =
     obj
         |> Object.skin
         |> Maybe.map
@@ -433,7 +438,7 @@ boneDeformerF theta gltf obj =
                     boneTransforms : BoneTransforms
                     boneTransforms =
                         skeleton
-                            |> Maybe.map (GltfHelper.boneTransformsFromAnimationName theta "Walk" gltf skin)
+                            |> Maybe.map (GltfHelper.boneTransformsFromAnimations theta animations skin)
                             |> Maybe.withDefault Object.boneTransformsIdentity
                 in
                 obj |> Object.withBoneTransforms boneTransforms

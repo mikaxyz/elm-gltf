@@ -135,7 +135,7 @@ update msg model =
                             }
                         , viewPortElement = viewPortElement
                         }
-                        (model.gltf |> RemoteData.map (Scene.modifiers model.time model.animations) |> RemoteData.withDefault [])
+                        (model.gltf |> RemoteData.map (Scene.modifiers model.time model.activeAnimation) |> RemoteData.withDefault [])
                         scene
                         ( pos.x, pos.y )
                         |> Maybe.map Tuple.first
@@ -463,6 +463,7 @@ update msg model =
                         , animations = Animation.extractAnimations gltf
                         , scene = scene |> RemoteData.Success
                       }
+                        |> setActiveAnimation 0
                         |> setSceneSize
                     , getViewPort
                         :: cmds
@@ -556,6 +557,23 @@ update msg model =
               }
             , Cmd.none
             )
+
+        UserSelectedAnimation Nothing ->
+            ( { model | activeAnimation = Nothing }
+            , Cmd.none
+            )
+
+        UserSelectedAnimation (Just index) ->
+            ( model |> setActiveAnimation index
+            , Cmd.none
+            )
+
+
+setActiveAnimation : Int -> Model -> Model
+setActiveAnimation index model =
+    { model
+        | activeAnimation = model.animations |> List.drop index |> List.head
+    }
 
 
 default : { camera : XYZCamera.Camera, projection : { fov : number, near : Float, far : number } }

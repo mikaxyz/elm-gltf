@@ -55,6 +55,7 @@ type Msg
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
     | UserSelectedCamera (Maybe Internal.Camera.Index)
+    | UserSelectedAnimation (Maybe Int)
 
 
 type Asset
@@ -81,6 +82,7 @@ type alias Model =
     , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
     , nodes : List (Tree Query.Node)
     , animations : List ExtractedAnimation
+    , activeAnimation : Maybe ExtractedAnimation
     , activeCamera : Maybe Internal.Camera.Index
     }
 
@@ -107,6 +109,7 @@ init asset =
     , scene = RemoteData.Loading
     , nodes = []
     , animations = []
+    , activeAnimation = Nothing
     , activeCamera = Nothing
     }
 
