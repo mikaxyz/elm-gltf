@@ -15,6 +15,7 @@ import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.ResolvedMaterial
 import Http
+import Internal.Camera
 import Internal.Material
 import Keyboard
 import Material
@@ -52,6 +53,8 @@ type Msg
     | GltfReceived (Result Http.Error Gltf)
     | GltfApplyEffect Query.Effect
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
+      --
+    | UserSelectedCamera (Maybe Internal.Camera.Index)
 
 
 type Asset
@@ -78,6 +81,7 @@ type alias Model =
     , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
     , nodes : List (Tree Query.Node)
     , animations : List ExtractedAnimation
+    , activeCamera : Maybe Internal.Camera.Index
     }
 
 
@@ -91,7 +95,9 @@ init asset =
     , dragon = Dragon.init
     , asset = asset
     , selectedTreeIndex = Nothing
-    , sceneOptions = SceneOptions.create
+    , sceneOptions =
+        SceneOptions.create
+            |> SceneOptions.toggle SceneOptions.showGridYOption
     , sceneSize = 999999999
     , fallbackTexture = RemoteData.Loading
     , environmentTexture = RemoteData.Loading
@@ -101,6 +107,7 @@ init asset =
     , scene = RemoteData.Loading
     , nodes = []
     , animations = []
+    , activeCamera = Nothing
     }
 
 

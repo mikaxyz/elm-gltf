@@ -1,8 +1,12 @@
 module Page.Example.View exposing (view)
 
+import Array
 import Gltf exposing (Gltf)
-import Html exposing (Html, div, h1, label, progress, span, text)
-import Html.Attributes as HA exposing (class, id)
+import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
+import Html.Attributes as HA exposing (class, style, value)
+import Html.Events
+import Internal.Camera
+import Json.Decode as JD
 import Material
 import Math.Vector3 exposing (vec3)
 import Page.Example.Model exposing (Model, Msg(..))
@@ -16,7 +20,6 @@ import XYZMika.XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene exposing (Scene)
-import XYZMika.XYZ.Scene.Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -35,23 +38,26 @@ view model =
             h1 [] [ text <| "Error" ]
 
         RemoteData.Success ( gltf, scene ) ->
-            RemoteData.map3
-                (\fallbackTexture ( environmentTexture, specularEnvironmentTexture ) brdfLUTTexture ->
-                    { fallbackTexture = fallbackTexture
-                    , environmentTexture = environmentTexture
-                    , specularEnvironmentTexture = specularEnvironmentTexture
-                    , brdfLUTTexture = brdfLUTTexture
-                    }
-                )
-                model.fallbackTexture
-                (RemoteData.map2 Tuple.pair
-                    model.environmentTexture
-                    model.specularEnvironmentTexture
-                )
-                model.brdfLUTTexture
-                |> RemoteData.toMaybe
-                |> Maybe.map (sceneView model gltf scene)
-                |> Maybe.withDefault (progressIndicatorView "Loading textures")
+            div [ style "display" "contents" ]
+                [ sceneOptionsView gltf
+                , RemoteData.map3
+                    (\fallbackTexture ( environmentTexture, specularEnvironmentTexture ) brdfLUTTexture ->
+                        { fallbackTexture = fallbackTexture
+                        , environmentTexture = environmentTexture
+                        , specularEnvironmentTexture = specularEnvironmentTexture
+                        , brdfLUTTexture = brdfLUTTexture
+                        }
+                    )
+                    model.fallbackTexture
+                    (RemoteData.map2 Tuple.pair
+                        model.environmentTexture
+                        model.specularEnvironmentTexture
+                    )
+                    model.brdfLUTTexture
+                    |> RemoteData.toMaybe
+                    |> Maybe.map (sceneView model gltf scene)
+                    |> Maybe.withDefault (progressIndicatorView "Loading textures")
+                ]
 
 
 progressIndicatorView : String -> Html msg
@@ -62,12 +68,49 @@ progressIndicatorView message =
         ]
 
 
+sceneOptionsView : Gltf -> Html Msg
+sceneOptionsView gltf =
+    aside [ class "options" ]
+        [ case
+            gltf.cameras
+                |> Array.toList
+                |> List.map
+                    (\camera ->
+                        { name = camera.name
+                        , index = camera.index |> (\(Internal.Camera.Index index) -> index) |> Just
+                        }
+                    )
+          of
+            [] ->
+                text ""
+
+            cameras ->
+                fieldset [ class "options__title" ]
+                    [ legend [ class "options__title" ] [ text "Camera" ]
+                    , { name = Just "Select", index = Nothing }
+                        :: cameras
+                        |> List.map
+                            (\camera ->
+                                option
+                                    [ camera.index |> Maybe.map String.fromInt |> Maybe.withDefault "default" |> value ]
+                                    [ text (camera.name |> Maybe.withDefault ("Camera " ++ String.fromInt (Maybe.withDefault -1 camera.index)))
+                                    ]
+                            )
+                        |> select [ onChange (String.toInt >> Maybe.map Internal.Camera.Index >> UserSelectedCamera) ]
+                    ]
+        ]
+
+
+onChange : (String -> msg) -> Html.Attribute msg
+onChange tagger =
+    Html.Events.on "change" (Html.Events.targetValue |> JD.map tagger)
+
+
 renderer :
     { fallbackTexture : WebGL.Texture.Texture
     , environmentTexture : WebGL.Texture.Texture
     , specularEnvironmentTexture : WebGL.Texture.Texture
     , brdfLUTTexture : WebGL.Texture.Texture
-    , camera : Camera
     }
     -> Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
@@ -102,7 +145,6 @@ sceneView model gltf scene textures =
             , environmentTexture = textures.environmentTexture
             , specularEnvironmentTexture = textures.specularEnvironmentTexture
             , brdfLUTTexture = textures.brdfLUTTexture
-            , camera = XYZMika.XYZ.Scene.camera scene
             }
         )
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]

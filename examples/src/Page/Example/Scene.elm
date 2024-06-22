@@ -12,6 +12,7 @@ import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.ResolvedMaterial
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
+import Internal.Camera
 import Internal.Node as Node exposing (Index(..), Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -33,6 +34,7 @@ type ObjectId
     = Mesh Node.Index
     | SkinnedMesh
     | Bone Node.Index
+    | Camera Internal.Camera.Index Node.Index
 
 
 type alias Config =
@@ -141,14 +143,25 @@ frameScene config nodes =
                 transformToMat : Node.Transform -> Mat4
                 transformToMat transform =
                     case transform of
-                        Node.RTS { translation, rotation } ->
-                            translation |> Maybe.withDefault (vec3 0 0 0) |> Mat4.makeTranslate |> Mat4.mul (rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity)
+                        Node.RTS { translation, rotation, scale } ->
+                            let
+                                r =
+                                    rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
+
+                                s =
+                                    scale |> Maybe.withDefault (vec3 1 1 1) |> Mat4.makeScale
+                            in
+                            translation
+                                |> Maybe.withDefault (vec3 0 0 0)
+                                |> Mat4.makeTranslate
+                                |> Mat4.mul r
+                                |> Mat4.mul s
 
                         Node.Matrix mat ->
                             mat
             in
             case node of
-                Query.CameraNode (Query.Properties properties) ->
+                Query.CameraNode _ (Query.Properties properties) ->
                     ( transformToMat properties.transform, Nothing )
 
                 Query.EmptyNode (Query.Properties properties) ->
@@ -263,12 +276,21 @@ objectsFromNode objectIdMap node =
         applyTransform : Node.Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
             case transform of
-                Node.RTS { translation, rotation } ->
+                Node.RTS { translation, rotation, scale } ->
                     object
                         |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
-                        |> (rotation
-                                |> Maybe.map (Quaternion.toMat4 >> Object.withRotation)
-                                |> Maybe.withDefault identity
+                        |> (\object_ ->
+                                let
+                                    r : Mat4
+                                    r =
+                                        rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
+
+                                    s : Mat4
+                                    s =
+                                        -- No scale on object
+                                        scale |> Maybe.withDefault (vec3 1 1 1) |> Mat4.makeScale
+                                in
+                                object_ |> Object.withRotation (Mat4.mulAffine s r)
                            )
 
                 Node.Matrix mat ->
@@ -282,8 +304,8 @@ objectsFromNode objectIdMap node =
             , []
             )
 
-        Query.CameraNode (Query.Properties properties) ->
-            ( Object.group "CAMERA"
+        Query.CameraNode cameraId (Query.Properties properties) ->
+            ( Object.groupWithId (objectIdMap (Camera cameraId properties.nodeIndex)) "CAMERA"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , []

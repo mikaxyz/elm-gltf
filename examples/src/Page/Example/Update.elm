@@ -1,10 +1,12 @@
 module Page.Example.Update exposing (update)
 
+import Array
 import Browser.Dom
 import Color
 import Gltf.Query as Query
 import Gltf.Query.Animation as Animation
-import Http
+import Internal.Camera
+import Internal.Node
 import Internal.Scene
 import Keyboard
 import Material
@@ -419,8 +421,8 @@ update msg model =
                                 (\_ ->
                                     Scene.graphFromNodes nodes
                                         identity
-                                        { camera = XYZCamera.init (vec3 3 8 12) (vec3 0 0 0)
-                                        , projection = { fov = 60, near = 0.1, far = 10000 }
+                                        { camera = default.camera
+                                        , projection = default.projection
                                         , sceneSize = model.sceneSize
                                         }
                                 )
@@ -450,8 +452,8 @@ update msg model =
                             Scene.initWithNodes
                                 nodes
                                 identity
-                                { camera = XYZCamera.init (vec3 3 8 12) (vec3 0 0 0)
-                                , projection = { fov = 60, near = 0.1, far = 10000 }
+                                { camera = default.camera
+                                , projection = default.projection
                                 , sceneSize = model.sceneSize
                                 }
                     in
@@ -471,6 +473,96 @@ update msg model =
                     ( { model | gltf = RemoteData.Failure error }
                     , Cmd.none
                     )
+
+        UserSelectedCamera Nothing ->
+            ( { model
+                | activeCamera = Nothing
+                , scene =
+                    model.scene
+                        |> RemoteData.map
+                            (XYZScene.unpinCamera >> XYZScene.withPerspectiveProjection default.projection)
+              }
+            , Cmd.none
+            )
+
+        UserSelectedCamera (Just index) ->
+            ( { model
+                | activeCamera = Just index
+                , scene =
+                    model.scene
+                        |> RemoteData.map
+                            (\scene ->
+                                let
+                                    cameraNodeIndex : Maybe Internal.Node.Index
+                                    cameraNodeIndex =
+                                        model.nodes
+                                            |> List.concatMap
+                                                (\tree ->
+                                                    Tree.flatten tree
+                                                        |> List.map
+                                                            (\node ->
+                                                                case node of
+                                                                    Query.CameraNode cameraIndex (Query.Properties properties) ->
+                                                                        if cameraIndex == index then
+                                                                            Just properties.nodeIndex
+
+                                                                        else
+                                                                            Nothing
+
+                                                                    _ ->
+                                                                        Nothing
+                                                            )
+                                                )
+                                            |> List.filterMap identity
+                                            |> List.head
+
+                                    maybeGltfCamera : Maybe Internal.Camera.Camera
+                                    maybeGltfCamera =
+                                        model.gltf
+                                            |> RemoteData.toMaybe
+                                            |> Maybe.map .cameras
+                                            |> Maybe.andThen (Array.get ((\(Internal.Camera.Index i) -> i) index))
+
+                                    applyProjection =
+                                        case maybeGltfCamera |> Maybe.map .projection of
+                                            Just (Internal.Camera.Perspective p) ->
+                                                XYZScene.withPerspectiveProjection
+                                                    { fov = 180 / pi * p.yFov
+                                                    , near = p.zNear
+                                                    , far = p.zFar |> Maybe.withDefault 1000
+                                                    }
+
+                                            Just (Internal.Camera.Orthographic p) ->
+                                                XYZScene.withOrthographicProjection
+                                                    { xMag = p.xMag
+                                                    , yMag = p.yMag
+                                                    , near = p.zNear
+                                                    , far = p.zFar
+                                                    }
+
+                                            Nothing ->
+                                                identity
+                                in
+                                scene
+                                    |> applyProjection
+                                    |> (case cameraNodeIndex of
+                                            Just nodeIndex ->
+                                                XYZScene.pinCameraToObject (Scene.Camera index nodeIndex)
+
+                                            Nothing ->
+                                                XYZScene.withPerspectiveProjection default.projection
+                                       )
+                            )
+              }
+            , Cmd.none
+            )
+
+
+default : { camera : XYZCamera.Camera, projection : { fov : number, near : Float, far : number } }
+default =
+    { camera = XYZCamera.init (vec3 3 8 12) (vec3 0 0 0)
+    , projection = { fov = 60, near = 0.1, far = 10000 }
+    }
 
 
 setSceneSize : Model -> Model

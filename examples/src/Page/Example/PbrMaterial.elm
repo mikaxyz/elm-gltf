@@ -133,7 +133,6 @@ renderer :
     , environmentTexture : Texture
     , specularEnvironmentTexture : Texture
     , brdfLUTTexture : WebGL.Texture.Texture
-    , camera : Camera
     }
     -> Gltf.Query.ResolvedMaterial.Material
     -> Material.Options
@@ -182,7 +181,7 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
         , u_ModelMatrix = uniforms.sceneMatrix
         , u_NormalMatrix = uniforms.sceneRotationMatrix
-        , u_Camera = Camera.position config.camera
+        , u_Camera = Camera.position (Material.camera options)
 
         --
         , u_LightDirection = directionalLight3

@@ -20,6 +20,7 @@ import Gltf.Query.Material
 import Gltf.Query.ResolvedMaterial
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
+import Internal.Camera
 import Internal.Material
 import Internal.Node as Node
 import Internal.Scene as Scene exposing (Scene(..))
@@ -57,7 +58,7 @@ type QueryError
 -}
 type Node
     = EmptyNode Properties
-    | CameraNode Properties
+    | CameraNode Internal.Camera.Index Properties
     | MeshNode (List TriangularMesh) Properties
     | SkinnedMeshNode (List TriangularMesh) Skin Properties
 
@@ -70,7 +71,7 @@ meshesFromNode node =
         EmptyNode _ ->
             []
 
-        CameraNode _ ->
+        CameraNode _ _ ->
             []
 
         MeshNode triangularMeshes _ ->
@@ -88,7 +89,7 @@ skinFromNode node =
         EmptyNode _ ->
             Nothing
 
-        CameraNode _ ->
+        CameraNode _ _ ->
             Nothing
 
         MeshNode _ _ ->
@@ -168,7 +169,7 @@ applyResolveTextureEffect (ResolveTextureEffect index texture) nodes =
         |> Tree.map
             (\node ->
                 case node of
-                    CameraNode _ ->
+                    CameraNode _ _ ->
                         node
 
                     EmptyNode _ ->
@@ -190,7 +191,7 @@ effectsFromNodeTree msg nodes =
         toMeshes : Node -> Maybe (List TriangularMesh)
         toMeshes node =
             case node of
-                CameraNode _ ->
+                CameraNode _ _ ->
                     Nothing
 
                 EmptyNode _ ->
@@ -337,10 +338,10 @@ nodeFromNode gltf node =
 
         Nothing ->
             case node |> (\(Node.Node x) -> x.cameraIndex) of
-                Just _ ->
+                Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> CameraNode
+                        |> CameraNode cameraIndex
 
                 Nothing ->
                     case triangularMeshesFromNode gltf node of

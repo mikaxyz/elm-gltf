@@ -1,6 +1,7 @@
 module Internal.Camera exposing
     ( Camera
     , Index(..)
+    , Projection(..)
     , decoder
     , indexDecoder
     )
@@ -13,7 +14,14 @@ type Index
     = Index Int
 
 
-type Camera
+type alias Camera =
+    { name : Maybe String
+    , index : Index
+    , projection : Projection
+    }
+
+
+type Projection
     = Perspective PerspectiveCamera
     | Orthographic OrthographicCamera
 
@@ -39,17 +47,23 @@ indexDecoder =
     JD.int |> JD.map Index
 
 
-decoder : JD.Decoder Camera
-decoder =
+decoder : Int -> JD.Decoder Camera
+decoder index =
     JD.field "type" JD.string
         |> JD.andThen
             (\type_ ->
                 case type_ of
                     "perspective" ->
-                        perspectiveDecoder |> JD.map Perspective
+                        JD.succeed Camera
+                            |> JDP.optional "name" (JD.maybe JD.string) Nothing
+                            |> JDP.hardcoded (Index index)
+                            |> JDP.required "perspective" (perspectiveDecoder |> JD.map Perspective)
 
                     "orthographic" ->
-                        orthographicDecoder |> JD.map Orthographic
+                        JD.succeed Camera
+                            |> JDP.optional "name" (JD.maybe JD.string) Nothing
+                            |> JDP.hardcoded (Index index)
+                            |> JDP.required "orthographic" (orthographicDecoder |> JD.map Orthographic)
 
                     _ ->
                         JD.fail <| "Unknown camera type: " ++ type_
