@@ -29,7 +29,7 @@ type Page
 
 fromRoute :
     { pushRoute : Route -> Cmd msg
-    , assets : RemoteData Http.Error SampleAssets
+    , assets : SampleAssets
     }
     -> (Msg -> msg)
     -> Maybe Route
@@ -44,18 +44,13 @@ fromRoute config tagger maybeRoute =
                         |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
 
                 Route.ExampleGlb assetId ->
-                    case config.assets |> RemoteData.map (SampleAssets.getAsset assetId) of
-                        RemoteData.Success maybeAsset ->
-                            case maybeAsset of
-                                Just asset ->
-                                    Page.Example.initWithSampleAsset asset
-                                        |> Tuple.mapFirst Example
-                                        |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
+                    case config.assets |> SampleAssets.getAsset assetId of
+                        Just asset ->
+                            Page.Example.initWithSampleAsset asset
+                                |> Tuple.mapFirst Example
+                                |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
 
-                                Nothing ->
-                                    ( Error NotFound, Cmd.none )
-
-                        _ ->
+                        Nothing ->
                             ( Error NotFound, Cmd.none )
 
         Nothing ->

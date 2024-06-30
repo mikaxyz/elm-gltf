@@ -22,13 +22,18 @@ spaConfig =
 
 updateWithRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 updateWithRoute maybeRoute model =
-    Page.fromRoute
-        { pushRoute = Spa.pushRoute spaConfig model.spa
-        , assets = model.sampleAssets
-        }
-        PageMsg
-        maybeRoute
-        |> Tuple.mapFirst (\page -> { model | page = Just page })
+    model.sampleAssets
+        |> RemoteData.map
+            (\assets ->
+                Page.fromRoute
+                    { pushRoute = Spa.pushRoute spaConfig model.spa
+                    , assets = assets
+                    }
+                    PageMsg
+                    maybeRoute
+                    |> Tuple.mapFirst (\page -> { model | page = Just page })
+            )
+        |> RemoteData.withDefault ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
