@@ -366,7 +366,7 @@ update msg model =
                     )
 
                 Err error ->
-                    ( { model | fallbackTexture = RemoteData.Failure (Debug.log "FallbackTextureReceived" error) }
+                    ( { model | fallbackTexture = RemoteData.Failure (Model.TextureError error) }
                     , Cmd.none
                     )
 
@@ -378,7 +378,7 @@ update msg model =
                     )
 
                 Err error ->
-                    ( { model | environmentTexture = RemoteData.Failure error }
+                    ( { model | environmentTexture = RemoteData.Failure (Model.TextureError error) }
                     , Cmd.none
                     )
 
@@ -390,7 +390,7 @@ update msg model =
                     )
 
                 Err error ->
-                    ( { model | specularEnvironmentTexture = RemoteData.Failure error }
+                    ( { model | specularEnvironmentTexture = RemoteData.Failure (Model.TextureError error) }
                     , Cmd.none
                     )
 
@@ -402,50 +402,42 @@ update msg model =
                     )
 
                 Err error ->
-                    ( { model | brdfLUTTexture = RemoteData.Failure error }
+                    ( { model | brdfLUTTexture = RemoteData.Failure (Model.TextureError error) }
                     , Cmd.none
                     )
 
-        GltfApplyEffect effect ->
-            let
-                nodes : List (Tree.Tree Query.Node)
-                nodes =
-                    model.nodes |> List.map (Query.applyEffect effect)
-            in
-            ( { model
-                | nodes = nodes
-                , scene =
-                    model.scene
-                        |> RemoteData.map
-                            (XYZScene.map
-                                (\_ ->
-                                    Scene.graphFromNodes nodes
-                                        identity
-                                        { camera = default.camera
-                                        , projection = default.projection
-                                        , sceneSize = model.sceneSize
-                                        }
-                                )
-                            )
-              }
-            , getViewPort
+        GltfApplyQueryResult textureIndex result ->
+            ( { model | queryResult = model.queryResult |> Maybe.map (Query.applyQueryResult textureIndex result) }
+            , Cmd.none
             )
+
+        GltfApplyQueryResultEffect effect ->
+            model.queryResult
+                |> Maybe.map (Query.applyQueryResultEffect effect GltfApplyQueryResult)
+                |> Maybe.map (Tuple.mapFirst (\r -> { model | queryResult = Just r }))
+                |> Maybe.withDefault ( model, Cmd.none )
 
         GltfReceived result ->
             case result of
                 Ok gltf ->
                     let
+                        queryResult : Result Query.QueryError Query.QueryResult
+                        queryResult =
+                            gltf
+                                |> Query.sceneQuery (Internal.Scene.Index 0)
+
+                        cmd : Cmd Msg
+                        cmd =
+                            queryResult
+                                |> Result.map (Query.queryResultRun GltfApplyQueryResultEffect)
+                                |> Result.withDefault Cmd.none
+
                         nodes : List (Tree.Tree Query.Node)
                         nodes =
                             gltf
                                 |> Query.sceneNodeTrees (Internal.Scene.Index 0)
                                 |> Result.withDefault []
                                 |> List.map (Tree.map (Query.nodeFromNode gltf))
-
-                        cmds : List (Cmd Msg)
-                        cmds =
-                            nodes
-                                |> List.map (Query.effectsFromNodeTree GltfApplyEffect)
 
                         scene : XYZScene.Scene Scene.ObjectId Material.Name
                         scene =
@@ -459,19 +451,18 @@ update msg model =
                     in
                     ( { model
                         | gltf = RemoteData.Success gltf
-                        , nodes = nodes
+                        , queryResult = queryResult |> Result.toMaybe
                         , animations = Animation.extractAnimations gltf
                         , scene = scene |> RemoteData.Success
                       }
                         |> setActiveAnimation 0
                         |> setSceneSize
-                    , getViewPort
-                        :: cmds
+                    , [ cmd, getViewPort ]
                         |> Cmd.batch
                     )
 
                 Err error ->
-                    ( { model | gltf = RemoteData.Failure error }
+                    ( { model | gltf = RemoteData.Failure (Model.HttpError error) }
                     , Cmd.none
                     )
 
@@ -496,7 +487,9 @@ update msg model =
                                 let
                                     cameraNodeIndex : Maybe Internal.Node.Index
                                     cameraNodeIndex =
-                                        model.nodes
+                                        model.queryResult
+                                            |> Maybe.map Query.queryResultNodes
+                                            |> Maybe.withDefault []
                                             |> List.concatMap
                                                 (\tree ->
                                                     Tree.flatten tree

@@ -1,6 +1,7 @@
 module Page.Example.Model exposing
     ( Asset(..)
     , DragTarget(..)
+    , Error(..)
     , Model
     , Msg(..)
     , dragTarget
@@ -13,16 +14,14 @@ import Browser.Dom
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
-import Gltf.Query.ResolvedMaterial
+import Gltf.Query.Material
 import Http
 import Internal.Camera
-import Internal.Material
 import Keyboard
 import Material
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import SampleAssets
-import Tree exposing (Tree)
 import WebGL.Texture
 import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ
@@ -51,7 +50,8 @@ type Msg
     | SpecularEnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | GltfReceived (Result Http.Error Gltf)
-    | GltfApplyEffect Query.Effect
+    | GltfApplyQueryResultEffect Query.QueryResultEffect
+    | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
     | UserSelectedCamera (Maybe Internal.Camera.Index)
@@ -61,6 +61,11 @@ type Msg
 type Asset
     = Local String
     | SampleAsset SampleAssets.Asset
+
+
+type Error
+    = TextureError WebGL.Texture.Error
+    | HttpError Http.Error
 
 
 type alias Model =
@@ -74,13 +79,13 @@ type alias Model =
     , selectedTreeIndex : Maybe Int
     , sceneOptions : SceneOptions.Options
     , sceneSize : Float
-    , fallbackTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
-    , environmentTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
-    , specularEnvironmentTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
-    , brdfLUTTexture : RemoteData WebGL.Texture.Error WebGL.Texture.Texture
-    , gltf : RemoteData Http.Error Gltf
-    , scene : RemoteData Http.Error (Scene Scene.ObjectId Material.Name)
-    , nodes : List (Tree Query.Node)
+    , fallbackTexture : RemoteData Error WebGL.Texture.Texture
+    , environmentTexture : RemoteData Error WebGL.Texture.Texture
+    , specularEnvironmentTexture : RemoteData Error WebGL.Texture.Texture
+    , brdfLUTTexture : RemoteData Error WebGL.Texture.Texture
+    , gltf : RemoteData Error Gltf
+    , scene : RemoteData Error (Scene Scene.ObjectId Material.Name)
+    , queryResult : Maybe Query.QueryResult
     , animations : List ExtractedAnimation
     , activeAnimation : Maybe ExtractedAnimation
     , activeCamera : Maybe Internal.Camera.Index
@@ -107,7 +112,7 @@ init asset =
     , brdfLUTTexture = RemoteData.Loading
     , gltf = RemoteData.Loading
     , scene = RemoteData.Loading
-    , nodes = []
+    , queryResult = Nothing
     , animations = []
     , activeAnimation = Nothing
     , activeCamera = Nothing

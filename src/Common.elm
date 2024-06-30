@@ -7,6 +7,7 @@ module Common exposing
     , materialAtIndex
     , meshAtIndex
     , nodeAtIndex
+    , samplerAtIndex
     , sceneAtIndex
     , textureAtIndex
     )
@@ -20,6 +21,7 @@ import Internal.Image as Image exposing (Image)
 import Internal.Material as Internal
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node)
+import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene)
 import Internal.Texture
 
@@ -67,6 +69,11 @@ materialAtIndex gltf (Internal.Index index) =
 textureAtIndex : Gltf -> Internal.Texture.Index -> Maybe Internal.Texture.Texture
 textureAtIndex gltf (Internal.Texture.Index index) =
     gltf.textures |> Array.get index
+
+
+samplerAtIndex : Gltf -> Internal.Sampler.Index -> Maybe Internal.Sampler.Sampler
+samplerAtIndex gltf (Internal.Sampler.Index index) =
+    gltf.samplers |> Array.get index
 
 
 bufferInfo : Gltf -> Accessor -> Maybe ( Accessor, BufferView, Buffer )

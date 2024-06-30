@@ -3,10 +3,14 @@ module Internal.Sampler exposing
     , Sampler
     , decoder
     , indexDecoder
+    , magFilterToTextureOption
+    , minFilterToTextureOption
+    , wrapToTextureOption
     )
 
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
+import WebGL.Texture
 
 
 type Index
@@ -20,6 +24,51 @@ type alias Sampler =
     , wrapS : Wrap
     , wrapT : Wrap
     }
+
+
+magFilterToTextureOption : MagFilter -> WebGL.Texture.Resize WebGL.Texture.Bigger
+magFilterToTextureOption magFilter =
+    case magFilter of
+        MagNearest ->
+            WebGL.Texture.nearest
+
+        MagLinear ->
+            WebGL.Texture.linear
+
+
+minFilterToTextureOption : MinFilter -> WebGL.Texture.Resize WebGL.Texture.Smaller
+minFilterToTextureOption minFilter =
+    case minFilter of
+        MinNearest ->
+            WebGL.Texture.nearest
+
+        MinLinear ->
+            WebGL.Texture.linear
+
+        NearestMipmapNearest ->
+            WebGL.Texture.nearestMipmapNearest
+
+        LinearMipmapNearest ->
+            WebGL.Texture.linearMipmapNearest
+
+        NearestMipmapLinear ->
+            WebGL.Texture.nearestMipmapLinear
+
+        LinearMipmapLinear ->
+            WebGL.Texture.linearMipmapLinear
+
+
+wrapToTextureOption : Wrap -> WebGL.Texture.Wrap
+wrapToTextureOption wrap =
+    case wrap of
+        ClampToEdge ->
+            WebGL.Texture.clampToEdge
+
+        MirroredRepeat ->
+            WebGL.Texture.mirroredRepeat
+
+        Repeat ->
+            WebGL.Texture.repeat
 
 
 type MagFilter

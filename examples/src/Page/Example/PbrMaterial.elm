@@ -1,6 +1,6 @@
-module Page.Example.PbrMaterial exposing (renderer)
+module Page.Example.PbrMaterial exposing (Config, renderer)
 
-import Gltf.Query.ResolvedMaterial
+import Gltf.Query.Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -14,6 +14,13 @@ import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
+
+
+type alias Config =
+    { environmentTexture : WebGL.Texture.Texture
+    , specularEnvironmentTexture : WebGL.Texture.Texture
+    , brdfLUTTexture : WebGL.Texture.Texture
+    }
 
 
 type alias Uniforms =
@@ -129,17 +136,22 @@ type alias Varyings =
 
 
 renderer :
-    { fallbackTexture : Texture
-    , environmentTexture : Texture
-    , specularEnvironmentTexture : Texture
-    , brdfLUTTexture : WebGL.Texture.Texture
-    }
-    -> Gltf.Query.ResolvedMaterial.Material
+    Config
+    ->
+        { pbrMetallicRoughness :
+            { baseColorTexture : Texture
+            , metallicRoughnessTexture : Texture
+            }
+        , normalTexture : Texture
+        , occlusionTexture : Texture
+        , emissiveTexture : Texture
+        }
+    -> Gltf.Query.Material.Material
     -> Material.Options
     -> Scene.Uniforms u
     -> Object objectId materialId
     -> Entity
-renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms object =
+renderer config textures (Gltf.Query.Material.Material pbr) options uniforms object =
     let
         boneTransforms : BoneTransforms
         boneTransforms =
@@ -190,26 +202,26 @@ renderer config (Gltf.Query.ResolvedMaterial.Material pbr) options uniforms obje
         --
         , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
         , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture /= Nothing
-        , u_MetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.withDefault config.fallbackTexture
+        , u_MetallicRoughnessSampler = textures.pbrMetallicRoughness.metallicRoughnessTexture
 
         --
         , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture /= Nothing
-        , u_BaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> Maybe.withDefault config.fallbackTexture
+        , u_BaseColorSampler = textures.pbrMetallicRoughness.baseColorTexture
 
         --
         , u_hasNormalSampler = pbr.normalTexture /= Nothing
-        , u_NormalSampler = pbr.normalTexture |> Maybe.withDefault config.fallbackTexture
+        , u_NormalSampler = textures.normalTexture
         , u_NormalScale = pbr.normalTextureScale
 
         --
         , u_hasOcclusionSampler = pbr.occlusionTexture /= Nothing
-        , u_OcclusionSampler = pbr.occlusionTexture |> Maybe.withDefault config.fallbackTexture
+        , u_OcclusionSampler = textures.occlusionTexture
         , u_OcclusionStrength = pbr.occlusionTextureStrength
 
         --
         , u_hasEmissiveSampler = pbr.emissiveTexture /= Nothing
-        , u_EmissiveSampler = pbr.emissiveTexture |> Maybe.withDefault config.fallbackTexture
+        , u_EmissiveSampler = textures.emissiveTexture
         , u_EmissiveFactor = pbr.emissiveFactor
 
         --

@@ -10,7 +10,7 @@ import Color
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
-import Gltf.Query.ResolvedMaterial
+import Gltf.Query.Material
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Camera
 import Internal.Node as Node exposing (Index(..), Node(..))
@@ -320,33 +320,11 @@ objectsFromNode objectIdMap node =
             )
 
         Query.SkinnedMeshNode (mesh :: rest) skin (Query.Properties properties) ->
-            let
-                withMaterial : Maybe TriangularMesh.Material -> Object id Material.Name -> Object id Material.Name
-                withMaterial maybeMaterial_ =
-                    case maybeMaterial_ of
-                        Just (TriangularMesh.ResolvedMaterial material) ->
-                            Object.withMaterialName (Material.PbrMaterial material)
-
-                        Just (TriangularMesh.Material _) ->
-                            Object.withMaterialName Material.Color
-
-                        Nothing ->
-                            Object.withMaterialName Material.Advanced
-
-                maybeMaterial =
-                    case mesh of
-                        TriangularMesh material _ ->
-                            material
-
-                        IndexedTriangularMesh material _ ->
-                            material
-            in
             ( mesh
                 |> objectFromMesh (objectIdMap SkinnedMesh)
                 |> GltfHelper.objectWithSkin skin
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-                |> withMaterial maybeMaterial
             , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
             )
 
@@ -373,19 +351,14 @@ objectsFromNode objectIdMap node =
 objectFromMesh : objectId -> TriangularMesh -> Object objectId Material.Name
 objectFromMesh objectId triangularMesh =
     let
-        withMaterial : Maybe TriangularMesh.Material -> Object id Material.Name -> Object id Material.Name
+        withMaterial : Maybe Gltf.Query.Material.Material -> Object id Material.Name -> Object id Material.Name
         withMaterial maybeMaterial =
             case maybeMaterial of
-                Just (TriangularMesh.ResolvedMaterial material) ->
+                Just material ->
                     Object.withMaterialName (Material.PbrMaterial material)
 
-                Just (TriangularMesh.Material material) ->
-                    Gltf.Query.ResolvedMaterial.fromUnresolved material
-                        |> Material.PbrMaterial
-                        |> Object.withMaterialName
-
                 Nothing ->
-                    Object.withMaterialName Material.Advanced
+                    identity
     in
     case triangularMesh of
         TriangularMesh material vertices ->

@@ -1,28 +1,33 @@
 module Gltf.Query exposing
     ( Error(..), Node(..), Properties(..), QueryError(..)
     , fromJson, nodeTree, sceneNodeTrees
-    , Effect, effectsFromNodeTree, applyEffect
     , nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
+    , QueryResult, QueryResultEffect
+    , queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
+    , textureWithIndex
     )
 
 {-| Query contents of Gltf
 
 @docs Error, Node, Properties, QueryError
 @docs fromJson, nodeTree, sceneNodeTrees
-@docs Effect, effectsFromNodeTree, applyEffect
 @docs nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
+@docs QueryResult, QueryResultEffect
+@docs textureWithTextureIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
 
 -}
 
 import Common
 import Gltf exposing (Gltf)
 import Gltf.Query.Material
-import Gltf.Query.ResolvedMaterial
 import Gltf.Query.Skin as Skin exposing (Skin)
+import Gltf.Query.Task
+import Gltf.Query.TextureStore as TextureStore exposing (SampledTexture, TextureStore)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
 import Internal.Camera
-import Internal.Material
+import Internal.Image
 import Internal.Node as Node
+import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene(..))
 import Json.Decode as JD
 import Task
@@ -108,221 +113,144 @@ treeFromNode index gltf =
         |> Result.fromMaybe NodeNotFound
 
 
-{-| TODO: Docs
--}
-type Effect
-    = Noop
-    | ResolveTexture ResolveTextureEffect
+type QueryResult
+    = QueryResult Gltf TextureStore (List (Tree Node))
 
 
-type ResolveTextureEffect
-    = ResolveTextureEffect Internal.Material.Index (Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture)
+type QueryResultEffect
+    = QueryResultLoadTextureEffect Gltf.Query.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
 
 
-{-| TODO: Docs
--}
-applyEffect : Effect -> Tree Node -> Tree Node
-applyEffect effect nodes =
-    case effect of
-        Noop ->
-            nodes
-
-        ResolveTexture texture ->
-            applyResolveTextureEffect texture nodes
-
-
-applyResolveTextureEffect : ResolveTextureEffect -> Tree Node -> Tree Node
-applyResolveTextureEffect (ResolveTextureEffect index texture) nodes =
-    let
-        applyToMaterial : TriangularMesh.Material -> TriangularMesh.Material
-        applyToMaterial material =
-            case material of
-                TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    if unresolvedMaterial.index == index then
-                        Gltf.Query.Material.Material unresolvedMaterial
-                            |> Gltf.Query.ResolvedMaterial.fromUnresolved
-                            |> Gltf.Query.ResolvedMaterial.updateTexture texture
-                            |> TriangularMesh.ResolvedMaterial
-
-                    else
-                        material
-
-                TriangularMesh.ResolvedMaterial (Gltf.Query.ResolvedMaterial.Material resolvedMaterial) ->
-                    if resolvedMaterial.index == index then
-                        Gltf.Query.ResolvedMaterial.Material resolvedMaterial
-                            |> Gltf.Query.ResolvedMaterial.updateTexture texture
-                            |> TriangularMesh.ResolvedMaterial
-
-                    else
-                        material
-
-        applyToMesh : TriangularMesh -> TriangularMesh
-        applyToMesh mesh =
-            case mesh of
-                TriangularMesh.TriangularMesh material a ->
-                    TriangularMesh.TriangularMesh (material |> Maybe.map applyToMaterial) a
-
-                TriangularMesh.IndexedTriangularMesh material a ->
-                    TriangularMesh.IndexedTriangularMesh (material |> Maybe.map applyToMaterial) a
-    in
+queryResultNodes : QueryResult -> List (Tree Node)
+queryResultNodes (QueryResult _ _ nodes) =
     nodes
-        |> Tree.map
-            (\node ->
-                case node of
-                    CameraNode _ _ ->
-                        node
 
-                    EmptyNode _ ->
-                        node
 
-                    MeshNode meshes a ->
-                        MeshNode (meshes |> List.map applyToMesh) a
+{-| TODO: Needed?
+-}
+textureWithIndex : QueryResult -> Gltf.Query.Material.TextureIndex -> Maybe WebGL.Texture.Texture
+textureWithIndex (QueryResult _ textureStore _) textureIndex =
+    TextureStore.textureWithTextureIndex textureIndex textureStore
 
-                    SkinnedMeshNode meshes a b ->
-                        SkinnedMeshNode (meshes |> List.map applyToMesh) a b
+
+{-| TODO: Needed?
+-}
+sceneQuery : Scene.Index -> Gltf -> Result QueryError QueryResult
+sceneQuery index gltf =
+    Common.sceneAtIndex gltf index
+        |> Maybe.map
+            (\(Scene scene) ->
+                scene.nodes
+                    |> List.filterMap
+                        (\nodeIndex -> nodeTree nodeIndex gltf |> Result.toMaybe)
+                    |> List.map (Tree.map (nodeFromNode gltf))
+                    |> QueryResult gltf TextureStore.init
             )
+        |> Result.fromMaybe SceneNotFound
 
 
 {-| TODO: Docs
 -}
-effectsFromNodeTree : (Effect -> msg) -> Tree Node -> Cmd msg
-effectsFromNodeTree msg nodes =
-    let
-        toMeshes : Node -> Maybe (List TriangularMesh)
-        toMeshes node =
-            case node of
-                CameraNode _ _ ->
-                    Nothing
+applyQueryResult : Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> QueryResult -> QueryResult
+applyQueryResult textureIndex textureLoadResult (QueryResult gltf textureStore queryResult) =
+    case textureLoadResult of
+        Ok texture ->
+            QueryResult gltf (TextureStore.insert textureIndex texture textureStore) queryResult
 
-                EmptyNode _ ->
-                    Nothing
+        Err _ ->
+            QueryResult gltf textureStore queryResult
 
-                MeshNode meshes _ ->
-                    Just meshes
 
-                SkinnedMeshNode meshes _ _ ->
-                    Just meshes
+{-| TODO: Docs
+-}
+applyQueryResultEffect :
+    QueryResultEffect
+    -> (Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> msg)
+    -> QueryResult
+    -> ( QueryResult, Cmd msg )
+applyQueryResultEffect effect msg (QueryResult gltf textureStore queryResult) =
+    case effect of
+        QueryResultLoadTextureEffect textureIndex image maybeSampler ->
+            case TextureStore.get textureIndex textureStore of
+                Just _ ->
+                    ( QueryResult gltf textureStore queryResult, Cmd.none )
 
-        meshMaterial : TriangularMesh -> Maybe TriangularMesh.Material
-        meshMaterial mesh =
-            case mesh of
-                TriangularMesh.TriangularMesh material _ ->
-                    material
-
-                TriangularMesh.IndexedTriangularMesh material _ ->
-                    material
-
-        updateMaterialWithIndex : Internal.Material.Index -> TriangularMesh.Material -> Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture -> Maybe Effect
-        updateMaterialWithIndex materialIndex material texture =
-            case material of
-                TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    if unresolvedMaterial.index == materialIndex then
-                        texture
-                            |> ResolveTextureEffect materialIndex
-                            |> ResolveTexture
-                            |> Just
-
-                    else
-                        Nothing
-
-                TriangularMesh.ResolvedMaterial (Gltf.Query.ResolvedMaterial.Material resolvedMaterial) ->
-                    if resolvedMaterial.index == materialIndex then
-                        texture
-                            |> ResolveTextureEffect materialIndex
-                            |> ResolveTexture
-                            |> Just
-
-                    else
-                        Nothing
-
-        cmdFromMaterial : TriangularMesh.Material -> Maybe (Cmd msg)
-        cmdFromMaterial material =
-            let
-                toCmd : Gltf.Query.Material.Material -> (WebGL.Texture.Texture -> Gltf.Query.ResolvedMaterial.Texture WebGL.Texture.Texture) -> Gltf.Query.Material.MaterialImage -> Maybe (Cmd msg)
-                toCmd (Gltf.Query.Material.Material unresolvedMaterial) toTexture unresolvedTexture =
-                    case unresolvedTexture of
-                        Gltf.Query.Material.DataUri dataUri ->
-                            let
-                                defaultOptions : WebGL.Texture.Options
-                                defaultOptions =
-                                    WebGL.Texture.defaultOptions
-
-                                -- TODO: Options from Sampler
-                                -- flipY: https://github.com/KhronosGroup/glTF-Sample-Viewer/issues/16
-                                options : WebGL.Texture.Options
-                                options =
-                                    { defaultOptions
-                                        | flipY = False
-                                    }
-                            in
-                            Task.attempt
-                                (\result ->
-                                    -- TODO: Report/return Effect Texture.Error
-                                    result
-                                        |> Result.toMaybe
-                                        |> Maybe.andThen (updateMaterialWithIndex unresolvedMaterial.index material)
-                                        |> Maybe.withDefault Noop
-                                        |> msg
-                                )
-                                (WebGL.Texture.loadWith
-                                    options
-                                    dataUri
-                                    |> Task.map toTexture
-                                )
-                                |> Just
-
-                        Gltf.Query.Material.Uri _ ->
-                            -- TODO: Report Effect ResolveMaterialError?
-                            Nothing
-            in
-            case material of
-                TriangularMesh.Material (Gltf.Query.Material.Material unresolvedMaterial) ->
-                    [ Gltf.Query.ResolvedMaterial.BaseColorTexture unresolvedMaterial.pbrMetallicRoughness.baseColorTexture
-                    , Gltf.Query.ResolvedMaterial.MetallicRoughnessTexture unresolvedMaterial.pbrMetallicRoughness.metallicRoughnessTexture
-                    , Gltf.Query.ResolvedMaterial.NormalTexture unresolvedMaterial.normalTexture
-                    , Gltf.Query.ResolvedMaterial.OcclusionTexture unresolvedMaterial.occlusionTexture
-                    , Gltf.Query.ResolvedMaterial.EmissiveTexture unresolvedMaterial.emissiveTexture
-                    ]
-                        |> List.filterMap
-                            (\texture ->
-                                case texture of
-                                    Gltf.Query.ResolvedMaterial.BaseColorTexture maybeMaterialImage ->
-                                        maybeMaterialImage
-                                            |> Maybe.andThen
-                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.BaseColorTexture)
-
-                                    Gltf.Query.ResolvedMaterial.MetallicRoughnessTexture maybeMaterialImage ->
-                                        maybeMaterialImage
-                                            |> Maybe.andThen
-                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.MetallicRoughnessTexture)
-
-                                    Gltf.Query.ResolvedMaterial.NormalTexture maybeMaterialImage ->
-                                        maybeMaterialImage
-                                            |> Maybe.andThen
-                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.NormalTexture)
-
-                                    Gltf.Query.ResolvedMaterial.OcclusionTexture maybeMaterialImage ->
-                                        maybeMaterialImage
-                                            |> Maybe.andThen
-                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.OcclusionTexture)
-
-                                    Gltf.Query.ResolvedMaterial.EmissiveTexture maybeMaterialImage ->
-                                        maybeMaterialImage
-                                            |> Maybe.andThen
-                                                (toCmd (Gltf.Query.Material.Material unresolvedMaterial) Gltf.Query.ResolvedMaterial.EmissiveTexture)
+                Nothing ->
+                    case Gltf.Query.Task.loadTextureTask gltf image maybeSampler of
+                        Just task ->
+                            ( QueryResult gltf (TextureStore.insertLoading textureIndex textureStore) queryResult
+                            , Task.attempt (msg textureIndex) task
                             )
+
+                        Nothing ->
+                            ( QueryResult gltf textureStore queryResult, Cmd.none )
+
+
+{-| TODO: Docs
+-}
+queryResultRun : (QueryResultEffect -> msg) -> QueryResult -> Cmd msg
+queryResultRun msg (QueryResult gltf textureStore trees) =
+    let
+        imageEffect : Gltf.Query.Material.TextureIndex -> Maybe Internal.Sampler.Sampler -> Internal.Image.Image -> QueryResultEffect
+        imageEffect id maybeSampler image =
+            QueryResultLoadTextureEffect id image maybeSampler
+
+        textureSourceCmd : TriangularMesh -> Maybe (Cmd msg)
+        textureSourceCmd mesh =
+            case TriangularMesh.toMaterial mesh of
+                Just (Gltf.Query.Material.Material m) ->
+                    let
+                        maybeEffect : Maybe Gltf.Query.Material.TextureIndex -> Maybe QueryResultEffect
+                        maybeEffect maybeTextureIndex =
+                            maybeTextureIndex
+                                |> Maybe.andThen (\textureIndex -> TextureStore.get textureIndex textureStore)
+                                |> (\texture ->
+                                        case texture of
+                                            Just _ ->
+                                                Nothing
+
+                                            Nothing ->
+                                                maybeTextureIndex
+                                                    |> Maybe.andThen
+                                                        (\textureIndex ->
+                                                            (textureIndex |> Gltf.Query.Material.toImageIndex |> Common.imageAtIndex gltf)
+                                                                |> Maybe.map
+                                                                    (imageEffect textureIndex
+                                                                        (textureIndex
+                                                                            |> Gltf.Query.Material.toSamplerIndex
+                                                                            |> Maybe.andThen (Common.samplerAtIndex gltf)
+                                                                        )
+                                                                    )
+                                                        )
+                                   )
+
+                        perform : QueryResultEffect -> Cmd msg
+                        perform effect =
+                            Task.perform msg (Task.succeed effect)
+                    in
+                    [ maybeEffect m.pbrMetallicRoughness.baseColorTexture |> Maybe.map perform
+                    , maybeEffect m.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.map perform
+                    , maybeEffect m.normalTexture |> Maybe.map perform
+                    , maybeEffect m.occlusionTexture |> Maybe.map perform
+                    , maybeEffect m.emissiveTexture |> Maybe.map perform
+                    ]
+                        |> List.filterMap identity
                         |> Cmd.batch
                         |> Just
 
-                TriangularMesh.ResolvedMaterial _ ->
+                Nothing ->
                     Nothing
+
+        doTree : Tree Node -> List (Cmd msg)
+        doTree tree =
+            tree
+                |> Tree.flatten
+                |> List.map meshesFromNode
+                |> List.concat
+                |> List.filterMap textureSourceCmd
     in
-    nodes
-        |> Tree.flatten
-        |> List.filterMap toMeshes
-        |> List.concat
-        |> List.filterMap meshMaterial
-        |> List.filterMap cmdFromMaterial
+    trees
+        |> List.concatMap doTree
         |> Cmd.batch
 
 

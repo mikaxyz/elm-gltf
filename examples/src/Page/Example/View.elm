@@ -2,6 +2,7 @@ module Page.Example.View exposing (view)
 
 import Array
 import Gltf exposing (Gltf)
+import Gltf.Query
 import Gltf.Query.Animation as Animation
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
@@ -11,6 +12,7 @@ import Json.Decode as JD
 import Material
 import Math.Vector3 exposing (vec3)
 import Page.Example.Model exposing (Model, Msg(..))
+import Page.Example.PbrMaterial
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import Tree
@@ -28,7 +30,29 @@ import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 view : Model -> Html Msg
 view model =
-    case RemoteData.map2 Tuple.pair model.gltf model.scene of
+    let
+        materialConfig : RemoteData Page.Example.Model.Error Page.Example.PbrMaterial.Config
+        materialConfig =
+            RemoteData.map Page.Example.PbrMaterial.Config
+                model.environmentTexture
+                |> RemoteData.andMap model.specularEnvironmentTexture
+                |> RemoteData.andMap model.brdfLUTTexture
+
+        data =
+            RemoteData.map
+                (\gltf scene fallbackTexture config ->
+                    { gltf = gltf
+                    , scene = scene
+                    , fallbackTexture = fallbackTexture
+                    , config = config
+                    }
+                )
+                model.gltf
+                |> RemoteData.andMap model.scene
+                |> RemoteData.andMap model.fallbackTexture
+                |> RemoteData.andMap materialConfig
+    in
+    case data of
         RemoteData.NotAsked ->
             progressIndicatorView "Loading"
 
@@ -38,32 +62,23 @@ view model =
         RemoteData.Failure _ ->
             h1 [] [ text <| "Error" ]
 
-        RemoteData.Success ( gltf, scene ) ->
-            div [ style "display" "contents" ]
-                [ sceneOptionsView gltf model
-                , RemoteData.map3
-                    (\fallbackTexture ( environmentTexture, specularEnvironmentTexture ) brdfLUTTexture ->
-                        { fallbackTexture = fallbackTexture
-                        , environmentTexture = environmentTexture
-                        , specularEnvironmentTexture = specularEnvironmentTexture
-                        , brdfLUTTexture = brdfLUTTexture
-                        }
-                    )
-                    model.fallbackTexture
-                    (RemoteData.map2 Tuple.pair
-                        model.environmentTexture
-                        model.specularEnvironmentTexture
-                    )
-                    model.brdfLUTTexture
-                    |> RemoteData.toMaybe
-                    |> Maybe.map
-                        (sceneView model
+        RemoteData.Success { gltf, scene, fallbackTexture, config } ->
+            case model.queryResult of
+                Just gltfQueryResult ->
+                    div [ style "display" "contents" ]
+                        [ sceneOptionsView gltf
+                            model
+                        , sceneView model
+                            gltfQueryResult
                             model.activeAnimation
                             gltf
                             scene
-                        )
-                    |> Maybe.withDefault (progressIndicatorView "Loading textures")
-                ]
+                            fallbackTexture
+                            config
+                        ]
+
+                Nothing ->
+                    progressIndicatorView "Loading"
 
 
 progressIndicatorView : String -> Html msg
@@ -141,20 +156,18 @@ onChange tagger =
 
 
 renderer :
-    { fallbackTexture : WebGL.Texture.Texture
-    , environmentTexture : WebGL.Texture.Texture
-    , specularEnvironmentTexture : WebGL.Texture.Texture
-    , brdfLUTTexture : WebGL.Texture.Texture
-    }
+    WebGL.Texture.Texture
+    -> Page.Example.PbrMaterial.Config
+    -> Gltf.Query.QueryResult
     -> Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
     -> Object a Material.Name
     -> WebGL.Entity
-renderer textures name =
+renderer fallbackTexture textures gltfQueryResult name =
     case name of
         Just materialName ->
-            Material.renderer textures materialName
+            Material.renderer fallbackTexture textures gltfQueryResult materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer
@@ -162,26 +175,17 @@ renderer textures name =
 
 sceneView :
     Model
+    -> Gltf.Query.QueryResult
     -> Maybe Animation.ExtractedAnimation
     -> Gltf
     -> Scene Scene.ObjectId Material.Name
-    ->
-        { fallbackTexture : WebGL.Texture.Texture
-        , environmentTexture : WebGL.Texture.Texture
-        , specularEnvironmentTexture : WebGL.Texture.Texture
-        , brdfLUTTexture : WebGL.Texture.Texture
-        }
+    -> WebGL.Texture.Texture
+    -> Page.Example.PbrMaterial.Config
     -> Html Msg
-sceneView model animation gltf scene textures =
+sceneView model gltfQueryResult animation gltf scene fallbackTexture config =
     XYZMika.XYZ.view
         model.viewport
-        (renderer
-            { fallbackTexture = textures.fallbackTexture
-            , environmentTexture = textures.environmentTexture
-            , specularEnvironmentTexture = textures.specularEnvironmentTexture
-            , brdfLUTTexture = textures.brdfLUTTexture
-            }
-        )
+        (renderer fallbackTexture config gltfQueryResult)
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
         |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation gltf)
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions

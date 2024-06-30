@@ -1,15 +1,14 @@
 module Gltf.Query.TriangularMesh exposing
-    ( Material(..)
-    , TriangularMesh(..)
+    ( TriangularMesh(..)
     , Vertex
     , fromPrimitive
+    , toMaterial
     )
 
 import Common
 import Gltf exposing (Gltf)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
-import Gltf.Query.Material
-import Gltf.Query.ResolvedMaterial
+import Gltf.Query.Material exposing (Material)
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
 import Internal.Accessor as Accessor
 import Internal.Mesh exposing (Primitive)
@@ -42,11 +41,6 @@ type TriangularMesh
     | IndexedTriangularMesh (Maybe Material) ( List Vertex, List ( Int, Int, Int ) )
 
 
-type Material
-    = Material Gltf.Query.Material.Material
-    | ResolvedMaterial Gltf.Query.ResolvedMaterial.Material
-
-
 type alias VertexAttributes =
     { position : Maybe (List Attribute)
     , normal : Maybe (List Attribute)
@@ -56,6 +50,16 @@ type alias VertexAttributes =
     , weights : Maybe (List Attribute)
     , texCoords : Maybe (List Attribute)
     }
+
+
+toMaterial : TriangularMesh -> Maybe Gltf.Query.Material.Material
+toMaterial mesh =
+    case mesh of
+        TriangularMesh material _ ->
+            material
+
+        IndexedTriangularMesh material _ ->
+            material
 
 
 fromPrimitive : Gltf -> Primitive -> TriangularMesh
@@ -200,7 +204,7 @@ fromPrimitive gltf primitive =
 
         material : Maybe Material
         material =
-            Gltf.Query.Material.fromPrimitive gltf primitive |> Maybe.map Material
+            Gltf.Query.Material.fromPrimitive gltf primitive
     in
     case primitive.indices of
         Just indices ->
