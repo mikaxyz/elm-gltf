@@ -50,6 +50,7 @@ type Material
         , occlusionTextureStrength : Float
         , emissiveTexture : Maybe TextureIndex
         , emissiveFactor : Vec3
+        , doubleSided : Bool
         }
 
 
@@ -118,6 +119,7 @@ fromPrimitive gltf primitive =
                     , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
                     , metallicRoughnessTexture = metallicRoughnessTexture
                     }
+                , doubleSided = material.doubleSided
                 }
                 |> Just
 

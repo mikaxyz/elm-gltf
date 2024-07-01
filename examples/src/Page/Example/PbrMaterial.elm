@@ -6,6 +6,8 @@ import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
+import WebGL.Settings
+import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
@@ -188,6 +190,14 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
                 |> List.head
                 |> Maybe.map DirectionalLight.direction
                 |> Maybe.withDefault (vec3 0 0 0)
+
+        settings : List WebGL.Settings.Setting
+        settings =
+            [ ( True, WebGL.Settings.DepthTest.default )
+            , ( not pbr.doubleSided, WebGL.Settings.cullFace WebGL.Settings.back )
+            ]
+                |> List.filter Tuple.first
+                |> List.map Tuple.second
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
@@ -296,7 +306,7 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
         , inverseBindMatrix23 = boneTransforms.inverseBindMatrix23
         , inverseBindMatrix24 = boneTransforms.inverseBindMatrix24
         }
-        |> Material.toEntity object
+        |> Material.toEntityWithSettings settings object
 
 
 material : Uniforms -> Material Uniforms Varyings
