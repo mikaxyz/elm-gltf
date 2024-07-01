@@ -7,6 +7,7 @@ import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Settings
+import WebGL.Settings.Blend
 import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -191,6 +192,20 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
                 |> Maybe.map DirectionalLight.direction
                 |> Maybe.withDefault (vec3 0 0 0)
 
+        settingsWithAlpha : List WebGL.Settings.Setting -> List WebGL.Settings.Setting
+        settingsWithAlpha x =
+            case pbr.alphaMode of
+                Gltf.Query.Material.Opaque ->
+                    x
+
+                Gltf.Query.Material.Mask cutoff ->
+                    WebGL.Settings.sampleCoverage cutoff True
+                        :: WebGL.Settings.sampleAlphaToCoverage
+                        :: x
+
+                Gltf.Query.Material.Blend ->
+                    x
+
         settings : List WebGL.Settings.Setting
         settings =
             [ ( True, WebGL.Settings.DepthTest.default )
@@ -198,6 +213,7 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
             ]
                 |> List.filter Tuple.first
                 |> List.map Tuple.second
+                |> settingsWithAlpha
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix

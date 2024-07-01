@@ -1,5 +1,6 @@
 module Gltf.Query.Material exposing
-    ( Material(..)
+    ( AlphaMode(..)
+    , Material(..)
     , TextureIndex
     , fromPrimitive
     , toComparable
@@ -51,7 +52,14 @@ type Material
         , emissiveTexture : Maybe TextureIndex
         , emissiveFactor : Vec3
         , doubleSided : Bool
+        , alphaMode : AlphaMode
         }
+
+
+type AlphaMode
+    = Opaque
+    | Mask Float
+    | Blend
 
 
 type alias BbrMetallicRoughness =
@@ -120,6 +128,19 @@ fromPrimitive gltf primitive =
                     , metallicRoughnessTexture = metallicRoughnessTexture
                     }
                 , doubleSided = material.doubleSided
+                , alphaMode =
+                    material.alphaMode
+                        |> (\alphaMode ->
+                                case alphaMode of
+                                    Internal.Opaque ->
+                                        Opaque
+
+                                    Internal.Mask cutoff ->
+                                        Mask cutoff
+
+                                    Internal.Blend ->
+                                        Blend
+                           )
                 }
                 |> Just
 

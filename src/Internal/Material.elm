@@ -1,5 +1,6 @@
 module Internal.Material exposing
-    ( Index(..)
+    ( AlphaMode(..)
+    , Index(..)
     , Material
     , NormalTextureInfo
     , OcclusionTextureInfo
@@ -27,14 +28,13 @@ type alias Material =
     , emissiveTexture : Maybe TextureInfo
     , emissiveFactor : Vec3
     , alphaMode : AlphaMode
-    , alphaCutoff : Float
     , doubleSided : Bool
     }
 
 
 type AlphaMode
     = Opaque
-    | Mask
+    | Mask Float
     | Blend
 
 
@@ -86,7 +86,6 @@ decoder =
         |> JDP.optional "emissiveTexture" (JD.maybe TextureInfo.decoder) Nothing
         |> JDP.optional "emissiveFactor" vec3Decoder (vec3 0 0 0)
         |> JDP.optional "alphaMode" alphaModeDecoder Opaque
-        |> JDP.optional "alphaCutoff" JD.float 0.5
         |> JDP.optional "doubleSided" JD.bool False
 
 
@@ -117,6 +116,7 @@ alphaModeDecoder =
 
                     "MASK" ->
                         JD.succeed Mask
+                            |> JDP.optional "alphaCutoff" JD.float 1.0
 
                     "BLEND" ->
                         JD.succeed Blend
