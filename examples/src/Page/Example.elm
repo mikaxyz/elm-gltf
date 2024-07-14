@@ -57,8 +57,8 @@ loadEnvironmentTexture msg =
     WebGL.Texture.loadCubeMap
         { xPos = "/assets/papermill/diffuse/diffuse_right_0.jpg"
         , xNeg = "/assets/papermill/diffuse/diffuse_left_0.jpg"
-        , yPos = "/assets/papermill/diffuse/diffuse_bottom_0.jpg"
-        , yNeg = "/assets/papermill/diffuse/diffuse_top_0.jpg"
+        , yPos = "/assets/papermill/diffuse/diffuse_top_0.jpg"
+        , yNeg = "/assets/papermill/diffuse/diffuse_bottom_0.jpg"
         , zPos = "/assets/papermill/diffuse/diffuse_front_0.jpg"
         , zNeg = "/assets/papermill/diffuse/diffuse_back_0.jpg"
         }
@@ -70,8 +70,8 @@ loadSpecularEnvironmentTexture msg =
     WebGL.Texture.loadCubeMap
         { xPos = "/assets/hospital_room_2/px.png"
         , xNeg = "/assets/hospital_room_2/nx.png"
-        , yPos = "/assets/hospital_room_2/ny.png"
-        , yNeg = "/assets/hospital_room_2/py.png"
+        , yPos = "/assets/hospital_room_2/py.png"
+        , yNeg = "/assets/hospital_room_2/ny.png"
         , zPos = "/assets/hospital_room_2/pz.png"
         , zNeg = "/assets/hospital_room_2/nz.png"
         }
