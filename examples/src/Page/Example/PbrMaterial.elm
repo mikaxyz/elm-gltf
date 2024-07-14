@@ -35,27 +35,27 @@ type alias Uniforms =
     , u_LightColor : Vec3
 
     --
-    , u_hasMetallicRoughnessSampler : Bool
+    , u_hasMetallicRoughnessSampler : Int
     , u_MetallicRoughnessSampler : Texture
     , u_MetallicRoughnessValues : Vec2
 
     --
-    , u_hasBaseColorSampler : Bool
+    , u_hasBaseColorSampler : Int
     , u_BaseColorSampler : Texture
     , u_BaseColorFactor : Vec4
 
     --
-    , u_hasNormalSampler : Bool
+    , u_hasNormalSampler : Int
     , u_NormalSampler : Texture
     , u_NormalScale : Float
 
     --
-    , u_hasOcclusionSampler : Bool
+    , u_hasOcclusionSampler : Int
     , u_OcclusionSampler : Texture
     , u_OcclusionStrength : Float
 
     --
-    , u_hasEmissiveSampler : Bool
+    , u_hasEmissiveSampler : Int
     , u_EmissiveSampler : Texture
     , u_EmissiveFactor : Vec3
 
@@ -214,6 +214,14 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
                 |> List.filter Tuple.first
                 |> List.map Tuple.second
                 |> settingsWithAlpha
+
+        flagFromMaybe : Maybe a -> number
+        flagFromMaybe x =
+            if x /= Nothing then
+                1
+
+            else
+                0
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
@@ -227,26 +235,26 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
 
         --
         , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
-        , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture /= Nothing
+        , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture |> flagFromMaybe
         , u_MetallicRoughnessSampler = textures.pbrMetallicRoughness.metallicRoughnessTexture
 
         --
         , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
-        , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture /= Nothing
+        , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> flagFromMaybe
         , u_BaseColorSampler = textures.pbrMetallicRoughness.baseColorTexture
 
         --
-        , u_hasNormalSampler = pbr.normalTexture /= Nothing
+        , u_hasNormalSampler = pbr.normalTexture |> flagFromMaybe
         , u_NormalSampler = textures.normalTexture
         , u_NormalScale = pbr.normalTextureScale
 
         --
-        , u_hasOcclusionSampler = pbr.occlusionTexture /= Nothing
+        , u_hasOcclusionSampler = pbr.occlusionTexture |> flagFromMaybe
         , u_OcclusionSampler = textures.occlusionTexture
         , u_OcclusionStrength = pbr.occlusionTextureStrength
 
         --
-        , u_hasEmissiveSampler = pbr.emissiveTexture /= Nothing
+        , u_hasEmissiveSampler = pbr.emissiveTexture |> flagFromMaybe
         , u_EmissiveSampler = textures.emissiveTexture
         , u_EmissiveFactor = pbr.emissiveFactor
 
@@ -515,22 +523,22 @@ fragmentShader =
         uniform samplerCube u_SpecularEnvSampler;
 
         uniform vec2 u_MetallicRoughnessValues;
-        uniform bool u_hasMetallicRoughnessSampler;
+        uniform int u_hasMetallicRoughnessSampler;
         uniform sampler2D u_MetallicRoughnessSampler;
 
         uniform vec4 u_BaseColorFactor;
-        uniform bool u_hasBaseColorSampler;
+        uniform int u_hasBaseColorSampler;
         uniform sampler2D u_BaseColorSampler;
 
-        uniform bool u_hasNormalSampler;
+        uniform int u_hasNormalSampler;
         uniform sampler2D u_NormalSampler;
         uniform float u_NormalScale;
 
-        uniform bool u_hasOcclusionSampler;
+        uniform int u_hasOcclusionSampler;
         uniform sampler2D u_OcclusionSampler;
         uniform float u_OcclusionStrength;
 
-        uniform bool u_hasEmissiveSampler;
+        uniform int u_hasEmissiveSampler;
         uniform sampler2D u_EmissiveSampler;
         uniform vec3 u_EmissiveFactor;
 
@@ -603,7 +611,7 @@ fragmentShader =
             mat3 tbn = mat3(t, b, ng);
 
             vec3 n;
-            if (u_hasNormalSampler) {
+            if (u_hasNormalSampler == 1) {
                 n = texture2D(u_NormalSampler, v_UV).rgb;
                 n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
             } else {
@@ -706,7 +714,7 @@ fragmentShader =
             float perceptualRoughness = u_MetallicRoughnessValues.y;
             float metallic = u_MetallicRoughnessValues.x;
 
-            if (u_hasMetallicRoughnessSampler) {
+            if (u_hasMetallicRoughnessSampler == 1) {
                 vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
                 perceptualRoughness = mrSample.g * perceptualRoughness;
                 metallic = mrSample.b * metallic;
@@ -720,7 +728,7 @@ fragmentShader =
 
             // The albedo may be defined from a base texture or a flat color
             vec4 baseColor = u_BaseColorFactor;
-            if (u_hasBaseColorSampler) {
+            if (u_hasBaseColorSampler == 1) {
                 baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
             }
 
@@ -781,12 +789,12 @@ fragmentShader =
             // Calculate lighting contribution from image based lighting source (IBL)
             color += getIBLContribution(pbrInputs, n, reflection);
 
-            if (u_hasOcclusionSampler) {
+            if (u_hasOcclusionSampler == 1) {
                 float ao = texture2D(u_OcclusionSampler, v_UV).r;
                 color = mix(color, color * ao, u_OcclusionStrength);
             }
 
-            if (u_hasEmissiveSampler) {
+            if (u_hasEmissiveSampler == 1) {
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
                 color += emissive;
             }
