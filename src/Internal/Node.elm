@@ -1,12 +1,12 @@
 module Internal.Node exposing
     ( Index(..)
     , Node(..)
-    , Transform(..)
     , decoder
     , indexDecoder
     )
 
 import Gltf.Query.Camera
+import Gltf.Query.Transform exposing (Transform(..))
 import Internal.Camera as Camera
 import Internal.Mesh as Mesh
 import Internal.Skin as Skin
@@ -104,15 +104,6 @@ type alias Data =
     --
     , transform : Transform
     }
-
-
-type Transform
-    = RTS
-        { rotation : Maybe Quaternion
-        , translation : Maybe Vec3
-        , scale : Maybe Vec3
-        }
-    | Matrix Mat4
 
 
 vec3Decoder : JD.Decoder Vec3

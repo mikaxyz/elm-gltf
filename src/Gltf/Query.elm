@@ -23,6 +23,7 @@ import Gltf.Query.Material
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.Task
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
+import Gltf.Query.Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
 import Internal.Image
 import Internal.Node as Node
@@ -308,7 +309,7 @@ type Properties
     = Properties
         { nodeIndex : NodeIndex
         , nodeName : Maybe String
-        , transform : Node.Transform
+        , transform : Transform
         }
 
 

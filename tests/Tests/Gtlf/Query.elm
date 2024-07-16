@@ -3,6 +3,7 @@ module Tests.Gtlf.Query exposing (suite)
 import Expect
 import Gltf.Query as Query
 import Gltf.Query.Skin exposing (Skin(..))
+import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
@@ -34,7 +35,7 @@ suite =
                             , cameraIndex = Nothing
                             , children = []
                             , transform =
-                                Node.RTS
+                                Transform.RTS
                                     { rotation = Nothing
                                     , translation = Nothing
                                     , scale = Nothing

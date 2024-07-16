@@ -2,6 +2,7 @@ module Tests.Gtlf.BevyCharacter exposing (suite)
 
 import Expect
 import Gltf.Query as Query
+import Gltf.Query.Transform as Transform
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
 import Internal.Skin as Skin
@@ -29,7 +30,7 @@ suite =
                             , cameraIndex = Nothing
                             , children = []
                             , transform =
-                                Node.RTS
+                                Transform.RTS
                                     { rotation = Nothing
                                     , translation = Nothing
                                     , scale = Nothing

@@ -12,6 +12,7 @@ import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
+import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Internal.Node
 import Material
@@ -140,10 +141,10 @@ frameScene config nodes =
         nodeTransformAndBounds : Query.Node -> ( Mat4, Maybe ( Vec3, Vec3 ) )
         nodeTransformAndBounds node =
             let
-                transformToMat : Internal.Node.Transform -> Mat4
+                transformToMat : Transform -> Mat4
                 transformToMat transform =
                     case transform of
-                        Internal.Node.RTS { translation, rotation, scale } ->
+                        Transform.RTS { translation, rotation, scale } ->
                             let
                                 r =
                                     rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
@@ -157,7 +158,7 @@ frameScene config nodes =
                                 |> Mat4.mul r
                                 |> Mat4.mul s
 
-                        Internal.Node.Matrix mat ->
+                        Transform.Matrix mat ->
                             mat
             in
             case node of
@@ -273,10 +274,10 @@ frameScene config nodes =
 objectsFromNode : (ObjectId -> objectId) -> Query.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
 objectsFromNode objectIdMap node =
     let
-        applyTransform : Internal.Node.Transform -> Object id materialId -> Object id materialId
+        applyTransform : Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
             case transform of
-                Internal.Node.RTS { translation, rotation, scale } ->
+                Transform.RTS { translation, rotation, scale } ->
                     object
                         |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
                         |> (\object_ ->
@@ -293,7 +294,7 @@ objectsFromNode objectIdMap node =
                                 object_ |> Object.withRotation (Mat4.mulAffine s r)
                            )
 
-                Internal.Node.Matrix mat ->
+                Transform.Matrix mat ->
                     Object.withRotation mat object
     in
     case node of

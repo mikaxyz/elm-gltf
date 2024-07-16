@@ -16,6 +16,7 @@ import Gltf.Query.Animation as Animation
         )
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skin exposing (Skin(..))
+import Gltf.Query.Transform as Transform
 import Internal.Node as Node exposing (Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -485,13 +486,13 @@ boneTransformsFromAnimations theta animations skin skeleton =
 
                 { t, r, s } =
                     case node.transform of
-                        Node.RTS { translation, rotation, scale } ->
+                        Transform.RTS { translation, rotation, scale } ->
                             { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
                             , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
                             , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
                             }
 
-                        Node.Matrix _ ->
+                        Transform.Matrix _ ->
                             { t = Mat4.identity
                             , r = Mat4.identity
                             , s = Mat4.identity
