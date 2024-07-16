@@ -7,7 +7,6 @@ import Gltf.Query as Query
 import Gltf.Query.Animation as Animation
 import Gltf.Query.Camera
 import Internal.Node
-import Internal.Scene
 import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (vec2)
@@ -424,7 +423,7 @@ update msg model =
                         queryResult : Result Query.QueryError Query.QueryResult
                         queryResult =
                             gltf
-                                |> Query.sceneQuery (Internal.Scene.Index 0)
+                                |> Query.sceneQuery 0
 
                         cmd : Cmd Msg
                         cmd =
@@ -434,10 +433,9 @@ update msg model =
 
                         nodes : List (Tree.Tree Query.Node)
                         nodes =
-                            gltf
-                                |> Query.sceneNodeTrees (Internal.Scene.Index 0)
+                            queryResult
+                                |> Result.map Query.queryResultNodes
                                 |> Result.withDefault []
-                                |> List.map (Tree.map (Query.nodeFromNode gltf))
 
                         scene : XYZScene.Scene Scene.ObjectId Material.Name
                         scene =

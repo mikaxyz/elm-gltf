@@ -134,9 +134,9 @@ textureWithIndex (QueryResult _ textureStore _) textureIndex =
 
 {-| TODO: Needed?
 -}
-sceneQuery : Scene.Index -> Gltf -> Result QueryError QueryResult
+sceneQuery : Int -> Gltf -> Result QueryError QueryResult
 sceneQuery index gltf =
-    Common.sceneAtIndex gltf index
+    Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
             (\(Scene scene) ->
                 scene.nodes
@@ -303,9 +303,9 @@ type Properties
 
 {-| TODO: Needed?
 -}
-sceneNodeTrees : Scene.Index -> Gltf -> Result QueryError (List (Tree Node.Node))
+sceneNodeTrees : Int -> Gltf -> Result QueryError (List (Tree Node.Node))
 sceneNodeTrees index gltf =
-    Common.sceneAtIndex gltf index
+    Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
             (\(Scene scene) ->
                 scene.nodes

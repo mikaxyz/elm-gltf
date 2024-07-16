@@ -6,7 +6,6 @@ import Gltf.Query.Skin exposing (Skin(..))
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
-import Internal.Scene as Scene
 import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (vec3)
@@ -80,7 +79,7 @@ suite =
 
                     queryResult : Result Query.Error (List (Tree Node.Index))
                     queryResult =
-                        Query.fromJson simpleSkin (Query.sceneNodeTrees (Scene.Index 0))
+                        Query.fromJson simpleSkin (Query.sceneNodeTrees 0)
                             |> Result.map (List.map (Tree.map nodeToIndex))
 
                     expected : List (Tree Node.Index)
