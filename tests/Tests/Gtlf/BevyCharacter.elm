@@ -17,7 +17,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node)
                     queryResult =
-                        Query.fromJson json (Query.nodeTree (Node.Index 25))
+                        Query.fromJson json (Query.nodeTree 25)
 
                     expected : Node
                     expected =
@@ -49,7 +49,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree String)
                     queryResult =
-                        Query.fromJson json (Query.nodeTree (Node.Index 26))
+                        Query.fromJson json (Query.nodeTree 26)
                             |> Result.map (Tree.map (\(Node node) -> node.name |> Maybe.withDefault "Unknown"))
 
                     expected : Tree String

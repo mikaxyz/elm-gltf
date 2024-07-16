@@ -22,7 +22,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node)
                     queryResult =
-                        Query.fromJson simpleSkin (Query.nodeTree (Node.Index 0))
+                        Query.fromJson simpleSkin (Query.nodeTree 0)
 
                     expected : Node
                     expected =
@@ -54,7 +54,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node.Index)
                     queryResult =
-                        Query.fromJson simpleSkin (Query.nodeTree (Node.Index 1))
+                        Query.fromJson simpleSkin (Query.nodeTree 1)
                             |> Result.map (Tree.map (\(Node node) -> node.index))
 
                     expected : Tree Node.Index

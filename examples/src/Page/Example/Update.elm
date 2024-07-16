@@ -6,7 +6,6 @@ import Color
 import Gltf.Query as Query
 import Gltf.Query.Animation as Animation
 import Gltf.Query.Camera
-import Internal.Node
 import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (vec2)
@@ -483,7 +482,7 @@ update msg model =
                         |> RemoteData.map
                             (\scene ->
                                 let
-                                    cameraNodeIndex : Maybe Internal.Node.Index
+                                    cameraNodeIndex : Maybe Query.NodeIndex
                                     cameraNodeIndex =
                                         model.queryResult
                                             |> Maybe.map Query.queryResultNodes

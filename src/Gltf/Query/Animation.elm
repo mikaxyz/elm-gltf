@@ -11,13 +11,14 @@ module Gltf.Query.Animation exposing
 import Array exposing (Array)
 import Common
 import Gltf exposing (Gltf)
+import Gltf.Query as Query
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Internal.Accessor as Accessor
 import Internal.Animation exposing (Animation(..))
 import Internal.Animation.Channel exposing (Channel(..))
 import Internal.Animation.Sampler as Sampler exposing (Sampler(..))
 import Internal.Mesh exposing (Primitive)
-import Internal.Node as Node exposing (Node(..))
+import Internal.Node exposing (Node(..))
 import Tree exposing (Tree)
 
 
@@ -74,7 +75,7 @@ type ExtractedAnimation
 type ExtractedChannel
     = ExtractedChannel
         { sampler : ExtractedSampler
-        , nodeIndex : Node.Index
+        , nodeIndex : Query.NodeIndex
         , path : Path
         }
 
@@ -114,7 +115,7 @@ extractChannel samplers (Channel channel) =
             (\sampler ->
                 ExtractedChannel
                     { sampler = sampler
-                    , nodeIndex = channel.target.node
+                    , nodeIndex = channel.target.node |> (\(Internal.Node.Index i) -> Query.NodeIndex i)
                     , path = pathFromChannel channel.target.path
                     }
             )

@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Error(..), Node(..), Properties(..), QueryError(..)
+    ( Error(..), Node(..), NodeIndex(..), Properties(..), QueryError(..)
     , fromJson, nodeTree, sceneNodeTrees
     , nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
     , QueryResult, QueryResultEffect
@@ -8,7 +8,7 @@ module Gltf.Query exposing
 
 {-| Query contents of Gltf
 
-@docs Error, Node, Properties, QueryError
+@docs Error, Node, NodeIndex, Properties, QueryError
 @docs fromJson, nodeTree, sceneNodeTrees
 @docs nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
 @docs QueryResult, QueryResultEffect
@@ -56,6 +56,17 @@ fromJson json f =
 type QueryError
     = SceneNotFound
     | NodeNotFound
+
+
+{-| TODO: Docs
+-}
+type NodeIndex
+    = NodeIndex Int
+
+
+nodeIndexFromNode : Node.Index -> NodeIndex
+nodeIndexFromNode (Node.Index index) =
+    NodeIndex index
 
 
 {-| TODO: Docs
@@ -141,7 +152,7 @@ sceneQuery index gltf =
             (\(Scene scene) ->
                 scene.nodes
                     |> List.filterMap
-                        (\nodeIndex -> nodeTree nodeIndex gltf |> Result.toMaybe)
+                        (\(Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
                     |> List.map (Tree.map (nodeFromNode gltf))
                     |> QueryResult gltf TextureStore.init
             )
@@ -285,7 +296,7 @@ nodeFromNode gltf node =
 propertiesFromNode : Node.Node -> Properties
 propertiesFromNode (Node.Node node) =
     Properties
-        { nodeIndex = node.index
+        { nodeIndex = nodeIndexFromNode node.index
         , nodeName = node.name
         , transform = node.transform
         }
@@ -295,7 +306,7 @@ propertiesFromNode (Node.Node node) =
 -}
 type Properties
     = Properties
-        { nodeIndex : Node.Index
+        { nodeIndex : NodeIndex
         , nodeName : Maybe String
         , transform : Node.Transform
         }
@@ -310,7 +321,7 @@ sceneNodeTrees index gltf =
             (\(Scene scene) ->
                 scene.nodes
                     |> List.filterMap
-                        (\nodeIndex ->
+                        (\(Node.Index nodeIndex) ->
                             nodeTree nodeIndex gltf
                                 |> Result.toMaybe
                         )
@@ -320,9 +331,9 @@ sceneNodeTrees index gltf =
 
 {-| TODO: Needed?
 -}
-nodeTree : Node.Index -> Gltf -> Result QueryError (Tree Node.Node)
+nodeTree : Int -> Gltf -> Result QueryError (Tree Node.Node)
 nodeTree index gltf =
-    maybeNodeTree gltf index |> Result.fromMaybe NodeNotFound
+    maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe NodeNotFound
 
 
 maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree Node.Node)

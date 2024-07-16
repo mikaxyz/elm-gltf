@@ -7,6 +7,7 @@ module Page.Example.GltfHelper exposing
 
 import Dict exposing (Dict)
 import Gltf exposing (Gltf)
+import Gltf.Query as Query
 import Gltf.Query.Animation as Animation
     exposing
         ( ExtractedAnimation(..)
@@ -52,7 +53,7 @@ type alias TRS =
     }
 
 
-modifiersFromAnimations : Float -> (Node.Index -> objectId) -> List ExtractedAnimation -> List (Scene.Modifier objectId Material.Name)
+modifiersFromAnimations : Float -> (Query.NodeIndex -> objectId) -> List ExtractedAnimation -> List (Scene.Modifier objectId Material.Name)
 modifiersFromAnimations theta objectIdMap animations =
     let
         channels : List Animation.ExtractedChannel
@@ -451,7 +452,7 @@ boneTransformsFromAnimations theta animations skin skeleton =
                 |> List.concatMap (\(ExtractedAnimation x) -> x.channels)
                 |> List.map
                     (\(ExtractedChannel channel) ->
-                        ( ( channel.nodeIndex |> (\(Node.Index i) -> i)
+                        ( ( channel.nodeIndex |> (\(Query.NodeIndex i) -> i)
                           , pathToString channel.path
                           )
                         , ExtractedChannel channel

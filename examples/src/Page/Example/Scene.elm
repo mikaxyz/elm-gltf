@@ -13,7 +13,7 @@ import Gltf.Query.Animation exposing (ExtractedAnimation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Internal.Node as Node exposing (Index(..), Node(..))
+import Internal.Node
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -31,10 +31,10 @@ import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 
 
 type ObjectId
-    = Mesh Node.Index
+    = Mesh Query.NodeIndex
     | SkinnedMesh
-    | Bone Node.Index
-    | Camera Gltf.Query.Camera.Index Node.Index
+    | Bone Query.NodeIndex
+    | Camera Gltf.Query.Camera.Index Query.NodeIndex
 
 
 type alias Config =
@@ -140,10 +140,10 @@ frameScene config nodes =
         nodeTransformAndBounds : Query.Node -> ( Mat4, Maybe ( Vec3, Vec3 ) )
         nodeTransformAndBounds node =
             let
-                transformToMat : Node.Transform -> Mat4
+                transformToMat : Internal.Node.Transform -> Mat4
                 transformToMat transform =
                     case transform of
-                        Node.RTS { translation, rotation, scale } ->
+                        Internal.Node.RTS { translation, rotation, scale } ->
                             let
                                 r =
                                     rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
@@ -157,7 +157,7 @@ frameScene config nodes =
                                 |> Mat4.mul r
                                 |> Mat4.mul s
 
-                        Node.Matrix mat ->
+                        Internal.Node.Matrix mat ->
                             mat
             in
             case node of
@@ -273,10 +273,10 @@ frameScene config nodes =
 objectsFromNode : (ObjectId -> objectId) -> Query.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
 objectsFromNode objectIdMap node =
     let
-        applyTransform : Node.Transform -> Object id materialId -> Object id materialId
+        applyTransform : Internal.Node.Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
             case transform of
-                Node.RTS { translation, rotation, scale } ->
+                Internal.Node.RTS { translation, rotation, scale } ->
                     object
                         |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
                         |> (\object_ ->
@@ -293,7 +293,7 @@ objectsFromNode objectIdMap node =
                                 object_ |> Object.withRotation (Mat4.mulAffine s r)
                            )
 
-                Node.Matrix mat ->
+                Internal.Node.Matrix mat ->
                     Object.withRotation mat object
     in
     case node of
@@ -330,7 +330,7 @@ objectsFromNode objectIdMap node =
 
         Query.MeshNode [] (Query.Properties properties) ->
             let
-                name (Node.Index nodeIndex) =
+                name (Query.NodeIndex nodeIndex) =
                     Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
             in
             ( Primitives.bone3 0.1
@@ -398,13 +398,13 @@ boneDeformerF theta animations gltf obj =
         |> Maybe.map
             (\skin ->
                 let
-                    skeleton : Maybe (Tree Node)
+                    skeleton : Maybe (Tree Internal.Node.Node)
                     skeleton =
                         skin.joints
                             |> List.head
                             |> Maybe.andThen
                                 (\rootNode ->
-                                    Query.nodeTree (Node.Index rootNode) gltf
+                                    Query.nodeTree rootNode gltf
                                         |> Result.toMaybe
                                 )
 
