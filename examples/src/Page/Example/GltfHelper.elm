@@ -17,7 +17,7 @@ import Gltf.Query.Animation as Animation
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skin exposing (Skin(..))
 import Gltf.Query.Transform as Transform
-import Internal.Node as Node exposing (Node(..))
+import Internal.Node
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
@@ -32,7 +32,7 @@ objectWithSkin (Skin skin) obj =
     obj
         |> Object.withSkin
             { inverseBindMatrices = skin.inverseBindMatrices
-            , joints = skin.joints |> List.map (\(Node.Index index) -> index)
+            , joints = skin.joints |> List.map (\(Internal.Node.Index index) -> index)
             }
 
 
@@ -419,7 +419,7 @@ channelMatrix theta (ExtractedChannel channel) =
             Mat4.identity
 
 
-boneTransformsFromAnimationName : Float -> String -> Gltf -> Object.Skin -> Tree Node -> BoneTransforms
+boneTransformsFromAnimationName : Float -> String -> Gltf -> Object.Skin -> Tree Internal.Node.Node -> BoneTransforms
 boneTransformsFromAnimationName theta animationName gltf skin skeleton =
     let
         animations : List ExtractedAnimation
@@ -429,7 +429,7 @@ boneTransformsFromAnimationName theta animationName gltf skin skeleton =
     boneTransformsFromAnimations theta animations skin skeleton
 
 
-boneTransformsFromAnimations : Float -> List ExtractedAnimation -> Object.Skin -> Tree Node -> BoneTransforms
+boneTransformsFromAnimations : Float -> List ExtractedAnimation -> Object.Skin -> Tree Internal.Node.Node -> BoneTransforms
 boneTransformsFromAnimations theta animations skin skeleton =
     let
         pathToString : Animation.Path -> String
@@ -473,12 +473,12 @@ boneTransformsFromAnimations theta animations skin skeleton =
                 |> List.indexedMap (\index ( nodeIndex, inverseBindMatrix ) -> ( nodeIndex, ( index, inverseBindMatrix ) ))
                 |> Dict.fromList
 
-        nodeToTrs : Node -> TRS
-        nodeToTrs (Node node) =
+        nodeToTrs : Internal.Node.Node -> TRS
+        nodeToTrs (Internal.Node.Node node) =
             let
                 nodeIndex : Int
                 nodeIndex =
-                    node.index |> (\(Node.Index index) -> index)
+                    node.index |> (\(Internal.Node.Index index) -> index)
 
                 ( skinIndex, inverseBindMatrix ) =
                     Dict.get nodeIndex skeletonIndices
