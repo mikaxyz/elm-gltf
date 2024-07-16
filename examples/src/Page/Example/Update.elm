@@ -5,7 +5,7 @@ import Browser.Dom
 import Color
 import Gltf.Query as Query
 import Gltf.Query.Animation as Animation
-import Internal.Camera
+import Gltf.Query.Camera
 import Internal.Node
 import Internal.Scene
 import Keyboard
@@ -510,23 +510,23 @@ update msg model =
                                             |> List.filterMap identity
                                             |> List.head
 
-                                    maybeGltfCamera : Maybe Internal.Camera.Camera
+                                    maybeGltfCamera : Maybe Gltf.Query.Camera.Camera
                                     maybeGltfCamera =
                                         model.gltf
                                             |> RemoteData.toMaybe
                                             |> Maybe.map .cameras
-                                            |> Maybe.andThen (Array.get ((\(Internal.Camera.Index i) -> i) index))
+                                            |> Maybe.andThen (Array.get ((\(Gltf.Query.Camera.Index i) -> i) index))
 
                                     applyProjection =
                                         case maybeGltfCamera |> Maybe.map .projection of
-                                            Just (Internal.Camera.Perspective p) ->
+                                            Just (Gltf.Query.Camera.Perspective p) ->
                                                 XYZScene.withPerspectiveProjection
                                                     { fov = 180 / pi * p.yFov
                                                     , near = p.zNear
                                                     , far = p.zFar |> Maybe.withDefault 1000
                                                     }
 
-                                            Just (Internal.Camera.Orthographic p) ->
+                                            Just (Gltf.Query.Camera.Orthographic p) ->
                                                 XYZScene.withOrthographicProjection
                                                     { xMag = p.xMag
                                                     , yMag = p.yMag

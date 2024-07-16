@@ -18,12 +18,12 @@ module Gltf.Query exposing
 
 import Common
 import Gltf exposing (Gltf)
+import Gltf.Query.Camera as Camera
 import Gltf.Query.Material
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.Task
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
-import Internal.Camera
 import Internal.Image
 import Internal.Node as Node
 import Internal.Sampler
@@ -62,7 +62,7 @@ type QueryError
 -}
 type Node
     = EmptyNode Properties
-    | CameraNode Internal.Camera.Index Properties
+    | CameraNode Camera.Index Properties
     | MeshNode (List TriangularMesh) Properties
     | SkinnedMeshNode (List TriangularMesh) Skin Properties
 

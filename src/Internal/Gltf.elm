@@ -8,11 +8,12 @@ module Internal.Gltf exposing
 import Array exposing (Array)
 import Bytes.Decode
 import Gltf.Glb as Glb
+import Gltf.Query.Camera
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.Animation as Animation exposing (Animation)
 import Internal.Buffer as Buffer exposing (Buffer)
 import Internal.BufferView as BufferView exposing (BufferView)
-import Internal.Camera as Camera exposing (Camera)
+import Internal.Camera as Camera
 import Internal.Image as Image exposing (Image)
 import Internal.Material as Material exposing (Material)
 import Internal.Mesh as Mesh exposing (Mesh)
@@ -40,7 +41,7 @@ type alias Gltf =
     , bufferViews : Array BufferView
     , accessors : Array Accessor
     , animations : Array Animation
-    , cameras : Array Camera
+    , cameras : Array Gltf.Query.Camera.Camera
     }
 
 

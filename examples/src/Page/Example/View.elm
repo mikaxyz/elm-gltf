@@ -4,10 +4,10 @@ import Array
 import Gltf exposing (Gltf)
 import Gltf.Query
 import Gltf.Query.Animation as Animation
+import Gltf.Query.Camera
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
-import Internal.Camera
 import Json.Decode as JD
 import Material
 import Math.Vector3 exposing (vec3)
@@ -98,7 +98,7 @@ sceneOptionsView gltf model =
                 |> List.map
                     (\camera ->
                         { name = camera.name
-                        , index = camera.index |> (\(Internal.Camera.Index index) -> index) |> Just
+                        , index = camera.index |> (\(Gltf.Query.Camera.Index index) -> index) |> Just
                         }
                     )
           of
@@ -117,7 +117,7 @@ sceneOptionsView gltf model =
                                     [ text (camera.name |> Maybe.withDefault ("Camera " ++ String.fromInt (Maybe.withDefault -1 camera.index)))
                                     ]
                             )
-                        |> select [ onChange (String.toInt >> Maybe.map Internal.Camera.Index >> UserSelectedCamera) ]
+                        |> select [ onChange (String.toInt >> Maybe.map Gltf.Query.Camera.Index >> UserSelectedCamera) ]
                     ]
         , case model.animations of
             [] ->

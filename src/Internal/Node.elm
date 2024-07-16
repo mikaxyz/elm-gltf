@@ -6,6 +6,7 @@ module Internal.Node exposing
     , indexDecoder
     )
 
+import Gltf.Query.Camera
 import Internal.Camera as Camera
 import Internal.Mesh as Mesh
 import Internal.Skin as Skin
@@ -97,7 +98,7 @@ type alias Data =
     , name : Maybe String
     , meshIndex : Maybe Mesh.Index
     , skinIndex : Maybe Skin.Index
-    , cameraIndex : Maybe Camera.Index
+    , cameraIndex : Maybe Gltf.Query.Camera.Index
     , children : List Index
 
     --

@@ -10,9 +10,9 @@ import Color
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
+import Gltf.Query.Camera
 import Gltf.Query.Material
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Internal.Camera
 import Internal.Node as Node exposing (Index(..), Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -34,7 +34,7 @@ type ObjectId
     = Mesh Node.Index
     | SkinnedMesh
     | Bone Node.Index
-    | Camera Internal.Camera.Index Node.Index
+    | Camera Gltf.Query.Camera.Index Node.Index
 
 
 type alias Config =

@@ -14,9 +14,9 @@ import Browser.Dom
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (ExtractedAnimation)
+import Gltf.Query.Camera
 import Gltf.Query.Material
 import Http
-import Internal.Camera
 import Keyboard
 import Material
 import Page.Example.Scene as Scene
@@ -54,7 +54,7 @@ type Msg
     | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
-    | UserSelectedCamera (Maybe Internal.Camera.Index)
+    | UserSelectedCamera (Maybe Gltf.Query.Camera.Index)
     | UserSelectedAnimation (Maybe Int)
 
 
@@ -88,7 +88,7 @@ type alias Model =
     , queryResult : Maybe Query.QueryResult
     , animations : List ExtractedAnimation
     , activeAnimation : Maybe ExtractedAnimation
-    , activeCamera : Maybe Internal.Camera.Index
+    , activeCamera : Maybe Gltf.Query.Camera.Index
     }
 
 
