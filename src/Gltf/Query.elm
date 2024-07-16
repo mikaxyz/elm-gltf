@@ -3,8 +3,7 @@ module Gltf.Query exposing
     , fromJson, nodeTree, sceneNodeTrees
     , nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
     , QueryResult, QueryResultEffect
-    , queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
-    , textureWithIndex
+    , textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
 
 {-| Query contents of Gltf
@@ -13,7 +12,7 @@ module Gltf.Query exposing
 @docs fromJson, nodeTree, sceneNodeTrees
 @docs nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
 @docs QueryResult, QueryResultEffect
-@docs textureWithTextureIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
+@docs textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
 
 -}
 
@@ -22,7 +21,7 @@ import Gltf exposing (Gltf)
 import Gltf.Query.Material
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.Task
-import Gltf.Query.TextureStore as TextureStore exposing (SampledTexture, TextureStore)
+import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
 import Internal.Camera
 import Internal.Image
@@ -245,8 +244,7 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
         doTree tree =
             tree
                 |> Tree.flatten
-                |> List.map meshesFromNode
-                |> List.concat
+                |> List.concatMap meshesFromNode
                 |> List.filterMap textureSourceCmd
     in
     trees
