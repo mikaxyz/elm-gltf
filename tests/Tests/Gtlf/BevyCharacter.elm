@@ -30,7 +30,7 @@ suite =
                             , cameraIndex = Nothing
                             , children = []
                             , transform =
-                                Transform.RTS
+                                Transform.TRS
                                     { rotation = Nothing
                                     , translation = Nothing
                                     , scale = Nothing

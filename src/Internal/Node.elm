@@ -44,7 +44,7 @@ transformDecoder =
         [ JDP.required "matrix" mat4decoder (JD.succeed Matrix)
         , JD.map3
             (\rotation translation scale ->
-                RTS
+                TRS
                     { rotation = rotation
                     , translation = translation
                     , scale = scale

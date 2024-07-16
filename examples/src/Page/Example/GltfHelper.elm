@@ -486,7 +486,7 @@ boneTransformsFromAnimations theta animations skin skeleton =
 
                 { t, r, s } =
                     case node.transform of
-                        Transform.RTS { translation, rotation, scale } ->
+                        Transform.TRS { translation, rotation, scale } ->
                             { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
                             , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
                             , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity

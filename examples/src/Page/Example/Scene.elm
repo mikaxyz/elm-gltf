@@ -144,7 +144,7 @@ frameScene config nodes =
                 transformToMat : Transform -> Mat4
                 transformToMat transform =
                     case transform of
-                        Transform.RTS { translation, rotation, scale } ->
+                        Transform.TRS { translation, rotation, scale } ->
                             let
                                 r =
                                     rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
@@ -277,7 +277,7 @@ objectsFromNode objectIdMap node =
         applyTransform : Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
             case transform of
-                Transform.RTS { translation, rotation, scale } ->
+                Transform.TRS { translation, rotation, scale } ->
                     object
                         |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
                         |> (\object_ ->

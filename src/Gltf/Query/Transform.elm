@@ -6,7 +6,7 @@ import Quaternion exposing (Quaternion)
 
 
 type Transform
-    = RTS
+    = TRS
         { rotation : Maybe Quaternion
         , translation : Maybe Vec3
         , scale : Maybe Vec3
