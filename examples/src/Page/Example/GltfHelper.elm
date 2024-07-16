@@ -15,7 +15,6 @@ import Gltf.Query.Animation as Animation
         )
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skin exposing (Skin(..))
-import Internal.Animation.Channel as Channel
 import Internal.Node as Node exposing (Node(..))
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -64,7 +63,7 @@ modifiersFromAnimations theta objectIdMap animations =
         applyChannel : ExtractedChannel -> Object objectId Material.Name -> Object objectId Material.Name
         applyChannel (ExtractedChannel channel) obj =
             case channel.path of
-                Channel.Translation ->
+                Animation.Translation ->
                     let
                         (ExtractedSampler sampler) =
                             channel.sampler
@@ -104,7 +103,7 @@ modifiersFromAnimations theta objectIdMap animations =
                     obj
                         |> Object.withPosition position
 
-                Channel.Rotation ->
+                Animation.Rotation ->
                     let
                         (ExtractedSampler sampler) =
                             channel.sampler
@@ -141,10 +140,10 @@ modifiersFromAnimations theta objectIdMap animations =
                     in
                     obj |> Object.withRotation rotation
 
-                Channel.Scale ->
+                Animation.Scale ->
                     obj
 
-                Channel.Weights ->
+                Animation.Weights ->
                     obj
     in
     channels
@@ -335,7 +334,7 @@ animatedRotation (ExtractedChannel channel) time =
 channelMatrix : Float -> ExtractedChannel -> Mat4
 channelMatrix theta (ExtractedChannel channel) =
     case channel.path of
-        Channel.Translation ->
+        Animation.Translation ->
             let
                 (ExtractedSampler sampler) =
                     channel.sampler
@@ -374,7 +373,7 @@ channelMatrix theta (ExtractedChannel channel) =
             in
             Mat4.makeTranslate position
 
-        Channel.Rotation ->
+        Animation.Rotation ->
             let
                 (ExtractedSampler sampler) =
                     channel.sampler
@@ -411,10 +410,10 @@ channelMatrix theta (ExtractedChannel channel) =
             in
             rotation
 
-        Channel.Scale ->
+        Animation.Scale ->
             Mat4.identity
 
-        Channel.Weights ->
+        Animation.Weights ->
             Mat4.identity
 
 
@@ -431,19 +430,19 @@ boneTransformsFromAnimationName theta animationName gltf skin skeleton =
 boneTransformsFromAnimations : Float -> List ExtractedAnimation -> Object.Skin -> Tree Node -> BoneTransforms
 boneTransformsFromAnimations theta animations skin skeleton =
     let
-        pathToString : Channel.Path -> String
+        pathToString : Animation.Path -> String
         pathToString path =
             case path of
-                Channel.Translation ->
+                Animation.Translation ->
                     "Translation"
 
-                Channel.Rotation ->
+                Animation.Rotation ->
                     "Rotation"
 
-                Channel.Scale ->
+                Animation.Scale ->
                     "Scale"
 
-                Channel.Weights ->
+                Animation.Weights ->
                     "Weights"
 
         channels : Dict ( Int, String ) ExtractedChannel

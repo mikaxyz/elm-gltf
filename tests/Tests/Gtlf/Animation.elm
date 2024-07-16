@@ -84,7 +84,7 @@ suite =
                                     , \(ExtractedSampler sampler) ->
                                         Expect.equal (List.length sampler.output) 62
                                     , \(ExtractedSampler sampler) ->
-                                        Expect.equal sampler.interpolation Sampler.Linear
+                                        Expect.equal sampler.interpolation Animation.Linear
                                     ]
 
                         expectChannel : ExtractedChannel -> Expectation

@@ -2,6 +2,8 @@ module Gltf.Query.Animation exposing
     ( ExtractedAnimation(..)
     , ExtractedChannel(..)
     , ExtractedSampler(..)
+    , Interpolation(..)
+    , Path(..)
     , extractAnimationWithName
     , extractAnimations
     )
@@ -12,11 +14,53 @@ import Gltf exposing (Gltf)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Internal.Accessor as Accessor
 import Internal.Animation exposing (Animation(..))
-import Internal.Animation.Channel as Channel exposing (Channel(..))
+import Internal.Animation.Channel exposing (Channel(..))
 import Internal.Animation.Sampler as Sampler exposing (Sampler(..))
 import Internal.Mesh exposing (Primitive)
 import Internal.Node as Node exposing (Node(..))
 import Tree exposing (Tree)
+
+
+type Path
+    = Translation
+    | Rotation
+    | Scale
+    | Weights
+
+
+type Interpolation
+    = Linear
+    | Step
+    | CubicSpline
+
+
+pathFromChannel : Internal.Animation.Channel.Path -> Path
+pathFromChannel channelPath =
+    case channelPath of
+        Internal.Animation.Channel.Translation ->
+            Translation
+
+        Internal.Animation.Channel.Rotation ->
+            Rotation
+
+        Internal.Animation.Channel.Scale ->
+            Scale
+
+        Internal.Animation.Channel.Weights ->
+            Weights
+
+
+interpolationFromSampler : Sampler.Interpolation -> Interpolation
+interpolationFromSampler interpolation =
+    case interpolation of
+        Sampler.Linear ->
+            Linear
+
+        Sampler.Step ->
+            Step
+
+        Sampler.Cubicspline ->
+            CubicSpline
 
 
 type ExtractedAnimation
@@ -31,7 +75,7 @@ type ExtractedChannel
     = ExtractedChannel
         { sampler : ExtractedSampler
         , nodeIndex : Node.Index
-        , path : Channel.Path
+        , path : Path
         }
 
 
@@ -39,7 +83,7 @@ type ExtractedSampler
     = ExtractedSampler
         { input : List Attribute
         , output : List Attribute
-        , interpolation : Sampler.Interpolation
+        , interpolation : Interpolation
         }
 
 
@@ -71,7 +115,7 @@ extractChannel samplers (Channel channel) =
                 ExtractedChannel
                     { sampler = sampler
                     , nodeIndex = channel.target.node
-                    , path = channel.target.path
+                    , path = pathFromChannel channel.target.path
                     }
             )
 
@@ -83,7 +127,7 @@ extractSampler gltf (Sampler sampler) =
             ExtractedSampler
                 { input = input
                 , output = output
-                , interpolation = sampler.interpolation
+                , interpolation = interpolationFromSampler sampler.interpolation
                 }
         )
         (sampler.input
