@@ -1,13 +1,16 @@
 module Tests.Gtlf.Query exposing (suite)
 
 import Expect
+import Gltf
 import Gltf.Query as Query
-import Gltf.Query.Skin exposing (Skin(..))
+import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Skin as Skin exposing (Skin(..))
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
 import Internal.Skin as GltfSkin
+import Json.Decode as JD
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (vec3)
 import Math.Vector4 as Vec4
@@ -326,8 +329,8 @@ suite =
                 let
                     maybeSkin : Maybe Skin
                     maybeSkin =
-                        Query.fromJson simpleSkin (Query.treeFromNode (Node.Index 0))
-                            |> Result.map (Tree.label >> Query.skinFromNode)
+                        JD.decodeString Gltf.decoder simpleSkin
+                            |> Result.map (\x -> Skin.skinAtIndex x (Skin.Index 0))
                             |> Result.withDefault Nothing
 
                     expected : Skin
@@ -337,7 +340,8 @@ suite =
                                 [ Mat4.identity
                                 , Mat4.makeTranslate (Vec3.vec3 0 -1 0)
                                 ]
-                            , joints = [ Node.Index 1, Node.Index 2 ]
+                            , joints = [ NodeIndex 1, NodeIndex 2 ]
+                            , index = Skin.Index 0
                             }
                 in
                 case maybeSkin of

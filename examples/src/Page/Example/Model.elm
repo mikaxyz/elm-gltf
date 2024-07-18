@@ -13,7 +13,7 @@ module Page.Example.Model exposing
 import Browser.Dom
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
-import Gltf.Query.Animation exposing (ExtractedAnimation)
+import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
 import Http
@@ -86,8 +86,8 @@ type alias Model =
     , gltf : RemoteData Error Gltf
     , scene : RemoteData Error (Scene Scene.ObjectId Material.Name)
     , queryResult : Maybe Query.QueryResult
-    , animations : List ExtractedAnimation
-    , activeAnimation : Maybe ExtractedAnimation
+    , animations : List Animation
+    , activeAnimation : Maybe Animation
     , activeCamera : Maybe Gltf.Query.Camera.Index
     }
 

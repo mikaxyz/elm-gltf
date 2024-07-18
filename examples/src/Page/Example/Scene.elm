@@ -9,12 +9,14 @@ module Page.Example.Scene exposing
 import Color
 import Gltf exposing (Gltf)
 import Gltf.Query as Query
-import Gltf.Query.Animation exposing (ExtractedAnimation)
+import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
+import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Skeleton exposing (Skeleton)
+import Gltf.Query.Skin
 import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Internal.Node
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -32,10 +34,10 @@ import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 
 
 type ObjectId
-    = Mesh Query.NodeIndex
-    | SkinnedMesh
-    | Bone Query.NodeIndex
-    | Camera Gltf.Query.Camera.Index Query.NodeIndex
+    = Mesh NodeIndex
+    | SkinnedMesh Gltf.Query.Skin.Index
+    | Bone NodeIndex
+    | Camera Gltf.Query.Camera.Index NodeIndex
 
 
 type alias Config =
@@ -320,10 +322,10 @@ objectsFromNode objectIdMap node =
             , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
             )
 
-        Query.SkinnedMeshNode (mesh :: rest) skin (Query.Properties properties) ->
+        Query.SkinnedMeshNode (mesh :: rest) skinIndex (Query.Properties properties) ->
             ( mesh
-                |> objectFromMesh (objectIdMap SkinnedMesh)
-                |> GltfHelper.objectWithSkin skin
+                |> objectFromMesh (objectIdMap (SkinnedMesh skinIndex))
+                --|> GltfHelper.objectWithSkin skin
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
@@ -331,7 +333,7 @@ objectsFromNode objectIdMap node =
 
         Query.MeshNode [] (Query.Properties properties) ->
             let
-                name (Query.NodeIndex nodeIndex) =
+                name (NodeIndex nodeIndex) =
                     Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
             in
             ( Primitives.bone3 0.1
@@ -375,49 +377,42 @@ objectFromMesh objectId triangularMesh =
                 |> withMaterial material
 
 
-modifiers : Float -> Maybe ExtractedAnimation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
+modifiers : Float -> Maybe Animation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
 modifiers theta maybeAnimation gltf =
     case maybeAnimation of
         Just animation ->
-            boneDeformer theta SkinnedMesh [ animation ] gltf
-                :: GltfHelper.modifiersFromAnimations theta Mesh [ animation ]
+            boneTransformModifiers theta SkinnedMesh [ animation ] gltf
+                ++ GltfHelper.modifiersFromAnimations theta Mesh [ animation ]
                 ++ GltfHelper.modifiersFromAnimations theta Bone [ animation ]
 
         Nothing ->
             []
 
 
-boneDeformer : Float -> objectId -> List ExtractedAnimation -> Gltf -> Scene.Modifier objectId Material.Name
-boneDeformer theta objectId animations gltf =
-    Scene.ObjectModifier objectId (boneDeformerF theta animations gltf)
-
-
-boneDeformerF : Float -> List ExtractedAnimation -> Gltf -> Object objectId Material.Name -> Object objectId Material.Name
-boneDeformerF theta animations gltf obj =
-    obj
-        |> Object.skin
-        |> Maybe.map
-            (\skin ->
+boneTransformModifiers : Float -> (Gltf.Query.Skin.Index -> objectId) -> List Animation -> Gltf -> List (Scene.Modifier objectId Material.Name)
+boneTransformModifiers theta objectId animations gltf =
+    Query.skins gltf
+        |> List.map
+            (\(Gltf.Query.Skin.Skin skin) ->
                 let
-                    skeleton : Maybe (Tree Internal.Node.Node)
+                    skeleton : Maybe Skeleton
                     skeleton =
                         skin.joints
                             |> List.head
                             |> Maybe.andThen
-                                (\rootNode ->
-                                    Query.nodeTree rootNode gltf
+                                (\(NodeIndex rootNode) ->
+                                    Query.skeleton rootNode gltf
                                         |> Result.toMaybe
                                 )
 
                     boneTransforms : BoneTransforms
                     boneTransforms =
                         skeleton
-                            |> Maybe.map (GltfHelper.boneTransformsFromAnimations theta animations skin)
+                            |> Maybe.map (GltfHelper.boneTransformsFromAnimations theta animations (Gltf.Query.Skin.Skin skin))
                             |> Maybe.withDefault Object.boneTransformsIdentity
                 in
-                obj |> Object.withBoneTransforms boneTransforms
+                Scene.ObjectModifier (objectId skin.index) (Object.withBoneTransforms boneTransforms)
             )
-        |> Maybe.withDefault obj
 
 
 toVertex : TriangularMesh.Vertex -> Vertex

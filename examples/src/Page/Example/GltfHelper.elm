@@ -1,637 +1,114 @@
 module Page.Example.GltfHelper exposing
-    ( boneTransformsFromAnimationName
-    , boneTransformsFromAnimations
+    ( boneTransformsFromAnimations
     , modifiersFromAnimations
-    , objectWithSkin
     )
 
-import Dict exposing (Dict)
-import Gltf exposing (Gltf)
-import Gltf.Query as Query
-import Gltf.Query.Animation as Animation
-    exposing
-        ( ExtractedAnimation(..)
-        , ExtractedChannel(..)
-        , ExtractedSampler(..)
-        )
-import Gltf.Query.Attribute as Attribute
+import Gltf.Query.Animation as Animation exposing (Animation(..))
+import Gltf.Query.NodeIndex exposing (NodeIndex)
+import Gltf.Query.Skeleton exposing (Skeleton)
 import Gltf.Query.Skin exposing (Skin(..))
-import Gltf.Query.Transform as Transform
-import Internal.Node
 import Material
-import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
-import Tree exposing (Tree)
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 
 
-objectWithSkin : Skin -> Object a b -> Object a b
-objectWithSkin (Skin skin) obj =
-    obj
-        |> Object.withSkin
-            { inverseBindMatrices = skin.inverseBindMatrices
-            , joints = skin.joints |> List.map (\(Internal.Node.Index index) -> index)
-            }
-
-
-type Animated
-    = Animated { from : Vec3, to : Vec3, w : Float, position : Vec3 }
-
-
-type AnimatedRotation
-    = AnimatedRotation { from : Quaternion, to : Quaternion, w : Float, current : Quaternion }
-
-
-type alias TRS =
-    { skinIndex : Int
-    , inverseBindMatrix : Mat4
-    , globalTransform : Mat4
-    , rAnimated : Mat4
-    , tAnimated : Mat4
-    , sAnimated : Mat4
-    }
-
-
-modifiersFromAnimations : Float -> (Query.NodeIndex -> objectId) -> List ExtractedAnimation -> List (Scene.Modifier objectId Material.Name)
+modifiersFromAnimations : Float -> (NodeIndex -> objectId) -> List Animation -> List (Scene.Modifier objectId Material.Name)
 modifiersFromAnimations theta objectIdMap animations =
     let
-        channels : List Animation.ExtractedChannel
-        channels =
-            animations
-                |> List.concatMap (\(ExtractedAnimation x) -> x.channels)
+        toModifier : Animation.AnimatedProperty -> Scene.Modifier objectId Material.Name
+        toModifier animated =
+            case animated of
+                Animation.AnimatedPositionProperty nodeIndex position ->
+                    Scene.ObjectModifier (objectIdMap nodeIndex) (Object.withPosition position)
 
-        applyChannel : ExtractedChannel -> Object objectId Material.Name -> Object objectId Material.Name
-        applyChannel (ExtractedChannel channel) obj =
-            case channel.path of
-                Animation.Translation ->
-                    let
-                        (ExtractedSampler sampler) =
-                            channel.sampler
-
-                        input : List Float
-                        input =
-                            sampler.input
-                                |> List.filterMap Attribute.toFloat
-
-                        inputMax : Float
-                        inputMax =
-                            -- TODO: Get this from BufferView
-                            input |> List.maximum |> Maybe.withDefault 0.0
-
-                        fract : Float
-                        fract =
-                            theta / inputMax
-
-                        duration : Float
-                        duration =
-                            fract - (floor fract |> toFloat)
-
-                        animationTime : Float
-                        animationTime =
-                            inputMax * duration
-
-                        animated : Maybe Animated
-                        animated =
-                            animatedProperty (ExtractedChannel channel) animationTime
-
-                        position : Vec3
-                        position =
-                            animated
-                                |> Maybe.map (\(Animated x) -> x.position)
-                                |> Maybe.withDefault (Object.position obj)
-                    in
-                    obj
-                        |> Object.withPosition position
-
-                Animation.Rotation ->
-                    let
-                        (ExtractedSampler sampler) =
-                            channel.sampler
-
-                        inputMax : Float
-                        inputMax =
-                            -- TODO: Get this from BufferView
-                            sampler.input
-                                |> List.filterMap Attribute.toFloat
-                                |> List.maximum
-                                |> Maybe.withDefault 0.0
-
-                        fract : Float
-                        fract =
-                            theta / inputMax
-
-                        duration : Float
-                        duration =
-                            fract - (floor fract |> toFloat)
-
-                        animationTime : Float
-                        animationTime =
-                            inputMax * duration
-
-                        animated : Maybe AnimatedRotation
-                        animated =
-                            animatedRotation (ExtractedChannel channel) animationTime
-
-                        rotation : Mat4
-                        rotation =
-                            animated
-                                |> Maybe.map (\(AnimatedRotation x) -> Quaternion.toMat4 x.current)
-                                |> Maybe.withDefault (Object.rotation obj)
-                    in
-                    obj |> Object.withRotation rotation
-
-                Animation.Scale ->
-                    obj
-
-                Animation.Weights ->
-                    obj
+                Animation.AnimatedRotationProperty nodeIndex rotation ->
+                    Scene.ObjectModifier (objectIdMap nodeIndex) (Object.withRotation (Quaternion.toMat4 rotation))
     in
-    channels
-        |> List.map
-            (\(Animation.ExtractedChannel channel) ->
-                Scene.ObjectModifier (objectIdMap channel.nodeIndex)
-                    (applyChannel (Animation.ExtractedChannel channel))
-            )
+    Animation.animatedProperties theta animations
+        |> List.map toModifier
 
 
-animatedProperty : ExtractedChannel -> Float -> Maybe Animated
-animatedProperty (ExtractedChannel channel) time =
-    let
-        (ExtractedSampler sampler) =
-            channel.sampler
-
-        data : List ( Float, Vec3 )
-        data =
-            List.map2
-                (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Attribute.toFloat)
-                (sampler.output |> List.filterMap Attribute.toVec3)
-
-        asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Vec3, to : Maybe Vec3 }
-        asd =
-            data
-                |> List.foldl
-                    (\( input, output ) acc ->
-                        if input < time then
-                            { acc | startTime = Just input, from = Just output }
-
-                        else if acc.endTime == Nothing then
-                            { acc | endTime = Just input, to = Just output }
-
-                        else
-                            acc
-                    )
-                    { startTime = Nothing, endTime = Nothing, from = Nothing, to = Nothing }
-
-        properties =
-            Maybe.map4
-                (\startTime endTime from to ->
-                    let
-                        rTime =
-                            (time - startTime) / (endTime - startTime)
-
-                        distance : Float
-                        distance =
-                            Vec3.distance to from
-
-                        direction : Vec3
-                        direction =
-                            if distance > 0 then
-                                Vec3.direction to from
-                                    |> Vec3.scale (distance * rTime)
-
-                            else
-                                Vec3.vec3 0 0 0
-                    in
-                    { w = rTime
-                    , from = from
-                    , to = to
-                    , timeEnd = endTime
-                    , timeStart = startTime
-                    , position = from |> Vec3.add direction
-                    }
-                )
-                asd.startTime
-                asd.endTime
-                asd.from
-                asd.to
-    in
-    properties
-        |> Maybe.map (\x -> { from = x.from, to = x.to, w = x.w, position = x.position })
-        |> Maybe.map Animated
-
-
-animatedRotation : ExtractedChannel -> Float -> Maybe AnimatedRotation
-animatedRotation (ExtractedChannel channel) time =
-    let
-        (ExtractedSampler sampler) =
-            channel.sampler
-
-        data : List ( Float, Quaternion )
-        data =
-            List.map2
-                (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Attribute.toFloat)
-                (sampler.output |> List.filterMap Attribute.toQuaternion)
-
-        asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Quaternion, to : Maybe Quaternion }
-        asd =
-            data
-                |> List.foldl
-                    (\( input, output ) acc ->
-                        if input < time then
-                            { acc | startTime = Just input, from = Just output }
-
-                        else if acc.endTime == Nothing then
-                            { acc | endTime = Just input, to = Just output }
-
-                        else
-                            acc
-                    )
-                    { startTime = Nothing, endTime = Nothing, from = Nothing, to = Nothing }
-
-        properties =
-            Maybe.map4
-                (\startTime endTime from to ->
-                    let
-                        rTime =
-                            (time - startTime) / (endTime - startTime)
-
-                        quaternionSlerp : Quaternion -> Quaternion -> Float -> Quaternion
-                        quaternionSlerp q1 q2 t =
-                            let
-                                -- http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-                                cosHalfTheta_ =
-                                    q1.scalar * q2.scalar + q1.vector.x * q2.vector.x + q1.vector.y * q2.vector.y + q1.vector.z * q2.vector.z
-
-                                ( cosHalfTheta, q2n ) =
-                                    if cosHalfTheta_ < 0 then
-                                        ( -cosHalfTheta_, Quaternion.conjugate q2 )
-                                        -- According to link above...
-                                        --( -cosHalfTheta_
-                                        --, Quaternion.quaternion
-                                        --    -q2.scalar
-                                        --    -q2.vector.x
-                                        --    -q2.vector.y
-                                        --    q2.vector.z
-                                        --)
-
-                                    else
-                                        ( cosHalfTheta_, q2 )
-
-                                halfTheta =
-                                    acos cosHalfTheta
-
-                                sinHalfTheta =
-                                    sqrt (1.0 - cosHalfTheta * cosHalfTheta)
-                            in
-                            if abs cosHalfTheta >= 1.0 then
-                                q1
-
-                            else if abs sinHalfTheta < 0.001 then
-                                { scalar = q1.scalar * 0.5 + q2n.scalar * 0.5
-                                , vector =
-                                    { x = q1.vector.x * 0.5 + q2n.vector.x * 0.5
-                                    , y = q1.vector.y * 0.5 + q2n.vector.y * 0.5
-                                    , z = q1.vector.z * 0.5 + q2n.vector.z * 0.5
-                                    }
-                                }
-
-                            else
-                                let
-                                    ratioA =
-                                        sin ((1 - t) * halfTheta) / sinHalfTheta
-
-                                    ratioB =
-                                        sin (t * halfTheta) / sinHalfTheta
-                                in
-                                { scalar = q1.scalar * ratioA + q2n.scalar * ratioB
-                                , vector =
-                                    { x = q1.vector.x * ratioA + q2n.vector.x * ratioB
-                                    , y = q1.vector.y * ratioA + q2n.vector.y * ratioB
-                                    , z = q1.vector.z * ratioA + q2n.vector.z * ratioB
-                                    }
-                                }
-                    in
-                    { w = rTime
-                    , from = from
-                    , to = to
-                    , timeEnd = endTime
-                    , timeStart = startTime
-                    , current = quaternionSlerp from to rTime
-                    }
-                )
-                asd.startTime
-                asd.endTime
-                asd.from
-                asd.to
-    in
-    properties
-        |> Maybe.map (\x -> { from = x.from, to = x.to, w = x.w, current = x.current })
-        |> Maybe.map AnimatedRotation
-
-
-channelMatrix : Float -> ExtractedChannel -> Mat4
-channelMatrix theta (ExtractedChannel channel) =
-    case channel.path of
-        Animation.Translation ->
-            let
-                (ExtractedSampler sampler) =
-                    channel.sampler
-
-                input : List Float
-                input =
-                    sampler.input
-                        |> List.filterMap Attribute.toFloat
-
-                inputMax : Float
-                inputMax =
-                    -- TODO: Get this from BufferView
-                    input |> List.maximum |> Maybe.withDefault 0.0
-
-                fract : Float
-                fract =
-                    theta / inputMax
-
-                duration : Float
-                duration =
-                    fract - (floor fract |> toFloat)
-
-                animationTime : Float
-                animationTime =
-                    inputMax * duration
-
-                animated : Maybe Animated
-                animated =
-                    animatedProperty (ExtractedChannel channel) animationTime
-
-                position : Vec3
-                position =
-                    animated
-                        |> Maybe.map (\(Animated x) -> x.position)
-                        |> Maybe.withDefault (Vec3.vec3 0 0 0)
-            in
-            Mat4.makeTranslate position
-
-        Animation.Rotation ->
-            let
-                (ExtractedSampler sampler) =
-                    channel.sampler
-
-                inputMax : Float
-                inputMax =
-                    -- TODO: Get this from BufferView
-                    sampler.input
-                        |> List.filterMap Attribute.toFloat
-                        |> List.maximum
-                        |> Maybe.withDefault 0.0
-
-                fract : Float
-                fract =
-                    theta / inputMax
-
-                duration : Float
-                duration =
-                    fract - (floor fract |> toFloat)
-
-                animationTime : Float
-                animationTime =
-                    inputMax * duration
-
-                animated : Maybe AnimatedRotation
-                animated =
-                    animatedRotation (ExtractedChannel channel) animationTime
-
-                rotation : Mat4
-                rotation =
-                    animated
-                        |> Maybe.map (\(AnimatedRotation x) -> Quaternion.toMat4 x.current)
-                        |> Maybe.withDefault Mat4.identity
-            in
-            rotation
-
-        Animation.Scale ->
-            Mat4.identity
-
-        Animation.Weights ->
-            Mat4.identity
-
-
-boneTransformsFromAnimationName : Float -> String -> Gltf -> Object.Skin -> Tree Internal.Node.Node -> BoneTransforms
-boneTransformsFromAnimationName theta animationName gltf skin skeleton =
-    let
-        animations : List ExtractedAnimation
-        animations =
-            Animation.extractAnimationWithName animationName gltf
-    in
-    boneTransformsFromAnimations theta animations skin skeleton
-
-
-boneTransformsFromAnimations : Float -> List ExtractedAnimation -> Object.Skin -> Tree Internal.Node.Node -> BoneTransforms
+boneTransformsFromAnimations : Float -> List Animation -> Skin -> Skeleton -> BoneTransforms
 boneTransformsFromAnimations theta animations skin skeleton =
-    let
-        pathToString : Animation.Path -> String
-        pathToString path =
-            case path of
-                Animation.Translation ->
-                    "Translation"
-
-                Animation.Rotation ->
-                    "Rotation"
-
-                Animation.Scale ->
-                    "Scale"
-
-                Animation.Weights ->
-                    "Weights"
-
-        channels : Dict ( Int, String ) ExtractedChannel
-        channels =
-            animations
-                |> List.concatMap (\(ExtractedAnimation x) -> x.channels)
-                |> List.map
-                    (\(ExtractedChannel channel) ->
-                        ( ( channel.nodeIndex |> (\(Query.NodeIndex i) -> i)
-                          , pathToString channel.path
-                          )
-                        , ExtractedChannel channel
-                        )
-                    )
-                |> Dict.fromList
-
-        nodeChannel : Int -> String -> Maybe ExtractedChannel
-        nodeChannel nodeIndex path =
-            Dict.get ( nodeIndex, path ) channels
-
-        skeletonIndices : Dict Int ( Int, Mat4 )
-        skeletonIndices =
-            List.map2 Tuple.pair
-                skin.joints
-                skin.inverseBindMatrices
-                |> List.indexedMap (\index ( nodeIndex, inverseBindMatrix ) -> ( nodeIndex, ( index, inverseBindMatrix ) ))
-                |> Dict.fromList
-
-        nodeToTrs : Internal.Node.Node -> TRS
-        nodeToTrs (Internal.Node.Node node) =
-            let
-                nodeIndex : Int
-                nodeIndex =
-                    node.index |> (\(Internal.Node.Index index) -> index)
-
-                ( skinIndex, inverseBindMatrix ) =
-                    Dict.get nodeIndex skeletonIndices
-                        |> Maybe.withDefault ( -1, Mat4.identity )
-
-                { t, r, s } =
-                    case node.transform of
-                        Transform.TRS { translation, rotation, scale } ->
-                            { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
-                            , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
-                            , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
-                            }
-
-                        Transform.Matrix _ ->
-                            { t = Mat4.identity
-                            , r = Mat4.identity
-                            , s = Mat4.identity
-                            }
-
-                rAnimated : Mat4
-                rAnimated =
-                    nodeChannel nodeIndex "Rotation"
-                        |> Maybe.map (channelMatrix theta)
-                        |> Maybe.withDefault r
-
-                tAnimated : Mat4
-                tAnimated =
-                    nodeChannel nodeIndex "Translation"
-                        |> Maybe.map (channelMatrix theta)
-                        |> Maybe.withDefault t
-
-                sAnimated : Mat4
-                sAnimated =
-                    nodeChannel nodeIndex "Scale"
-                        |> Maybe.map (channelMatrix theta)
-                        |> Maybe.withDefault s
-            in
-            { skinIndex = skinIndex
-            , inverseBindMatrix = inverseBindMatrix
-            , globalTransform = Mat4.identity
-            , rAnimated = rAnimated
-            , tAnimated = tAnimated
-            , sAnimated = sAnimated
-            }
-
-        trsTreeWithGlobalMatrix : Mat4 -> Tree TRS -> Tree TRS
-        trsTreeWithGlobalMatrix mat tree =
-            let
-                trs : TRS
-                trs =
-                    Tree.label tree
-
-                mat_ : Mat4
-                mat_ =
-                    trs.rAnimated
-                        |> Mat4.mul trs.tAnimated
-                        |> Mat4.mul trs.sAnimated
-                        |> Mat4.mul mat
-            in
-            tree
-                |> Tree.map (\trs_ -> { trs_ | globalTransform = mat_ })
-                |> Tree.mapChildren (List.map (trsTreeWithGlobalMatrix mat_))
-
-        trsTree : Tree TRS
-        trsTree =
-            skeleton
-                |> Tree.map nodeToTrs
-                |> trsTreeWithGlobalMatrix Mat4.identity
-    in
-    trsTree
-        |> Tree.flatten
+    Animation.animatedBoneTransforms theta animations skin skeleton
         |> List.foldl
-            (\trs acc ->
-                let
-                    mat : Mat4
-                    mat =
-                        trs.globalTransform
-                in
-                case trs.skinIndex of
+            (\(Animation.AnimatedBone bone) acc ->
+                case bone.skinIndex of
                     0 ->
-                        { acc | joint0 = mat, inverseBindMatrix0 = trs.inverseBindMatrix }
+                        { acc | joint0 = bone.joint, inverseBindMatrix0 = bone.inverseBindMatrix }
 
                     1 ->
-                        { acc | joint1 = mat, inverseBindMatrix1 = trs.inverseBindMatrix }
+                        { acc | joint1 = bone.joint, inverseBindMatrix1 = bone.inverseBindMatrix }
 
                     2 ->
-                        { acc | joint2 = mat, inverseBindMatrix2 = trs.inverseBindMatrix }
+                        { acc | joint2 = bone.joint, inverseBindMatrix2 = bone.inverseBindMatrix }
 
                     3 ->
-                        { acc | joint3 = mat, inverseBindMatrix3 = trs.inverseBindMatrix }
+                        { acc | joint3 = bone.joint, inverseBindMatrix3 = bone.inverseBindMatrix }
 
                     4 ->
-                        { acc | joint4 = mat, inverseBindMatrix4 = trs.inverseBindMatrix }
+                        { acc | joint4 = bone.joint, inverseBindMatrix4 = bone.inverseBindMatrix }
 
                     5 ->
-                        { acc | joint5 = mat, inverseBindMatrix5 = trs.inverseBindMatrix }
+                        { acc | joint5 = bone.joint, inverseBindMatrix5 = bone.inverseBindMatrix }
 
                     6 ->
-                        { acc | joint6 = mat, inverseBindMatrix6 = trs.inverseBindMatrix }
+                        { acc | joint6 = bone.joint, inverseBindMatrix6 = bone.inverseBindMatrix }
 
                     7 ->
-                        { acc | joint7 = mat, inverseBindMatrix7 = trs.inverseBindMatrix }
+                        { acc | joint7 = bone.joint, inverseBindMatrix7 = bone.inverseBindMatrix }
 
                     8 ->
-                        { acc | joint8 = mat, inverseBindMatrix8 = trs.inverseBindMatrix }
+                        { acc | joint8 = bone.joint, inverseBindMatrix8 = bone.inverseBindMatrix }
 
                     9 ->
-                        { acc | joint9 = mat, inverseBindMatrix9 = trs.inverseBindMatrix }
+                        { acc | joint9 = bone.joint, inverseBindMatrix9 = bone.inverseBindMatrix }
 
                     10 ->
-                        { acc | joint10 = mat, inverseBindMatrix10 = trs.inverseBindMatrix }
+                        { acc | joint10 = bone.joint, inverseBindMatrix10 = bone.inverseBindMatrix }
 
                     11 ->
-                        { acc | joint11 = mat, inverseBindMatrix11 = trs.inverseBindMatrix }
+                        { acc | joint11 = bone.joint, inverseBindMatrix11 = bone.inverseBindMatrix }
 
                     12 ->
-                        { acc | joint12 = mat, inverseBindMatrix12 = trs.inverseBindMatrix }
+                        { acc | joint12 = bone.joint, inverseBindMatrix12 = bone.inverseBindMatrix }
 
                     13 ->
-                        { acc | joint13 = mat, inverseBindMatrix13 = trs.inverseBindMatrix }
+                        { acc | joint13 = bone.joint, inverseBindMatrix13 = bone.inverseBindMatrix }
 
                     14 ->
-                        { acc | joint14 = mat, inverseBindMatrix14 = trs.inverseBindMatrix }
+                        { acc | joint14 = bone.joint, inverseBindMatrix14 = bone.inverseBindMatrix }
 
                     15 ->
-                        { acc | joint15 = mat, inverseBindMatrix15 = trs.inverseBindMatrix }
+                        { acc | joint15 = bone.joint, inverseBindMatrix15 = bone.inverseBindMatrix }
 
                     16 ->
-                        { acc | joint16 = mat, inverseBindMatrix16 = trs.inverseBindMatrix }
+                        { acc | joint16 = bone.joint, inverseBindMatrix16 = bone.inverseBindMatrix }
 
                     17 ->
-                        { acc | joint17 = mat, inverseBindMatrix17 = trs.inverseBindMatrix }
+                        { acc | joint17 = bone.joint, inverseBindMatrix17 = bone.inverseBindMatrix }
 
                     18 ->
-                        { acc | joint18 = mat, inverseBindMatrix18 = trs.inverseBindMatrix }
+                        { acc | joint18 = bone.joint, inverseBindMatrix18 = bone.inverseBindMatrix }
 
                     19 ->
-                        { acc | joint19 = mat, inverseBindMatrix19 = trs.inverseBindMatrix }
+                        { acc | joint19 = bone.joint, inverseBindMatrix19 = bone.inverseBindMatrix }
 
                     20 ->
-                        { acc | joint20 = mat, inverseBindMatrix20 = trs.inverseBindMatrix }
+                        { acc | joint20 = bone.joint, inverseBindMatrix20 = bone.inverseBindMatrix }
 
                     21 ->
-                        { acc | joint21 = mat, inverseBindMatrix21 = trs.inverseBindMatrix }
+                        { acc | joint21 = bone.joint, inverseBindMatrix21 = bone.inverseBindMatrix }
 
                     22 ->
-                        { acc | joint22 = mat, inverseBindMatrix22 = trs.inverseBindMatrix }
+                        { acc | joint22 = bone.joint, inverseBindMatrix22 = bone.inverseBindMatrix }
 
                     23 ->
-                        { acc | joint23 = mat, inverseBindMatrix23 = trs.inverseBindMatrix }
+                        { acc | joint23 = bone.joint, inverseBindMatrix23 = bone.inverseBindMatrix }
 
                     24 ->
-                        { acc | joint24 = mat, inverseBindMatrix24 = trs.inverseBindMatrix }
+                        { acc | joint24 = bone.joint, inverseBindMatrix24 = bone.inverseBindMatrix }
 
                     _ ->
                         acc

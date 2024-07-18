@@ -129,10 +129,10 @@ sceneOptionsView gltf model =
                     , { name = Just "Disabled", index = Nothing, selected = model.activeAnimation == Nothing }
                         :: (animations
                                 |> List.indexedMap
-                                    (\index (Animation.ExtractedAnimation animation) ->
+                                    (\index (Animation.Animation animation) ->
                                         { name = animation.name
                                         , index = Just index
-                                        , selected = model.activeAnimation == Just (Animation.ExtractedAnimation animation)
+                                        , selected = model.activeAnimation == Just (Animation.Animation animation)
                                         }
                                     )
                            )
@@ -176,7 +176,7 @@ renderer fallbackTexture textures gltfQueryResult name =
 sceneView :
     Model
     -> Gltf.Query.QueryResult
-    -> Maybe Animation.ExtractedAnimation
+    -> Maybe Animation.Animation
     -> Gltf
     -> Scene Scene.ObjectId Material.Name
     -> WebGL.Texture.Texture

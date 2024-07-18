@@ -5,14 +5,14 @@ import Expect exposing (Expectation)
 import Gltf exposing (Gltf)
 import Gltf.Query.Animation as Animation
     exposing
-        ( ExtractedAnimation(..)
-        , ExtractedChannel(..)
-        , ExtractedSampler(..)
+        ( Animation(..)
+        , Channel(..)
+        , Sampler(..)
         )
 import Internal.Accessor as Accessor
-import Internal.Animation exposing (Animation(..))
-import Internal.Animation.Channel as Channel exposing (Channel(..))
-import Internal.Animation.Sampler as Sampler exposing (Sampler(..))
+import Internal.Animation
+import Internal.Animation.Channel
+import Internal.Animation.Sampler
 import Internal.Node as Node
 import Json.Decode as JD
 import Test exposing (Test, describe, test)
@@ -33,29 +33,29 @@ suite =
             , test "decodes animations" <|
                 \_ ->
                     let
-                        parsed : Result JD.Error (Array.Array Animation)
+                        parsed : Result JD.Error (Array.Array Internal.Animation.Animation)
                         parsed =
                             JD.decodeString Gltf.decoder json
                                 |> Result.map (\{ animations } -> animations)
 
-                        expected : Array.Array Animation
+                        expected : Array.Array Internal.Animation.Animation
                         expected =
-                            Animation
+                            Internal.Animation.Animation
                                 { name = Just "CubeAction"
                                 , channels =
-                                    [ Channel
-                                        { sampler = Sampler.Index 0
+                                    [ Internal.Animation.Channel.Channel
+                                        { sampler = Internal.Animation.Sampler.Index 0
                                         , target =
                                             { node = Node.Index 0
-                                            , path = Channel.Translation
+                                            , path = Internal.Animation.Channel.Translation
                                             }
                                         }
                                     ]
                                         |> Array.fromList
                                 , samplers =
-                                    [ Sampler
+                                    [ Internal.Animation.Sampler.Sampler
                                         { input = Accessor.Index 4
-                                        , interpolation = Sampler.Linear
+                                        , interpolation = Internal.Animation.Sampler.Linear
                                         , output = Accessor.Index 5
                                         }
                                     ]
@@ -70,28 +70,28 @@ suite =
             [ test "Extracts animations" <|
                 \_ ->
                     let
-                        extracted : Result JD.Error (List ExtractedAnimation)
+                        extracted : Result JD.Error (List Animation)
                         extracted =
                             JD.decodeString Gltf.decoder json
                                 |> Result.map Animation.extractAnimations
 
-                        expectSampler : ExtractedSampler -> Expectation
+                        expectSampler : Sampler -> Expectation
                         expectSampler extractedSampler =
                             extractedSampler
                                 |> Expect.all
-                                    [ \(ExtractedSampler sampler) ->
+                                    [ \(Sampler sampler) ->
                                         Expect.equal (List.length sampler.input) 62
-                                    , \(ExtractedSampler sampler) ->
+                                    , \(Sampler sampler) ->
                                         Expect.equal (List.length sampler.output) 62
-                                    , \(ExtractedSampler sampler) ->
+                                    , \(Sampler sampler) ->
                                         Expect.equal sampler.interpolation Animation.Linear
                                     ]
 
-                        expectChannel : ExtractedChannel -> Expectation
+                        expectChannel : Channel -> Expectation
                         expectChannel extractedChannel =
                             extractedChannel
                                 |> Expect.all
-                                    [ \(ExtractedChannel channel) ->
+                                    [ \(Channel channel) ->
                                         expectSampler channel.sampler
                                     ]
                     in
@@ -101,14 +101,14 @@ suite =
                                 [ \subject -> Expect.equal (List.length subject) 1
                                 , \subject ->
                                     case subject of
-                                        (ExtractedAnimation animation) :: [] ->
+                                        (Animation animation) :: [] ->
                                             Expect.equal (Array.length animation.samplers) 1
 
                                         _ ->
                                             Expect.fail "Expecting 1 sampler"
                                 , \subject ->
                                     case subject of
-                                        (ExtractedAnimation animation) :: [] ->
+                                        (Animation animation) :: [] ->
                                             case animation.samplers |> Array.toList of
                                                 singleSampler :: [] ->
                                                     expectSampler singleSampler
@@ -120,7 +120,7 @@ suite =
                                             Expect.fail "To many animations"
                                 , \subject ->
                                     case subject of
-                                        (ExtractedAnimation animation) :: [] ->
+                                        (Animation animation) :: [] ->
                                             case animation.channels of
                                                 singleChannel :: [] ->
                                                     expectChannel singleChannel

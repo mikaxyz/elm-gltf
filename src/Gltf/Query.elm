@@ -1,25 +1,28 @@
 module Gltf.Query exposing
-    ( Error(..), Node(..), NodeIndex(..), Properties(..), QueryError(..)
+    ( Error(..), Node(..), Properties(..), QueryError(..)
     , fromJson, nodeTree, sceneNodeTrees
-    , nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
+    , nodeFromNode, treeFromNode, meshesFromNode, skins, skeleton
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
 
 {-| Query contents of Gltf
 
-@docs Error, Node, NodeIndex, Properties, QueryError
+@docs Error, Node, Properties, QueryError
 @docs fromJson, nodeTree, sceneNodeTrees
-@docs nodeFromNode, treeFromNode, skinFromNode, triangularMeshesFromNode, meshesFromNode
+@docs nodeFromNode, treeFromNode, meshesFromNode, skins, skeleton
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
 
 -}
 
+import Array
 import Common
 import Gltf exposing (Gltf)
 import Gltf.Query.Camera as Camera
 import Gltf.Query.Material
+import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.Task
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
@@ -29,10 +32,21 @@ import Internal.Image
 import Internal.Node as Node
 import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene(..))
+import Internal.Skin
 import Json.Decode as JD
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
+
+
+{-| TODO: Needed?
+-}
+skins : Gltf -> List Skin
+skins gltf =
+    gltf.skins
+        |> Array.toIndexedList
+        |> List.map (Tuple.first >> Skin.Index)
+        |> List.filterMap (Skin.skinAtIndex gltf)
 
 
 {-| TODO: Needed?
@@ -59,12 +73,6 @@ type QueryError
     | NodeNotFound
 
 
-{-| TODO: Docs
--}
-type NodeIndex
-    = NodeIndex Int
-
-
 nodeIndexFromNode : Node.Index -> NodeIndex
 nodeIndexFromNode (Node.Index index) =
     NodeIndex index
@@ -76,7 +84,7 @@ type Node
     = EmptyNode Properties
     | CameraNode Camera.Index Properties
     | MeshNode (List TriangularMesh) Properties
-    | SkinnedMeshNode (List TriangularMesh) Skin Properties
+    | SkinnedMeshNode (List TriangularMesh) Skin.Index Properties
 
 
 {-| TODO: Needed?
@@ -95,24 +103,6 @@ meshesFromNode node =
 
         SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
-
-
-{-| TODO: Needed?
--}
-skinFromNode : Node -> Maybe Skin
-skinFromNode node =
-    case node of
-        EmptyNode _ ->
-            Nothing
-
-        CameraNode _ _ ->
-            Nothing
-
-        MeshNode _ _ ->
-            Nothing
-
-        SkinnedMeshNode _ skin _ ->
-            Just skin
 
 
 {-| TODO: Needed?
@@ -268,11 +258,11 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 -}
 nodeFromNode : Gltf -> Node.Node -> Node
 nodeFromNode gltf node =
-    case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.andThen (Skin.skinAtIndex gltf) of
-        Just skin ->
+    case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
+        Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skin
+                |> SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Node.Node x) -> x.cameraIndex) of
@@ -311,6 +301,25 @@ type Properties
         , nodeName : Maybe String
         , transform : Transform
         }
+
+
+{-| TODO: Docs
+-}
+skeleton : Int -> Gltf -> Result QueryError Skeleton
+skeleton index gltf =
+    maybeNodeTree gltf (Node.Index index)
+        |> Maybe.map
+            (\nodes ->
+                nodes
+                    |> Tree.map
+                        (\(Node.Node node) ->
+                            { nodeIndex = nodeIndexFromNode node.index
+                            , transform = node.transform
+                            }
+                        )
+                    |> Skeleton
+            )
+        |> Result.fromMaybe NodeNotFound
 
 
 {-| TODO: Needed?

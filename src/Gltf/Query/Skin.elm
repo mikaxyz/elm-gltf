@@ -1,7 +1,14 @@
 module Gltf.Query.Skin exposing
-    ( Skin(..)
+    ( Index(..), Skin(..)
     , skinAtIndex
     )
+
+{-| TODO: Docs
+
+@docs Index, Skin
+@docs skinAtIndex
+
+-}
 
 import Array
 import Bytes
@@ -10,23 +17,34 @@ import Bytes.Decode.Extra
 import Bytes.Extra
 import Common
 import Gltf exposing (Gltf)
+import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
-import Internal.Node as Node
 import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4 exposing (Mat4)
 
 
+{-| TODO: Docs
+-}
+type Index
+    = Index Int
+
+
+{-| TODO: Docs
+-}
 type Skin
     = Skin
         { inverseBindMatrices : List Mat4
-        , joints : List Node.Index
+        , joints : List NodeIndex
+        , index : Index
         }
 
 
-skinAtIndex : Gltf -> GltfSkin.Index -> Maybe Skin
-skinAtIndex gltf (GltfSkin.Index index) =
+{-| TODO: Docs
+-}
+skinAtIndex : Gltf -> Index -> Maybe Skin
+skinAtIndex gltf (Index index) =
     gltf.skins
         |> Array.get index
         |> Maybe.map
@@ -44,7 +62,8 @@ skinAtIndex gltf (GltfSkin.Index index) =
                 in
                 Skin
                     { inverseBindMatrices = inverseBindMatrices_ |> Maybe.withDefault []
-                    , joints = skin.joints |> List.map (\(GltfSkin.JointNodeIndex i) -> Node.Index i)
+                    , joints = skin.joints |> List.map (\(GltfSkin.JointNodeIndex i) -> NodeIndex i)
+                    , index = Index index
                     }
             )
 
