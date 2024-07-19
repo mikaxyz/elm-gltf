@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "exposed-modules": [
         "Gltf",
+        "Gltf.Query",
         "Gltf.Query.Animation",
         "Gltf.Query.Camera",
         "Gltf.Query.Material",

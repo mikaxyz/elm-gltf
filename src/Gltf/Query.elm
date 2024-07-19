@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Error(..), Node(..), Properties(..), QueryError(..)
+    ( Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
     , fromJson, nodeTree, sceneNodeTrees
     , treeFromNode, meshesFromNode, skins, skeleton
     , QueryResult, QueryResultEffect
@@ -8,7 +8,7 @@ module Gltf.Query exposing
 
 {-| Query contents of Gltf
 
-@docs Error, Node, Properties, QueryError
+@docs Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
 @docs fromJson, nodeTree, sceneNodeTrees
 @docs treeFromNode, meshesFromNode, skins, skeleton
 @docs QueryResult, QueryResultEffect
@@ -39,6 +39,18 @@ import Json.Decode as JD
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
+
+
+{-| TODO: REMOVE?
+-}
+type alias InternalNode =
+    Node.Node
+
+
+{-| TODO: REMOVE?
+-}
+type alias InternalNodeIndex =
+    Node.Index
 
 
 {-| TODO: Needed?
@@ -109,21 +121,27 @@ meshesFromNode node =
 
 {-| TODO: Needed?
 -}
-treeFromNode : Node.Index -> Gltf -> Result QueryError (Tree Node)
+treeFromNode : InternalNodeIndex -> Gltf -> Result QueryError (Tree Node)
 treeFromNode index gltf =
     maybeNodeTree gltf index
         |> Maybe.map (Tree.map (nodeFromNode gltf))
         |> Result.fromMaybe NodeNotFound
 
 
+{-| TODO: Docs
+-}
 type QueryResult
     = QueryResult Gltf TextureStore (List (Tree Node))
 
 
+{-| TODO: Docs
+-}
 type QueryResultEffect
     = QueryResultLoadTextureEffect Gltf.Query.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
 
 
+{-| TODO: Docs
+-}
 queryResultNodes : QueryResult -> List (Tree Node)
 queryResultNodes (QueryResult _ _ nodes) =
     nodes
@@ -258,7 +276,7 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 
 {-| TODO: Docs
 -}
-nodeFromNode : Gltf -> Node.Node -> Node
+nodeFromNode : Gltf -> InternalNode -> Node
 nodeFromNode gltf node =
     case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
         Just skinIndex ->
@@ -286,7 +304,7 @@ nodeFromNode gltf node =
                                 |> EmptyNode
 
 
-propertiesFromNode : Node.Node -> Properties
+propertiesFromNode : InternalNode -> Properties
 propertiesFromNode (Node.Node node) =
     Properties
         { nodeIndex = nodeIndexFromNode node.index
@@ -326,7 +344,7 @@ skeleton index gltf =
 
 {-| TODO: Needed?
 -}
-sceneNodeTrees : Int -> Gltf -> Result QueryError (List (Tree Node.Node))
+sceneNodeTrees : Int -> Gltf -> Result QueryError (List (Tree InternalNode))
 sceneNodeTrees index gltf =
     Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
@@ -343,12 +361,12 @@ sceneNodeTrees index gltf =
 
 {-| TODO: Needed?
 -}
-nodeTree : Int -> Gltf -> Result QueryError (Tree Node.Node)
+nodeTree : Int -> Gltf -> Result QueryError (Tree InternalNode)
 nodeTree index gltf =
     maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe NodeNotFound
 
 
-maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree Node.Node)
+maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree InternalNode)
 maybeNodeTree gltf index =
     Common.nodeAtIndex gltf index
         |> Maybe.map
@@ -361,7 +379,7 @@ maybeNodeTree gltf index =
 
 {-| TODO: Needed?
 -}
-triangularMeshesFromNode : Gltf -> Node.Node -> Maybe (List TriangularMesh)
+triangularMeshesFromNode : Gltf -> InternalNode -> Maybe (List TriangularMesh)
 triangularMeshesFromNode gltf (Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
