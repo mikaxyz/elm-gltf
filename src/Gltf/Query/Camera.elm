@@ -1,16 +1,20 @@
-module Gltf.Query.Camera exposing
-    ( Camera
-    , Index(..)
-    , OrthographicCamera
-    , PerspectiveCamera
-    , Projection(..)
-    )
+module Gltf.Query.Camera exposing (Camera, Index(..), Projection(..), OrthographicCamera, PerspectiveCamera)
+
+{-| TODO: Docs
+
+@docs Camera, Index, Projection, OrthographicCamera, PerspectiveCamera
+
+-}
 
 
+{-| TODO: Docs
+-}
 type Index
     = Index Int
 
 
+{-| TODO: Docs
+-}
 type alias Camera =
     { name : Maybe String
     , index : Index
@@ -18,11 +22,15 @@ type alias Camera =
     }
 
 
+{-| TODO: Docs
+-}
 type Projection
     = Perspective PerspectiveCamera
     | Orthographic OrthographicCamera
 
 
+{-| TODO: Docs
+-}
 type alias PerspectiveCamera =
     { yFov : Float
     , zNear : Float
@@ -31,6 +39,8 @@ type alias PerspectiveCamera =
     }
 
 
+{-| TODO: Docs
+-}
 type alias OrthographicCamera =
     { xMag : Float
     , yMag : Float
