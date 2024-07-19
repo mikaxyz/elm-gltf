@@ -8,10 +8,12 @@
         "Gltf",
         "Gltf.Query.Animation",
         "Gltf.Query.Camera",
+        "Gltf.Query.Material",
         "Gltf.Query.NodeIndex",
         "Gltf.Query.Skeleton",
         "Gltf.Query.Skin",
-        "Gltf.Query.Transform"
+        "Gltf.Query.Transform",
+        "Gltf.Query.TriangularMesh"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {

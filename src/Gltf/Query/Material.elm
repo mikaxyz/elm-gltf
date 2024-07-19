@@ -1,49 +1,34 @@
-module Gltf.Query.Material exposing
-    ( AlphaMode(..)
-    , Material(..)
-    , TextureIndex
-    , fromPrimitive
-    , toComparable
-    , toImageIndex
-    , toSamplerIndex
-    )
+module Gltf.Query.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
 
-import Common
-import Gltf exposing (Gltf)
-import Internal.Image
-import Internal.Material as Internal
-import Internal.Mesh exposing (Primitive)
-import Internal.Sampler
-import Internal.Texture
+{-| TODO: Docs
+
+@docs Material, Index, TextureIndex, AlphaMode, BbrMetallicRoughness
+
+-}
+
+import Gltf.Query.TextureIndex as TextureIndex
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
 
 
-type TextureIndex
-    = TextureIndex ( Maybe Internal.Sampler.Index, Internal.Image.Index )
+{-| TODO: Docs
+-}
+type alias TextureIndex =
+    TextureIndex.TextureIndex
 
 
-toComparable : TextureIndex -> ( Int, Int )
-toComparable (TextureIndex ( samplerIndex, Internal.Image.Index imageIndex )) =
-    ( samplerIndex |> Maybe.map (\(Internal.Sampler.Index index) -> index) |> Maybe.withDefault -1
-    , imageIndex
-    )
+{-| TODO: Docs
+-}
+type Index
+    = Index Int
 
 
-toImageIndex : TextureIndex -> Internal.Image.Index
-toImageIndex (TextureIndex ( _, index )) =
-    index
-
-
-toSamplerIndex : TextureIndex -> Maybe Internal.Sampler.Index
-toSamplerIndex (TextureIndex ( index, _ )) =
-    index
-
-
+{-| TODO: Docs
+-}
 type Material
     = Material
         { name : Maybe String
-        , index : Internal.Index
+        , index : Index
         , pbrMetallicRoughness : BbrMetallicRoughness
         , normalTexture : Maybe TextureIndex
         , normalTextureScale : Float
@@ -56,12 +41,16 @@ type Material
         }
 
 
+{-| TODO: Docs
+-}
 type AlphaMode
     = Opaque
     | Mask Float
     | Blend
 
 
+{-| TODO: Docs
+-}
 type alias BbrMetallicRoughness =
     { baseColorFactor : Vec4
     , baseColorTexture : Maybe TextureIndex
@@ -69,85 +58,3 @@ type alias BbrMetallicRoughness =
     , roughnessFactor : Float
     , metallicRoughnessTexture : Maybe TextureIndex
     }
-
-
-fromPrimitive : Gltf -> Primitive -> Maybe Material
-fromPrimitive gltf primitive =
-    case Maybe.map2 Tuple.pair primitive.material (primitive.material |> Maybe.andThen (Common.materialAtIndex gltf)) of
-        Just ( index, material ) ->
-            let
-                baseColorTexture : Maybe TextureIndex
-                baseColorTexture =
-                    material.pbrMetallicRoughness.baseColorTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                normalTexture : Maybe TextureIndex
-                normalTexture =
-                    material.normalTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                occlusionTexture : Maybe TextureIndex
-                occlusionTexture =
-                    material.occlusionTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                emissiveTexture : Maybe TextureIndex
-                emissiveTexture =
-                    material.emissiveTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                metallicRoughnessTexture : Maybe TextureIndex
-                metallicRoughnessTexture =
-                    material.pbrMetallicRoughness.metallicRoughnessTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-            in
-            Material
-                { name = material.name
-                , index = index
-                , normalTexture = normalTexture
-                , normalTextureScale = material.normalTexture |> Maybe.map .scale |> Maybe.withDefault 1.0
-                , occlusionTexture = occlusionTexture
-                , occlusionTextureStrength = material.occlusionTexture |> Maybe.map .strength |> Maybe.withDefault 1.0
-                , emissiveTexture = emissiveTexture
-                , emissiveFactor = material.emissiveFactor
-                , pbrMetallicRoughness =
-                    { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
-                    , baseColorTexture = baseColorTexture
-                    , metallicFactor = material.pbrMetallicRoughness.metallicFactor
-                    , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
-                    , metallicRoughnessTexture = metallicRoughnessTexture
-                    }
-                , doubleSided = material.doubleSided
-                , alphaMode =
-                    material.alphaMode
-                        |> (\alphaMode ->
-                                case alphaMode of
-                                    Internal.Opaque ->
-                                        Opaque
-
-                                    Internal.Mask cutoff ->
-                                        Mask cutoff
-
-                                    Internal.Blend ->
-                                        Blend
-                           )
-                }
-                |> Just
-
-        Nothing ->
-            Nothing
-
-
-textureFromTextureInfo : Gltf -> { a | index : Internal.Texture.Index } -> Maybe Internal.Texture.Texture
-textureFromTextureInfo gltf textureInfo =
-    Common.textureAtIndex gltf textureInfo.index

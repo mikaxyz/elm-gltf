@@ -1,7 +1,7 @@
 module Gltf.Query exposing
     ( Error(..), Node(..), Properties(..), QueryError(..)
     , fromJson, nodeTree, sceneNodeTrees
-    , nodeFromNode, treeFromNode, meshesFromNode, skins, skeleton
+    , treeFromNode, meshesFromNode, skins, skeleton
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
@@ -10,7 +10,7 @@ module Gltf.Query exposing
 
 @docs Error, Node, Properties, QueryError
 @docs fromJson, nodeTree, sceneNodeTrees
-@docs nodeFromNode, treeFromNode, meshesFromNode, skins, skeleton
+@docs treeFromNode, meshesFromNode, skins, skeleton
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
 
@@ -25,9 +25,11 @@ import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.Task
+import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.Transform exposing (Transform)
-import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh)
+import Gltf.Query.TriangularMesh exposing (TriangularMesh)
+import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Internal.Image
 import Internal.Node as Node
 import Internal.Sampler
@@ -198,7 +200,7 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 
         textureSourceCmd : TriangularMesh -> Maybe (Cmd msg)
         textureSourceCmd mesh =
-            case TriangularMesh.toMaterial mesh of
+            case TriangularMeshHelper.toMaterial mesh of
                 Just (Gltf.Query.Material.Material m) ->
                     let
                         maybeEffect : Maybe Gltf.Query.Material.TextureIndex -> Maybe QueryResultEffect
@@ -214,11 +216,11 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
                                                 maybeTextureIndex
                                                     |> Maybe.andThen
                                                         (\textureIndex ->
-                                                            (textureIndex |> Gltf.Query.Material.toImageIndex |> Common.imageAtIndex gltf)
+                                                            (textureIndex |> TextureIndex.toImageIndex |> Common.imageAtIndex gltf)
                                                                 |> Maybe.map
                                                                     (imageEffect textureIndex
                                                                         (textureIndex
-                                                                            |> Gltf.Query.Material.toSamplerIndex
+                                                                            |> TextureIndex.toSamplerIndex
                                                                             |> Maybe.andThen (Common.samplerAtIndex gltf)
                                                                         )
                                                                     )
@@ -365,5 +367,5 @@ triangularMeshesFromNode gltf (Node.Node node) =
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (TriangularMesh.fromPrimitive gltf)
+                primitives |> List.map (TriangularMeshHelper.fromPrimitive gltf)
             )
