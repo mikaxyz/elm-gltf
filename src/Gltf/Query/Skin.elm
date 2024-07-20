@@ -18,11 +18,14 @@ import Bytes.Extra
 import Common
 import Gltf exposing (Gltf)
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
+import Internal.Node as Node
 import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Tree
 
 
 {-| TODO: Docs
@@ -38,6 +41,7 @@ type Skin
         { inverseBindMatrices : List Mat4
         , joints : List NodeIndex
         , index : Index
+        , skeleton : Skeleton
         }
 
 
@@ -47,29 +51,64 @@ skinAtIndex : Gltf -> Index -> Maybe Skin
 skinAtIndex gltf (Index index) =
     gltf.skins
         |> Array.get index
-        |> Maybe.map
+        |> Maybe.andThen
             (\skin ->
                 let
-                    inverseBindMatrices_ : Maybe (List Mat4)
-                    inverseBindMatrices_ =
+                    joints : List NodeIndex
+                    joints =
+                        skin.joints |> List.map (\(GltfSkin.JointNodeIndex i) -> NodeIndex i)
+
+                    skeleton : Maybe Skeleton
+                    skeleton =
+                        joints
+                            |> List.head
+                            |> Maybe.andThen
+                                (\(NodeIndex rootNode) ->
+                                    skeletonFromGltf rootNode gltf
+                                )
+
+                    inverseBindMatrices : Maybe (List Mat4)
+                    inverseBindMatrices =
                         skin.inverseBindMatrices
                             |> Maybe.andThen
                                 (\x ->
                                     Common.accessorAtIndex gltf x
                                         |> Maybe.andThen (Common.bufferInfo gltf)
-                                        |> Maybe.map inverseBindMatrices
+                                        |> Maybe.map inverseBindMatricesFromBuffer
                                 )
                 in
-                Skin
-                    { inverseBindMatrices = inverseBindMatrices_ |> Maybe.withDefault []
-                    , joints = skin.joints |> List.map (\(GltfSkin.JointNodeIndex i) -> NodeIndex i)
-                    , index = Index index
-                    }
+                Maybe.map2
+                    (\skeleton_ inverseBindMatrices_ ->
+                        Skin
+                            { inverseBindMatrices = inverseBindMatrices_
+                            , joints = joints
+                            , skeleton = skeleton_
+                            , index = Index index
+                            }
+                    )
+                    skeleton
+                    inverseBindMatrices
             )
 
 
-inverseBindMatrices : ( Accessor, BufferView, Buffer ) -> List Mat4
-inverseBindMatrices ( accessor, bufferView, Buffer buffer ) =
+skeletonFromGltf : Int -> Gltf -> Maybe Skeleton
+skeletonFromGltf index gltf =
+    Common.maybeNodeTree gltf (Node.Index index)
+        |> Maybe.map
+            (\nodes ->
+                nodes
+                    |> Tree.map
+                        (\(Node.Node node) ->
+                            { nodeIndex = node.index |> (\(Node.Index i) -> NodeIndex i)
+                            , transform = node.transform
+                            }
+                        )
+                    |> Skeleton
+            )
+
+
+inverseBindMatricesFromBuffer : ( Accessor, BufferView, Buffer ) -> List Mat4
+inverseBindMatricesFromBuffer ( accessor, bufferView, Buffer buffer ) =
     buffer
         |> Bytes.Extra.drop (accessor.byteOffset + bufferView.byteOffset)
         |> Bytes.Extra.take bufferView.byteLength

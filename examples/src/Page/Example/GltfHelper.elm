@@ -5,7 +5,6 @@ module Page.Example.GltfHelper exposing
 
 import Gltf.Query.Animation as Animation exposing (Animation(..))
 import Gltf.Query.NodeIndex exposing (NodeIndex)
-import Gltf.Query.Skeleton exposing (Skeleton)
 import Gltf.Query.Skin exposing (Skin(..))
 import Page.Example.Material as Material
 import Quaternion exposing (Quaternion)
@@ -29,9 +28,9 @@ modifiersFromAnimations theta objectIdMap animations =
         |> List.map toModifier
 
 
-boneTransformsFromAnimations : Float -> List Animation -> Skin -> Skeleton -> BoneTransforms
-boneTransformsFromAnimations theta animations skin skeleton =
-    Animation.animatedBoneTransforms theta animations skin skeleton
+boneTransformsFromAnimations : Float -> List Animation -> Skin -> BoneTransforms
+boneTransformsFromAnimations theta animations skin =
+    Animation.animatedBoneTransforms theta animations skin
         |> List.foldl
             (\(Animation.AnimatedBone bone) acc ->
                 case bone.skinIndex of

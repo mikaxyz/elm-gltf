@@ -5,6 +5,7 @@ module Common exposing
     , bufferViewAtIndex
     , imageAtIndex
     , materialAtIndex
+    , maybeNodeTree
     , meshAtIndex
     , nodeAtIndex
     , samplerAtIndex
@@ -24,6 +25,7 @@ import Internal.Node as Node exposing (Node)
 import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene)
 import Internal.Texture
+import Tree exposing (Tree)
 
 
 sceneAtIndex : Gltf -> Scene.Index -> Maybe Scene
@@ -97,3 +99,14 @@ readBuffer gltf accessor =
     accessor.bufferView
         |> maybeBufferView
         |> Maybe.andThen maybeBuffer
+
+
+maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree Node)
+maybeNodeTree gltf index =
+    nodeAtIndex gltf index
+        |> Maybe.map
+            (\(Node.Node node_) ->
+                node_.children
+                    |> List.filterMap (maybeNodeTree gltf)
+                    |> Tree.tree (Node.Node node_)
+            )

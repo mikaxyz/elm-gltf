@@ -4,6 +4,7 @@ import Expect
 import Gltf
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.Skin as Skin exposing (Skin(..))
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
@@ -332,23 +333,23 @@ suite =
                         JD.decodeString Gltf.decoder simpleSkin
                             |> Result.map (\x -> Skin.skinAtIndex x (Skin.Index 0))
                             |> Result.withDefault Nothing
-
-                    expected : Skin
-                    expected =
-                        Skin
+                in
+                case maybeSkin of
+                    Just (Skin skin) ->
+                        Expect.equal
                             { inverseBindMatrices =
                                 [ Mat4.identity
                                 , Mat4.makeTranslate (Vec3.vec3 0 -1 0)
                                 ]
                             , joints = [ NodeIndex 1, NodeIndex 2 ]
                             , index = Skin.Index 0
+                            , numberOfBones = 2
                             }
-                in
-                case maybeSkin of
-                    Just skin ->
-                        Expect.equal
-                            expected
-                            skin
+                            { inverseBindMatrices = skin.inverseBindMatrices
+                            , joints = skin.joints
+                            , index = skin.index
+                            , numberOfBones = skin.skeleton |> (\(Skeleton bones) -> Tree.flatten bones) |> List.length
+                            }
 
                     Nothing ->
                         Expect.fail "Extract failed"

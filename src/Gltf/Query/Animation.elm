@@ -540,8 +540,8 @@ type AnimatedBone
 
 {-| TODO: Docs
 -}
-animatedBoneTransforms : Float -> List Animation -> Skin -> Skeleton -> List AnimatedBone
-animatedBoneTransforms theta animations (Skin skin) (Skeleton skeleton) =
+animatedBoneTransforms : Float -> List Animation -> Skin -> List AnimatedBone
+animatedBoneTransforms theta animations (Skin skin) =
     let
         pathToString : Path -> String
         pathToString path =
@@ -658,7 +658,8 @@ animatedBoneTransforms theta animations (Skin skin) (Skeleton skeleton) =
 
         trsTree : Tree TRS
         trsTree =
-            skeleton
+            skin.skeleton
+                |> (\(Skeleton bones) -> bones)
                 |> Tree.map boneToTrs
                 |> trsTreeWithGlobalMatrix Mat4.identity
     in

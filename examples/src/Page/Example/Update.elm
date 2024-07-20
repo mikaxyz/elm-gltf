@@ -134,7 +134,13 @@ update msg model =
                             }
                         , viewPortElement = viewPortElement
                         }
-                        (model.gltf |> RemoteData.map (Scene.modifiers model.time model.activeAnimation) |> RemoteData.withDefault [])
+                        (model.queryResult
+                            |> Maybe.map
+                                (\queryResult ->
+                                    Scene.modifiers model.time model.activeAnimation (Query.skins queryResult)
+                                )
+                            |> Maybe.withDefault []
+                        )
                         scene
                         ( pos.x, pos.y )
                         |> Maybe.map Tuple.first

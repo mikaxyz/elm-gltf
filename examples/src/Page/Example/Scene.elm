@@ -7,14 +7,12 @@ module Page.Example.Scene exposing
     )
 
 import Color
-import Gltf exposing (Gltf)
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Skeleton exposing (Skeleton)
-import Gltf.Query.Skin
+import Gltf.Query.Skin exposing (Skin)
 import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -377,11 +375,11 @@ objectFromMesh objectId triangularMesh =
                 |> withMaterial material
 
 
-modifiers : Float -> Maybe Animation -> Gltf -> List (Scene.Modifier ObjectId Material.Name)
-modifiers theta maybeAnimation gltf =
+modifiers : Float -> Maybe Animation -> List Skin -> List (Scene.Modifier ObjectId Material.Name)
+modifiers theta maybeAnimation skins =
     case maybeAnimation of
         Just animation ->
-            boneTransformModifiers theta SkinnedMesh [ animation ] gltf
+            boneTransformModifiers theta SkinnedMesh [ animation ] skins
                 ++ GltfHelper.modifiersFromAnimations theta Mesh [ animation ]
                 ++ GltfHelper.modifiersFromAnimations theta Bone [ animation ]
 
@@ -389,27 +387,15 @@ modifiers theta maybeAnimation gltf =
             []
 
 
-boneTransformModifiers : Float -> (Gltf.Query.Skin.Index -> objectId) -> List Animation -> Gltf -> List (Scene.Modifier objectId Material.Name)
-boneTransformModifiers theta objectId animations gltf =
-    Query.skins gltf
+boneTransformModifiers : Float -> (Gltf.Query.Skin.Index -> objectId) -> List Animation -> List Skin -> List (Scene.Modifier objectId Material.Name)
+boneTransformModifiers theta objectId animations skins =
+    skins
         |> List.map
             (\(Gltf.Query.Skin.Skin skin) ->
                 let
-                    skeleton : Maybe Skeleton
-                    skeleton =
-                        skin.joints
-                            |> List.head
-                            |> Maybe.andThen
-                                (\(NodeIndex rootNode) ->
-                                    Query.skeleton rootNode gltf
-                                        |> Result.toMaybe
-                                )
-
                     boneTransforms : BoneTransforms
                     boneTransforms =
-                        skeleton
-                            |> Maybe.map (GltfHelper.boneTransformsFromAnimations theta animations (Gltf.Query.Skin.Skin skin))
-                            |> Maybe.withDefault Object.boneTransformsIdentity
+                        GltfHelper.boneTransformsFromAnimations theta animations (Gltf.Query.Skin.Skin skin)
                 in
                 Scene.ObjectModifier (objectId skin.index) (Object.withBoneTransforms boneTransforms)
             )

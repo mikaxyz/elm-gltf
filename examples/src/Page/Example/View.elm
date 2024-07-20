@@ -71,7 +71,6 @@ view model =
                         , sceneView model
                             gltfQueryResult
                             model.activeAnimation
-                            gltf
                             scene
                             fallbackTexture
                             config
@@ -177,17 +176,16 @@ sceneView :
     Model
     -> Gltf.Query.QueryResult
     -> Maybe Animation.Animation
-    -> Gltf
     -> Scene Scene.ObjectId Material.Name
     -> WebGL.Texture.Texture
     -> Page.Example.PbrMaterial.Config
     -> Html Msg
-sceneView model gltfQueryResult animation gltf scene fallbackTexture config =
+sceneView model gltfQueryResult animation scene fallbackTexture config =
     XYZMika.XYZ.view
         model.viewport
         (renderer fallbackTexture config gltfQueryResult)
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation gltf)
+        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation (Gltf.Query.skins gltfQueryResult))
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions
         |> XYZMika.XYZ.withRenderOptions
             (\graph ->
