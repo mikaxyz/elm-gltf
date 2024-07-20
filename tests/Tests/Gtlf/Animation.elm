@@ -2,7 +2,6 @@ module Tests.Gtlf.Animation exposing (suite)
 
 import Array
 import Expect exposing (Expectation)
-import Gltf exposing (Gltf)
 import Gltf.Query.Animation as Animation
     exposing
         ( Animation(..)
@@ -14,6 +13,7 @@ import Internal.Accessor as Accessor
 import Internal.Animation
 import Internal.Animation.Channel
 import Internal.Animation.Sampler
+import Internal.Gltf exposing (Gltf)
 import Internal.Node as Node
 import Json.Decode as JD
 import Test exposing (Test, describe, test)
@@ -28,7 +28,7 @@ suite =
                     let
                         parsed : Result JD.Error Gltf
                         parsed =
-                            JD.decodeString Gltf.decoder json
+                            JD.decodeString Internal.Gltf.decoder json
                     in
                     Expect.ok parsed
             , test "decodes animations" <|
@@ -36,7 +36,7 @@ suite =
                     let
                         parsed : Result JD.Error (Array.Array Internal.Animation.Animation)
                         parsed =
-                            JD.decodeString Gltf.decoder json
+                            JD.decodeString Internal.Gltf.decoder json
                                 |> Result.map (\{ animations } -> animations)
 
                         expected : Array.Array Internal.Animation.Animation
@@ -73,7 +73,7 @@ suite =
                     let
                         extracted : Result JD.Error (List Animation)
                         extracted =
-                            JD.decodeString Gltf.decoder json
+                            JD.decodeString Internal.Gltf.decoder json
                                 |> Result.map AnimationHelper.extractAnimations
 
                         expectSampler : Sampler -> Expectation

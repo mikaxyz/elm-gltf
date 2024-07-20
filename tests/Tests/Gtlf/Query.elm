@@ -1,7 +1,6 @@
 module Tests.Gtlf.Query exposing (suite)
 
 import Expect
-import Gltf
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
@@ -9,6 +8,7 @@ import Gltf.Query.Skin as Skin exposing (Skin(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
+import Internal.Gltf
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
 import Internal.Skin as GltfSkin
@@ -331,7 +331,7 @@ suite =
                 let
                     maybeSkin : Maybe Skin
                     maybeSkin =
-                        JD.decodeString Gltf.decoder simpleSkin
+                        JD.decodeString Internal.Gltf.decoder simpleSkin
                             |> Result.map (\x -> SkinHelper.skinAtIndex x (Skin.Index 0))
                             |> Result.withDefault Nothing
                 in

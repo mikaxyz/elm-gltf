@@ -424,43 +424,41 @@ update msg model =
                 |> RemoteData.map (Tuple.mapFirst (\r -> { model | queryResult = RemoteData.Success r }))
                 |> RemoteData.withDefault ( model, Cmd.none )
 
-        GltfReceived result ->
-            case result |> Result.andThen (\x -> Query.sceneQuery 0 x |> Result.mapError Model.GltfQueryError) of
-                Ok queryResult ->
-                    let
-                        cmd : Cmd Msg
-                        cmd =
-                            Query.queryResultRun GltfApplyQueryResultEffect queryResult
+        GltfReceived (Ok queryResult) ->
+            let
+                cmd : Cmd Msg
+                cmd =
+                    Query.queryResultRun GltfApplyQueryResultEffect queryResult
 
-                        nodes : List (Tree.Tree Query.Node)
-                        nodes =
-                            Query.queryResultNodes queryResult
+                nodes : List (Tree.Tree Query.Node)
+                nodes =
+                    Query.queryResultNodes queryResult
 
-                        scene : XYZScene.Scene Scene.ObjectId Material.Name
-                        scene =
-                            Scene.initWithNodes
-                                nodes
-                                identity
-                                { camera = default.camera
-                                , projection = default.projection
-                                , sceneSize = model.sceneSize
-                                }
-                    in
-                    ( { model
-                        | queryResult = queryResult |> RemoteData.Success
-                        , animations = Query.animations queryResult
-                        , scene = scene |> RemoteData.Success
-                      }
-                        |> setActiveAnimation 0
-                        |> setSceneSize
-                    , [ cmd, getViewPort ]
-                        |> Cmd.batch
-                    )
+                scene : XYZScene.Scene Scene.ObjectId Material.Name
+                scene =
+                    Scene.initWithNodes
+                        nodes
+                        identity
+                        { camera = default.camera
+                        , projection = default.projection
+                        , sceneSize = model.sceneSize
+                        }
+            in
+            ( { model
+                | queryResult = queryResult |> RemoteData.Success
+                , animations = Query.animations queryResult
+                , scene = scene |> RemoteData.Success
+              }
+                |> setActiveAnimation 0
+                |> setSceneSize
+            , [ cmd, getViewPort ]
+                |> Cmd.batch
+            )
 
-                Err error ->
-                    ( { model | queryResult = RemoteData.Failure error }
-                    , Cmd.none
-                    )
+        GltfReceived (Err error) ->
+            ( { model | queryResult = RemoteData.Failure (Model.GltfError error) }
+            , Cmd.none
+            )
 
         UserSelectedCamera Nothing ->
             ( { model

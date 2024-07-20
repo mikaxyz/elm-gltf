@@ -11,12 +11,11 @@ module Page.Example.Model exposing
     )
 
 import Browser.Dom
-import Gltf exposing (Gltf)
+import Gltf
 import Gltf.Query as Query
 import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
-import Http
 import Keyboard
 import Page.Example.Material as Material
 import Page.Example.Scene as Scene
@@ -49,7 +48,7 @@ type Msg
     | EnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | SpecularEnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
-    | GltfReceived (Result Error Gltf)
+    | GltfReceived (Result Gltf.Error Query.QueryResult)
     | GltfApplyQueryResultEffect Query.QueryResultEffect
     | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
@@ -65,8 +64,7 @@ type Asset
 
 type Error
     = TextureError WebGL.Texture.Error
-    | HttpError Http.Error
-    | GltfQueryError Query.QueryError
+    | GltfError Gltf.Error
 
 
 type alias Model =

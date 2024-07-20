@@ -30,6 +30,7 @@ import Json.Decode.Pipeline as JDP
 type alias Gltf =
     { asset : Asset
     , scenes : Array Scene
+    , scene : Scene.Index
     , nodes : Array Node
     , meshes : Array Mesh
     , images : Array Image
@@ -57,6 +58,7 @@ decoder =
     JD.succeed Gltf
         |> JDP.required "asset" assetDecoder
         |> JDP.required "scenes" (JD.array Scene.decoder)
+        |> JDP.optional "scene" (JD.int |> JD.map Scene.Index) (Scene.Index 0)
         |> JDP.required "nodes" (Util.arrayWithIndexedItems Node.decoder)
         |> JDP.required "meshes" (JD.array Mesh.decoder)
         |> JDP.optional "images" (JD.array Image.decoder) Array.empty
@@ -90,6 +92,7 @@ decoderWithSingleBuffer buffer =
     JD.succeed Gltf
         |> JDP.required "asset" assetDecoder
         |> JDP.required "scenes" (JD.array Scene.decoder)
+        |> JDP.optional "scene" (JD.int |> JD.map Scene.Index) (Scene.Index 0)
         |> JDP.required "nodes"
             (JD.list JD.value
                 |> JD.map

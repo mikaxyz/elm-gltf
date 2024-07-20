@@ -83,10 +83,7 @@ initWithSampleAsset asset =
     ( Model.init (Model.SampleAsset asset)
     , Cmd.batch
         [ SampleAssets.toBinaryUrl asset
-            |> Maybe.map
-                (\url ->
-                    Gltf.getBinary url (Result.mapError Model.HttpError >> GltfReceived)
-                )
+            |> Maybe.map (\url -> Gltf.getBinary url GltfReceived)
             |> Maybe.withDefault Cmd.none
         , loadFallbackTexture FallbackTextureReceived
         , loadEnvironmentTexture EnvironmentTextureReceived
@@ -100,7 +97,7 @@ initWithLocalAsset : String -> ( Model, Cmd Msg )
 initWithLocalAsset path =
     ( Model.init (Model.Local path)
     , Cmd.batch
-        [ Gltf.getEmbedded path (Result.mapError Model.HttpError >> GltfReceived)
+        [ Gltf.getEmbedded path GltfReceived
         , loadFallbackTexture FallbackTextureReceived
         , loadEnvironmentTexture EnvironmentTextureReceived
         , loadSpecularEnvironmentTexture SpecularEnvironmentTextureReceived

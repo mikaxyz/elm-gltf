@@ -1,7 +1,7 @@
 module Tests.Gltf exposing (suite)
 
 import Expect
-import Gltf exposing (Gltf)
+import Internal.Gltf exposing (Gltf)
 import Json.Decode as JD
 import Test exposing (Test, describe, test)
 
@@ -15,7 +15,7 @@ suite =
                     let
                         parsed : Result JD.Error Gltf
                         parsed =
-                            JD.decodeString Gltf.decoder json
+                            JD.decodeString Internal.Gltf.decoder json
                     in
                     Expect.ok parsed
             , test "decodes asset" <|
@@ -23,7 +23,7 @@ suite =
                     let
                         parsed : Result JD.Error String
                         parsed =
-                            JD.decodeString Gltf.decoder json
+                            JD.decodeString Internal.Gltf.decoder json
                                 |> Result.map (\{ asset } -> asset.version)
                     in
                     Expect.equal (Ok "2.0") parsed

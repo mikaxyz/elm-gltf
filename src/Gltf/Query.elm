@@ -3,7 +3,7 @@ module Gltf.Query exposing
     , fromJson, nodeTree, sceneNodeTrees
     , treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
-    , textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
+    , textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
 
 {-| Query contents of Gltf
@@ -12,7 +12,7 @@ module Gltf.Query exposing
 @docs fromJson, nodeTree, sceneNodeTrees
 @docs treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
-@docs textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
+@docs textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
 
 -}
 
@@ -181,6 +181,13 @@ queryResultNodes (QueryResult _ _ nodes) =
 textureWithIndex : QueryResult -> Gltf.Query.Material.TextureIndex -> Maybe WebGL.Texture.Texture
 textureWithIndex (QueryResult _ textureStore _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
+
+
+{-| TODO: Docs
+-}
+defaultSceneQuery : Gltf -> Result QueryError QueryResult
+defaultSceneQuery gltf =
+    sceneQuery (gltf.scene |> (\(Scene.Index index) -> index)) gltf
 
 
 {-| TODO: Needed?
