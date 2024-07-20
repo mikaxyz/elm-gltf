@@ -49,7 +49,7 @@ type Msg
     | EnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | SpecularEnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
-    | GltfReceived (Result Http.Error Gltf)
+    | GltfReceived (Result Error Gltf)
     | GltfApplyQueryResultEffect Query.QueryResultEffect
     | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
@@ -66,6 +66,7 @@ type Asset
 type Error
     = TextureError WebGL.Texture.Error
     | HttpError Http.Error
+    | GltfQueryError Query.QueryError
 
 
 type alias Model =
@@ -83,9 +84,8 @@ type alias Model =
     , environmentTexture : RemoteData Error WebGL.Texture.Texture
     , specularEnvironmentTexture : RemoteData Error WebGL.Texture.Texture
     , brdfLUTTexture : RemoteData Error WebGL.Texture.Texture
-    , gltf : RemoteData Error Gltf
     , scene : RemoteData Error (Scene Scene.ObjectId Material.Name)
-    , queryResult : Maybe Query.QueryResult
+    , queryResult : RemoteData Error Query.QueryResult
     , animations : List Animation
     , activeAnimation : Maybe Animation
     , activeCamera : Maybe Gltf.Query.Camera.Index
@@ -110,9 +110,8 @@ init asset =
     , environmentTexture = RemoteData.Loading
     , specularEnvironmentTexture = RemoteData.Loading
     , brdfLUTTexture = RemoteData.Loading
-    , gltf = RemoteData.Loading
     , scene = RemoteData.Loading
-    , queryResult = Nothing
+    , queryResult = RemoteData.Loading
     , animations = []
     , activeAnimation = Nothing
     , activeCamera = Nothing

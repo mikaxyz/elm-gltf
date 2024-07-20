@@ -1,7 +1,7 @@
 module Gltf.Query exposing
     ( Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
     , fromJson, nodeTree, sceneNodeTrees
-    , treeFromNode, meshesFromNode, skins
+    , treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
@@ -10,7 +10,7 @@ module Gltf.Query exposing
 
 @docs Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
 @docs fromJson, nodeTree, sceneNodeTrees
-@docs treeFromNode, meshesFromNode, skins
+@docs treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, sceneQuery, applyQueryResultEffect, applyQueryResult
 
@@ -19,7 +19,8 @@ module Gltf.Query exposing
 import Array
 import Common
 import Gltf exposing (Gltf)
-import Gltf.Query.Camera as Camera
+import Gltf.Query.Animation as Animation exposing (Animation)
+import Gltf.Query.Camera as Camera exposing (Camera)
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
@@ -60,6 +61,27 @@ skins (QueryResult gltf _ _) =
         |> Array.toIndexedList
         |> List.map (Tuple.first >> Skin.Index)
         |> List.filterMap (Skin.skinAtIndex gltf)
+
+
+{-| TODO: Docs
+-}
+cameras : QueryResult -> List Camera
+cameras (QueryResult gltf _ _) =
+    gltf.cameras |> Array.toList
+
+
+{-| TODO: Docs
+-}
+cameraByIndex : Camera.Index -> QueryResult -> Maybe Camera
+cameraByIndex (Camera.Index index) (QueryResult gltf _ _) =
+    Array.get index gltf.cameras
+
+
+{-| TODO: Docs
+-}
+animations : QueryResult -> List Animation
+animations (QueryResult gltf _ _) =
+    Animation.extractAnimations gltf
 
 
 {-| TODO: Needed?

@@ -1,7 +1,5 @@
 module Page.Example.View exposing (view)
 
-import Array
-import Gltf exposing (Gltf)
 import Gltf.Query
 import Gltf.Query.Animation as Animation
 import Gltf.Query.Camera
@@ -40,14 +38,14 @@ view model =
 
         data =
             RemoteData.map
-                (\gltf scene fallbackTexture config ->
-                    { gltf = gltf
+                (\queryResult scene fallbackTexture config ->
+                    { gltfQueryResult = queryResult
                     , scene = scene
                     , fallbackTexture = fallbackTexture
                     , config = config
                     }
                 )
-                model.gltf
+                model.queryResult
                 |> RemoteData.andMap model.scene
                 |> RemoteData.andMap model.fallbackTexture
                 |> RemoteData.andMap materialConfig
@@ -62,22 +60,16 @@ view model =
         RemoteData.Failure _ ->
             h1 [] [ text <| "Error" ]
 
-        RemoteData.Success { gltf, scene, fallbackTexture, config } ->
-            case model.queryResult of
-                Just gltfQueryResult ->
-                    div [ style "display" "contents" ]
-                        [ sceneOptionsView gltf
-                            model
-                        , sceneView model
-                            gltfQueryResult
-                            model.activeAnimation
-                            scene
-                            fallbackTexture
-                            config
-                        ]
-
-                Nothing ->
-                    progressIndicatorView "Loading"
+        RemoteData.Success { gltfQueryResult, scene, fallbackTexture, config } ->
+            div [ style "display" "contents" ]
+                [ sceneOptionsView model gltfQueryResult
+                , sceneView model
+                    gltfQueryResult
+                    model.activeAnimation
+                    scene
+                    fallbackTexture
+                    config
+                ]
 
 
 progressIndicatorView : String -> Html msg
@@ -88,12 +80,11 @@ progressIndicatorView message =
         ]
 
 
-sceneOptionsView : Gltf -> Model -> Html Msg
-sceneOptionsView gltf model =
+sceneOptionsView : Model -> Gltf.Query.QueryResult -> Html Msg
+sceneOptionsView model gltfQueryResult =
     aside [ class "options" ]
         [ case
-            gltf.cameras
-                |> Array.toList
+            Gltf.Query.cameras gltfQueryResult
                 |> List.map
                     (\camera ->
                         { name = camera.name
