@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
+    ( Gltf, Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
     , fromJson, nodeTree, sceneNodeTrees
     , treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
@@ -8,7 +8,7 @@ module Gltf.Query exposing
 
 {-| Query contents of Gltf
 
-@docs Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
+@docs Gltf, Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
 @docs fromJson, nodeTree, sceneNodeTrees
 @docs treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
@@ -18,18 +18,20 @@ module Gltf.Query exposing
 
 import Array
 import Common
-import Gltf exposing (Gltf)
-import Gltf.Query.Animation as Animation exposing (Animation)
+import Gltf.Query.Animation exposing (Animation)
+import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.Camera as Camera exposing (Camera)
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
+import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.Transform exposing (Transform)
 import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
+import Internal.Gltf as Gltf
 import Internal.Image
 import Internal.Node as Node
 import Internal.Sampler
@@ -39,6 +41,12 @@ import Json.Decode as JD
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
+
+
+{-| TODO: REMOVE?
+-}
+type alias Gltf =
+    Gltf.Gltf
 
 
 {-| TODO: REMOVE?
@@ -60,7 +68,7 @@ skins (QueryResult gltf _ _) =
     gltf.skins
         |> Array.toIndexedList
         |> List.map (Tuple.first >> Skin.Index)
-        |> List.filterMap (Skin.skinAtIndex gltf)
+        |> List.filterMap (SkinHelper.skinAtIndex gltf)
 
 
 {-| TODO: Docs
@@ -81,7 +89,7 @@ cameraByIndex (Camera.Index index) (QueryResult gltf _ _) =
 -}
 animations : QueryResult -> List Animation
 animations (QueryResult gltf _ _) =
-    Animation.extractAnimations gltf
+    AnimationHelper.extractAnimations gltf
 
 
 {-| TODO: Needed?

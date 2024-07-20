@@ -4,10 +4,10 @@ module Gltf.Query.VertexBuffers exposing
     )
 
 import Common
-import Gltf exposing (Gltf)
 import Internal.Accessor exposing (Accessor)
 import Internal.Buffer exposing (Buffer)
 import Internal.BufferView exposing (BufferView)
+import Internal.Gltf exposing (Gltf)
 import Internal.Mesh as Mesh exposing (Primitive)
 
 

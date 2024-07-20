@@ -1,9 +1,9 @@
 module Gltf.Query.MaterialHelper exposing (fromPrimitive)
 
 import Common
-import Gltf exposing (Gltf)
 import Gltf.Query.Material exposing (AlphaMode(..), Material(..))
 import Gltf.Query.TextureIndex exposing (TextureIndex(..))
+import Internal.Gltf exposing (Gltf)
 import Internal.Material as Internal
 import Internal.Mesh exposing (Primitive)
 import Internal.Texture

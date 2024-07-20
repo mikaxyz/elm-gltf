@@ -4,9 +4,9 @@ import Base64.Encode
 import Bytes exposing (Bytes)
 import Bytes.Extra
 import Common
-import Gltf exposing (Gltf)
 import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
+import Internal.Gltf exposing (Gltf)
 import Internal.Image as Image exposing (Image)
 import Internal.Sampler exposing (Sampler)
 import Task exposing (Task)

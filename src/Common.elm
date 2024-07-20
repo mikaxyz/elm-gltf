@@ -14,10 +14,10 @@ module Common exposing
     )
 
 import Array
-import Gltf exposing (Gltf)
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.Buffer as Buffer exposing (Buffer)
 import Internal.BufferView as BufferView exposing (BufferView)
+import Internal.Gltf exposing (Gltf)
 import Internal.Image as Image exposing (Image)
 import Internal.Material as Internal
 import Internal.Mesh as Mesh

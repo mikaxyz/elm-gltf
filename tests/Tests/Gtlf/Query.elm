@@ -6,6 +6,7 @@ import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.Skin as Skin exposing (Skin(..))
+import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Mesh as Mesh
@@ -331,7 +332,7 @@ suite =
                     maybeSkin : Maybe Skin
                     maybeSkin =
                         JD.decodeString Gltf.decoder simpleSkin
-                            |> Result.map (\x -> Skin.skinAtIndex x (Skin.Index 0))
+                            |> Result.map (\x -> SkinHelper.skinAtIndex x (Skin.Index 0))
                             |> Result.withDefault Nothing
                 in
                 case maybeSkin of

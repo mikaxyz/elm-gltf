@@ -9,6 +9,7 @@ import Gltf.Query.Animation as Animation
         , Channel(..)
         , Sampler(..)
         )
+import Gltf.Query.AnimationHelper as AnimationHelper
 import Internal.Accessor as Accessor
 import Internal.Animation
 import Internal.Animation.Channel
@@ -73,7 +74,7 @@ suite =
                         extracted : Result JD.Error (List Animation)
                         extracted =
                             JD.decodeString Gltf.decoder json
-                                |> Result.map Animation.extractAnimations
+                                |> Result.map AnimationHelper.extractAnimations
 
                         expectSampler : Sampler -> Expectation
                         expectSampler extractedSampler =

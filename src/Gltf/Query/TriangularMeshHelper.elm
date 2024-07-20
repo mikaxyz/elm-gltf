@@ -4,13 +4,13 @@ module Gltf.Query.TriangularMeshHelper exposing
     )
 
 import Common
-import Gltf exposing (Gltf)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Gltf.Query.Material exposing (Material)
 import Gltf.Query.MaterialHelper
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
 import Internal.Accessor as Accessor
+import Internal.Gltf exposing (Gltf)
 import Internal.Mesh exposing (Primitive)
 import Math.Vector3 as Vec3
 import Math.Vector4 as Vec4
