@@ -1,4 +1,4 @@
-module Material exposing (Name(..), renderer)
+module Page.Example.Material exposing (Name(..), renderer)
 
 import Gltf.Query
 import Gltf.Query.Material

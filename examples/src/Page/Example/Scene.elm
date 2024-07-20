@@ -17,11 +17,11 @@ import Gltf.Query.Skeleton exposing (Skeleton)
 import Gltf.Query.Skin
 import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
-import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4
 import Page.Example.GltfHelper as GltfHelper
+import Page.Example.Material as Material
 import Quaternion
 import Tree exposing (Tree)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)

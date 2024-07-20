@@ -18,7 +18,7 @@ import Gltf.Query.Camera
 import Gltf.Query.Material
 import Http
 import Keyboard
-import Material
+import Page.Example.Material as Material
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import SampleAssets

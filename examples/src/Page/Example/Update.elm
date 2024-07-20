@@ -8,9 +8,9 @@ import Gltf.Query.Animation as Animation
 import Gltf.Query.Camera
 import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Keyboard
-import Material
 import Math.Vector2 as Vec2 exposing (vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Page.Example.Material as Material
 import Page.Example.Model as Model exposing (Model, Msg(..))
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)

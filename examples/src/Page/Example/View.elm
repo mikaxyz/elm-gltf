@@ -9,8 +9,8 @@ import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, pro
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
 import Json.Decode as JD
-import Material
 import Math.Vector3 exposing (vec3)
+import Page.Example.Material as Material
 import Page.Example.Model exposing (Model, Msg(..))
 import Page.Example.PbrMaterial
 import Page.Example.Scene as Scene

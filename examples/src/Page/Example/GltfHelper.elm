@@ -7,7 +7,7 @@ import Gltf.Query.Animation as Animation exposing (Animation(..))
 import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Gltf.Query.Skeleton exposing (Skeleton)
 import Gltf.Query.Skin exposing (Skin(..))
-import Material
+import Page.Example.Material as Material
 import Quaternion exposing (Quaternion)
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
