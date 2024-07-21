@@ -10,11 +10,11 @@ import Color
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Gltf.Material
+import Gltf.Mesh exposing (Mesh(..))
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Skin exposing (Skin)
 import Gltf.Transform exposing (Transform)
-import Gltf.TriangularMesh exposing (TriangularMesh(..))
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4
@@ -90,7 +90,7 @@ frameScene :
         }
 frameScene config nodes =
     let
-        getBounds : List Gltf.TriangularMesh.Vertex -> ( Vec3, Vec3 )
+        getBounds : List Gltf.Mesh.Vertex -> ( Vec3, Vec3 )
         getBounds vertices =
             vertices
                 |> List.map .position
@@ -123,7 +123,7 @@ frameScene config nodes =
                     )
                     ( vec3 0 0 0, vec3 0 0 0 )
 
-        triangularMeshToBounds : TriangularMesh -> ( Vec3, Vec3 )
+        triangularMeshToBounds : Mesh -> ( Vec3, Vec3 )
         triangularMeshToBounds mesh =
             case mesh of
                 TriangularMesh _ vertices ->
@@ -132,7 +132,7 @@ frameScene config nodes =
                 IndexedTriangularMesh _ ( vertices, _ ) ->
                     vertices |> getBounds
 
-        triangularMeshesToBounds : List TriangularMesh -> ( Vec3, Vec3 )
+        triangularMeshesToBounds : List Mesh -> ( Vec3, Vec3 )
         triangularMeshesToBounds meshes =
             meshes
                 |> List.map triangularMeshToBounds
@@ -349,7 +349,7 @@ objectsFromNode objectIdMap node =
             )
 
 
-objectFromMesh : objectId -> TriangularMesh -> Object objectId Material.Name
+objectFromMesh : objectId -> Mesh -> Object objectId Material.Name
 objectFromMesh objectId triangularMesh =
     let
         withMaterial : Maybe Gltf.Material.Material -> Object id Material.Name -> Object id Material.Name
@@ -401,7 +401,7 @@ boneTransformModifiers theta objectId animations skins =
             )
 
 
-toVertex : Gltf.TriangularMesh.Vertex -> Vertex
+toVertex : Gltf.Mesh.Vertex -> Vertex
 toVertex v =
     v.position
         |> Vertex.vertex

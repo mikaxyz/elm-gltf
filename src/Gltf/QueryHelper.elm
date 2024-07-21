@@ -8,11 +8,11 @@ module Gltf.QueryHelper exposing
     )
 
 import Common
+import Gltf.Mesh exposing (Mesh)
 import Gltf.Query as Query
+import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Gltf.Skin
-import Gltf.TriangularMesh exposing (TriangularMesh)
 import Internal.Gltf as Gltf exposing (Gltf)
 import Internal.Node as Node exposing (Node)
 import Internal.Scene as Scene exposing (Scene(..))
@@ -36,7 +36,7 @@ fromJson json f =
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
 -}
-meshesFromNode : Query.Node -> List TriangularMesh
+meshesFromNode : Query.Node -> List Mesh
 meshesFromNode node =
     case node of
         Query.EmptyNode _ ->
@@ -131,11 +131,11 @@ nodeIndexFromNode (Node.Index index) =
 
 {-| TODO: Needed?
 -}
-triangularMeshesFromNode : Gltf -> Node -> Maybe (List TriangularMesh)
+triangularMeshesFromNode : Gltf -> Node -> Maybe (List Mesh)
 triangularMeshesFromNode gltf (Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (TriangularMeshHelper.fromPrimitive gltf)
+                primitives |> List.map (MeshHelper.fromPrimitive gltf)
             )

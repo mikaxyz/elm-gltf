@@ -1,14 +1,14 @@
-module Gltf.Query.TriangularMeshHelper exposing
+module Gltf.Query.MeshHelper exposing
     ( fromPrimitive
     , toMaterial
     )
 
 import Common
 import Gltf.Material exposing (Material)
+import Gltf.Mesh exposing (Mesh(..), Vertex)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Gltf.Query.MaterialHelper
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
-import Gltf.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Accessor as Accessor
 import Internal.Gltf exposing (Gltf)
 import Internal.Mesh exposing (Primitive)
@@ -27,7 +27,7 @@ type alias VertexAttributes =
     }
 
 
-toMaterial : TriangularMesh -> Maybe Gltf.Material.Material
+toMaterial : Mesh -> Maybe Gltf.Material.Material
 toMaterial mesh =
     case mesh of
         TriangularMesh material _ ->
@@ -37,7 +37,7 @@ toMaterial mesh =
             material
 
 
-fromPrimitive : Gltf -> Primitive -> TriangularMesh
+fromPrimitive : Gltf -> Primitive -> Mesh
 fromPrimitive gltf primitive =
     let
         vertexBuffers : VertexBuffers

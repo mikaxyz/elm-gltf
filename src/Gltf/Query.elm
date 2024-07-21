@@ -40,16 +40,16 @@ import Common
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera exposing (Camera)
 import Gltf.Material
+import Gltf.Mesh exposing (Mesh)
 import Gltf.Query.AnimationHelper as AnimationHelper
+import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
-import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Gltf.Skin exposing (Skin)
 import Gltf.Transform exposing (Transform)
-import Gltf.TriangularMesh exposing (TriangularMesh)
 import Internal.Gltf
 import Internal.Image
 import Internal.Node
@@ -79,8 +79,8 @@ type Error
 type Node
     = EmptyNode Properties
     | CameraNode Gltf.Camera.Index Properties
-    | MeshNode (List TriangularMesh) Properties
-    | SkinnedMeshNode (List TriangularMesh) Gltf.Skin.Index Properties
+    | MeshNode (List Mesh) Properties
+    | SkinnedMeshNode (List Mesh) Gltf.Skin.Index Properties
 
 
 {-| TODO: Docs
@@ -137,9 +137,9 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
         imageEffect id maybeSampler image =
             QueryResultLoadTextureEffect id image maybeSampler
 
-        textureSourceCmd : TriangularMesh -> Maybe (Cmd msg)
+        textureSourceCmd : Mesh -> Maybe (Cmd msg)
         textureSourceCmd mesh =
-            case TriangularMeshHelper.toMaterial mesh of
+            case MeshHelper.toMaterial mesh of
                 Just (Gltf.Material.Material m) ->
                     let
                         maybeEffect : Maybe Gltf.Material.TextureIndex -> Maybe QueryResultEffect
@@ -288,7 +288,7 @@ nodeIndexFromNode (Internal.Node.Index index) =
 
 {-| TODO: Needed?
 -}
-meshesFromNode : Node -> List TriangularMesh
+meshesFromNode : Node -> List Mesh
 meshesFromNode node =
     case node of
         EmptyNode _ ->
@@ -352,11 +352,11 @@ nodeTree index gltf =
 
 {-| TODO: Needed?
 -}
-triangularMeshesFromNode : Gltf -> Internal.Node.Node -> Maybe (List TriangularMesh)
+triangularMeshesFromNode : Gltf -> Internal.Node.Node -> Maybe (List Mesh)
 triangularMeshesFromNode gltf (Internal.Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (TriangularMeshHelper.fromPrimitive gltf)
+                primitives |> List.map (MeshHelper.fromPrimitive gltf)
             )

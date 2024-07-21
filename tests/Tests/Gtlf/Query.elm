@@ -1,6 +1,7 @@
 module Tests.Gtlf.Query exposing (suite)
 
 import Expect
+import Gltf.Mesh exposing (Mesh(..), Vertex)
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
@@ -8,7 +9,6 @@ import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.QueryHelper as QueryHelper
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform
-import Gltf.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Gltf
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
@@ -209,7 +209,7 @@ suite =
                             expectedWeights
                             expectedJoints
 
-                    expected : List TriangularMesh
+                    expected : List Mesh
                     expected =
                         [ IndexedTriangularMesh Nothing
                             ( expectedVertices
@@ -236,7 +236,7 @@ suite =
                         QueryHelper.fromJson triangle (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
-                    expected : List TriangularMesh
+                    expected : List Mesh
                     expected =
                         [ IndexedTriangularMesh Nothing
                             ( [ { joints = Nothing
@@ -286,7 +286,7 @@ suite =
                         QueryHelper.fromJson triangleWithoutIndices (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
-                    expected : List TriangularMesh
+                    expected : List Mesh
                     expected =
                         [ TriangularMesh Nothing
                             [ ( { joints = Nothing

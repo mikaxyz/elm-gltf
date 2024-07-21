@@ -1,8 +1,8 @@
-module Gltf.TriangularMesh exposing (TriangularMesh(..), Joints, Vertex)
+module Gltf.Mesh exposing (Mesh(..), Joints, Vertex)
 
 {-| TODO: Docs
 
-@docs TriangularMesh, Joints, Vertex
+@docs Mesh, Joints, Vertex
 
 -}
 
@@ -14,7 +14,7 @@ import Math.Vector4 exposing (Vec4)
 
 {-| TODO: Docs
 -}
-type TriangularMesh
+type Mesh
     = TriangularMesh (Maybe Material) (List ( Vertex, Vertex, Vertex ))
     | IndexedTriangularMesh (Maybe Material) ( List Vertex, List ( Int, Int, Int ) )
 
