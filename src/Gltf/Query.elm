@@ -37,7 +37,7 @@ module Gltf.Query exposing
 
 import Array
 import Common
-import Gltf.Query.Animation exposing (Animation)
+import Gltf.Animation exposing (Animation)
 import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.Camera as Camera exposing (Camera)
 import Gltf.Query.Material

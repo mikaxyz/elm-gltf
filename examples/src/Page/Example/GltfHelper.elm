@@ -3,7 +3,7 @@ module Page.Example.GltfHelper exposing
     , modifiersFromAnimations
     )
 
-import Gltf.Query.Animation as Animation exposing (Animation(..))
+import Gltf.Animation exposing (Animation(..))
 import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Gltf.Query.Skin exposing (Skin(..))
 import Page.Example.Material as Material
@@ -15,24 +15,24 @@ import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 modifiersFromAnimations : Float -> (NodeIndex -> objectId) -> List Animation -> List (Scene.Modifier objectId Material.Name)
 modifiersFromAnimations theta objectIdMap animations =
     let
-        toModifier : Animation.AnimatedProperty -> Scene.Modifier objectId Material.Name
+        toModifier : Gltf.Animation.AnimatedProperty -> Scene.Modifier objectId Material.Name
         toModifier animated =
             case animated of
-                Animation.AnimatedPositionProperty nodeIndex position ->
+                Gltf.Animation.AnimatedPositionProperty nodeIndex position ->
                     Scene.ObjectModifier (objectIdMap nodeIndex) (Object.withPosition position)
 
-                Animation.AnimatedRotationProperty nodeIndex rotation ->
+                Gltf.Animation.AnimatedRotationProperty nodeIndex rotation ->
                     Scene.ObjectModifier (objectIdMap nodeIndex) (Object.withRotation (Quaternion.toMat4 rotation))
     in
-    Animation.animatedProperties theta animations
+    Gltf.Animation.animatedProperties theta animations
         |> List.map toModifier
 
 
 boneTransformsFromAnimations : Float -> List Animation -> Skin -> BoneTransforms
 boneTransformsFromAnimations theta animations skin =
-    Animation.animatedBoneTransforms theta animations skin
+    Gltf.Animation.animatedBoneTransforms theta animations skin
         |> List.foldl
-            (\(Animation.AnimatedBone bone) acc ->
+            (\(Gltf.Animation.AnimatedBone bone) acc ->
                 case bone.skinIndex of
                     0 ->
                         { acc | joint0 = bone.joint, inverseBindMatrix0 = bone.inverseBindMatrix }

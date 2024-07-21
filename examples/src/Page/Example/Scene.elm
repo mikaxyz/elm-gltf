@@ -7,8 +7,8 @@ module Page.Example.Scene exposing
     )
 
 import Color
+import Gltf.Animation exposing (Animation)
 import Gltf.Query as Query
-import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))

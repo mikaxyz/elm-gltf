@@ -6,8 +6,8 @@
     "version": "1.0.0",
     "exposed-modules": [
         "Gltf",
+        "Gltf.Animation",
         "Gltf.Query",
-        "Gltf.Query.Animation",
         "Gltf.Query.Camera",
         "Gltf.Query.Material",
         "Gltf.Query.NodeIndex",

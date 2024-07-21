@@ -2,7 +2,7 @@ module Tests.Gtlf.Animation exposing (suite)
 
 import Array
 import Expect exposing (Expectation)
-import Gltf.Query.Animation as Animation
+import Gltf.Animation
     exposing
         ( Animation(..)
         , Channel(..)
@@ -85,7 +85,7 @@ suite =
                                     , \(Sampler sampler) ->
                                         Expect.equal (List.length sampler.output) 62
                                     , \(Sampler sampler) ->
-                                        Expect.equal sampler.interpolation Animation.Linear
+                                        Expect.equal sampler.interpolation Gltf.Animation.Linear
                                     ]
 
                         expectChannel : Channel -> Expectation

@@ -1,4 +1,4 @@
-module Gltf.Query.Animation exposing
+module Gltf.Animation exposing
     ( Animation(..), AnimatedBone(..), AnimatedProperty(..)
     , animatedProperties, animatedBoneTransforms
     , Channel(..), Sampler(..), Interpolation(..), Path(..), Attribute

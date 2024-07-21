@@ -5,7 +5,7 @@ module Gltf.Query.AnimationHelper exposing
 
 import Array exposing (Array)
 import Common
-import Gltf.Query.Animation
+import Gltf.Animation
     exposing
         ( Animation(..)
         , Channel(..)

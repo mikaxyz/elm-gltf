@@ -12,8 +12,8 @@ module Page.Example.Model exposing
 
 import Browser.Dom
 import Gltf
+import Gltf.Animation exposing (Animation)
 import Gltf.Query as Query
-import Gltf.Query.Animation exposing (Animation)
 import Gltf.Query.Camera
 import Gltf.Query.Material
 import Keyboard
