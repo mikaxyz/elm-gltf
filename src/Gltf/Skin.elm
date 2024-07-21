@@ -6,7 +6,7 @@ module Gltf.Skin exposing (Index(..), Skin(..), Skeleton)
 
 -}
 
-import Gltf.Query.NodeIndex exposing (NodeIndex)
+import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Query.Skeleton
 import Math.Matrix4 exposing (Mat4)
 

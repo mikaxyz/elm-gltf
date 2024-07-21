@@ -3,7 +3,7 @@ module Tests.Gtlf.Query exposing (suite)
 import Expect
 import Gltf.Mesh exposing (Mesh(..), Vertex)
 import Gltf.Node
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.QueryHelper as QueryHelper

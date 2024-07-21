@@ -1,4 +1,4 @@
-module Gltf.Query.NodeIndex exposing (NodeIndex(..))
+module Gltf.NodeIndex exposing (NodeIndex(..))
 
 {-| TODO: Docs
 

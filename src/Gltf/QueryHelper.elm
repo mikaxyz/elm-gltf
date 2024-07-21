@@ -10,9 +10,9 @@ module Gltf.QueryHelper exposing
 import Common
 import Gltf.Mesh exposing (Mesh)
 import Gltf.Node
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query as Query
 import Gltf.Query.MeshHelper as MeshHelper
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Skin
 import Internal.Gltf as Gltf exposing (Gltf)
 import Internal.Node as Node exposing (Node)

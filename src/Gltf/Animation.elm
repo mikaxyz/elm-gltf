@@ -25,8 +25,8 @@ module Gltf.Animation exposing
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Attribute as Attribute
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton as Skeleton exposing (Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform as Transform

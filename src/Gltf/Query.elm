@@ -42,9 +42,9 @@ import Gltf.Camera exposing (Camera)
 import Gltf.Material
 import Gltf.Mesh exposing (Mesh)
 import Gltf.Node exposing (Node)
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.MeshHelper as MeshHelper
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex

@@ -4,8 +4,8 @@ import Browser.Dom
 import Color
 import Gltf.Camera
 import Gltf.Node
+import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Query as Query
-import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Keyboard
 import Math.Vector2 as Vec2 exposing (vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)

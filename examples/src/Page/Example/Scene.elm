@@ -12,7 +12,7 @@ import Gltf.Camera
 import Gltf.Material
 import Gltf.Mesh exposing (Mesh(..))
 import Gltf.Node
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Skin exposing (Skin)
 import Gltf.Transform exposing (Transform)
 import Math.Matrix4 as Mat4 exposing (Mat4)

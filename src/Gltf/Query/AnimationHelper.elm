@@ -13,8 +13,8 @@ import Gltf.Animation
         , Path(..)
         , Sampler(..)
         )
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Attribute as Attribute
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Internal.Accessor as Accessor
 import Internal.Animation as Internal
 import Internal.Animation.Channel

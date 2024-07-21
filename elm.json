@@ -11,8 +11,8 @@
         "Gltf.Mesh",
         "Gltf.Material",
         "Gltf.Node",
+        "Gltf.NodeIndex",
         "Gltf.Query",
-        "Gltf.Query.NodeIndex",
         "Gltf.Skin",
         "Gltf.Transform"
     ],

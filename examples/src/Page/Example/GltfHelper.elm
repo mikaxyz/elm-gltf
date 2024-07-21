@@ -4,7 +4,7 @@ module Page.Example.GltfHelper exposing
     )
 
 import Gltf.Animation exposing (Animation(..))
-import Gltf.Query.NodeIndex exposing (NodeIndex)
+import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Skin exposing (Skin(..))
 import Page.Example.Material as Material
 import Quaternion exposing (Quaternion)

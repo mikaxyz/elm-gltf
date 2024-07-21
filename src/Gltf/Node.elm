@@ -11,7 +11,7 @@ module Gltf.Node exposing (Node(..), Properties(..))
 
 import Gltf.Camera
 import Gltf.Mesh exposing (Mesh)
-import Gltf.Query.NodeIndex exposing (NodeIndex)
+import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Skin
 import Gltf.Transform exposing (Transform)
 

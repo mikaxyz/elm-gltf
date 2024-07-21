@@ -6,7 +6,7 @@ import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Common
-import Gltf.Query.NodeIndex exposing (NodeIndex(..))
+import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
 import Internal.Accessor as Accessor exposing (Accessor)
