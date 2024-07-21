@@ -1,4 +1,4 @@
-module Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Joints, Vertex)
+module Gltf.TriangularMesh exposing (TriangularMesh(..), Joints, Vertex)
 
 {-| TODO: Docs
 

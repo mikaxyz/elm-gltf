@@ -10,9 +10,9 @@ module Gltf.QueryHelper exposing
 import Common
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Gltf.Skin
+import Gltf.TriangularMesh exposing (TriangularMesh)
 import Internal.Gltf as Gltf exposing (Gltf)
 import Internal.Node as Node exposing (Node)
 import Internal.Scene as Scene exposing (Scene(..))

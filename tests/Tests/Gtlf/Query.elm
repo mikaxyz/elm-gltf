@@ -5,10 +5,10 @@ import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.SkinHelper as SkinHelper
-import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Gltf.QueryHelper as QueryHelper
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform
+import Gltf.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Gltf
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))

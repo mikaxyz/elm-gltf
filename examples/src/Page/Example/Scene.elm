@@ -12,9 +12,9 @@ import Gltf.Camera
 import Gltf.Material
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Gltf.Skin exposing (Skin)
 import Gltf.Transform exposing (Transform)
+import Gltf.TriangularMesh exposing (TriangularMesh(..))
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4
@@ -90,7 +90,7 @@ frameScene :
         }
 frameScene config nodes =
     let
-        getBounds : List TriangularMesh.Vertex -> ( Vec3, Vec3 )
+        getBounds : List Gltf.TriangularMesh.Vertex -> ( Vec3, Vec3 )
         getBounds vertices =
             vertices
                 |> List.map .position
@@ -401,7 +401,7 @@ boneTransformModifiers theta objectId animations skins =
             )
 
 
-toVertex : TriangularMesh.Vertex -> Vertex
+toVertex : Gltf.TriangularMesh.Vertex -> Vertex
 toVertex v =
     v.position
         |> Vertex.vertex

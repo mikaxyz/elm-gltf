@@ -7,8 +7,8 @@ import Common
 import Gltf.Material exposing (Material)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Gltf.Query.MaterialHelper
-import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
+import Gltf.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Internal.Accessor as Accessor
 import Internal.Gltf exposing (Gltf)
 import Internal.Mesh exposing (Primitive)
