@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Gltf, Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
+    ( Gltf, Error(..), Node(..), Properties(..), InternalNode, InternalNodeIndex
     , skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
@@ -7,7 +7,7 @@ module Gltf.Query exposing
 
 {-| Query contents of Gltf
 
-@docs Gltf, Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
+@docs Gltf, Error, Node, Properties, InternalNode, InternalNodeIndex
 @docs skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
@@ -35,7 +35,6 @@ import Internal.Node as Node
 import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene(..))
 import Internal.Skin
-import Json.Decode as JD
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
@@ -93,13 +92,6 @@ animations (QueryResult gltf _ _) =
 {-| TODO: Needed?
 -}
 type Error
-    = DecodeError JD.Error
-    | QueryError QueryError
-
-
-{-| TODO: Needed?
--}
-type QueryError
     = SceneNotFound
     | NodeNotFound
 
@@ -164,14 +156,14 @@ textureWithIndex (QueryResult _ textureStore _) textureIndex =
 
 {-| TODO: Docs
 -}
-defaultSceneQuery : Gltf -> Result QueryError QueryResult
+defaultSceneQuery : Gltf -> Result Error QueryResult
 defaultSceneQuery gltf =
     sceneQuery (gltf.scene |> (\(Scene.Index index) -> index)) gltf
 
 
 {-| TODO: Needed?
 -}
-sceneQuery : Int -> Gltf -> Result QueryError QueryResult
+sceneQuery : Int -> Gltf -> Result Error QueryResult
 sceneQuery index gltf =
     Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
@@ -340,7 +332,7 @@ type Properties
 
 {-| TODO: Needed?
 -}
-nodeTree : Int -> Gltf -> Result QueryError (Tree InternalNode)
+nodeTree : Int -> Gltf -> Result Error (Tree InternalNode)
 nodeTree index gltf =
     Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe NodeNotFound
 

@@ -1,5 +1,6 @@
 module Gltf.QueryHelper exposing
-    ( fromJson
+    ( Error(..)
+    , fromJson
     , meshesFromNode
     , nodeTree
     , sceneNodeTrees
@@ -20,12 +21,17 @@ import Json.Decode as JD
 import Tree exposing (Tree)
 
 
-fromJson : String -> (Gltf -> Result Query.QueryError b) -> Result Query.Error b
+type Error
+    = DecodeError JD.Error
+    | QueryError Query.Error
+
+
+fromJson : String -> (Gltf -> Result Query.Error b) -> Result Error b
 fromJson json f =
     json
         |> JD.decodeString Gltf.decoder
-        |> Result.mapError Query.DecodeError
-        |> Result.andThen (\gltf -> f gltf |> Result.mapError Query.QueryError)
+        |> Result.mapError DecodeError
+        |> Result.andThen (\gltf -> f gltf |> Result.mapError QueryError)
 
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
@@ -48,14 +54,14 @@ meshesFromNode node =
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
 -}
-nodeTree : Int -> Gltf -> Result Query.QueryError (Tree Node)
+nodeTree : Int -> Gltf -> Result Query.Error (Tree Node)
 nodeTree index gltf =
     Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe Query.NodeNotFound
 
 
 {-| TODO: Use queries in tests?
 -}
-sceneNodeTrees : Int -> Gltf -> Result Query.QueryError (List (Tree Node))
+sceneNodeTrees : Int -> Gltf -> Result Query.Error (List (Tree Node))
 sceneNodeTrees index gltf =
     Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
@@ -72,7 +78,7 @@ sceneNodeTrees index gltf =
 
 {-| TODO: Use queries in tests?
 -}
-treeFromNode : Node.Index -> Gltf -> Result Query.QueryError (Tree Query.Node)
+treeFromNode : Node.Index -> Gltf -> Result Query.Error (Tree Query.Node)
 treeFromNode index gltf =
     Common.maybeNodeTree gltf index
         |> Maybe.map (Tree.map (nodeFromNode gltf))

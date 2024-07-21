@@ -27,7 +27,7 @@ suite =
         [ test "Extracts node" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error (Tree Node)
+                    queryResult : Result QueryHelper.Error (Tree Node)
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.nodeTree 0)
 
@@ -59,7 +59,7 @@ suite =
         , test "Extracts node with children" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error (Tree Node.Index)
+                    queryResult : Result QueryHelper.Error (Tree Node.Index)
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.nodeTree 1)
                             |> Result.map (Tree.map (\(Node node) -> node.index))
@@ -84,7 +84,7 @@ suite =
                     nodeToIndex (Node node) =
                         node.index
 
-                    queryResult : Result Query.Error (List (Tree Node.Index))
+                    queryResult : Result QueryHelper.Error (List (Tree Node.Index))
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.sceneNodeTrees 0)
                             |> Result.map (List.map (Tree.map nodeToIndex))
@@ -107,7 +107,7 @@ suite =
         , test "Extracts simpleSkin mesh with correct number of indices and vertices" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error Query.Node
+                    queryResult : Result QueryHelper.Error Query.Node
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -217,7 +217,7 @@ suite =
                             )
                         ]
 
-                    queryResult : Result Query.Error Query.Node
+                    queryResult : Result QueryHelper.Error Query.Node
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -231,7 +231,7 @@ suite =
         , test "Extracts IndexedTriangularMesh from Triangle" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error Query.Node
+                    queryResult : Result QueryHelper.Error Query.Node
                     queryResult =
                         QueryHelper.fromJson triangle (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -281,7 +281,7 @@ suite =
         , test "Extracts TriangularMesh from TriangleWithoutIndices" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error Query.Node
+                    queryResult : Result QueryHelper.Error Query.Node
                     queryResult =
                         QueryHelper.fromJson triangleWithoutIndices (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label

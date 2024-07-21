@@ -69,7 +69,7 @@ getEmbedded url msg =
 -}
 type Error
     = HttpError Http.Error
-    | QueryError Query.QueryError
+    | QueryError Query.Error
 
 
 {-| Get content from a file of type **.glb** by supplying one of following queries:
@@ -80,7 +80,7 @@ type Error
 -}
 getBinaryWithQuery :
     String
-    -> (Gltf -> Result Query.QueryError Query.QueryResult)
+    -> (Gltf -> Result Query.Error Query.QueryResult)
     -> (Result Error Query.QueryResult -> msg)
     -> Cmd msg
 getBinaryWithQuery url query msg =
@@ -106,7 +106,7 @@ getBinaryWithQuery url query msg =
 -}
 getEmbeddedWithQuery :
     String
-    -> (Gltf -> Result Query.QueryError Query.QueryResult)
+    -> (Gltf -> Result Query.Error Query.QueryResult)
     -> (Result Error Query.QueryResult -> msg)
     -> Cmd msg
 getEmbeddedWithQuery url query msg =

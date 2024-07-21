@@ -1,7 +1,6 @@
 module Tests.Gtlf.BevyCharacter exposing (suite)
 
 import Expect
-import Gltf.Query as Query
 import Gltf.Query.Transform as Transform
 import Gltf.QueryHelper as QueryHelper
 import Internal.Mesh as Mesh
@@ -17,7 +16,7 @@ suite =
         [ test "Extracts geometry node" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error (Tree Node)
+                    queryResult : Result QueryHelper.Error (Tree Node)
                     queryResult =
                         QueryHelper.fromJson json (QueryHelper.nodeTree 25)
 
@@ -49,7 +48,7 @@ suite =
         , test "Extracts node tree" <|
             \_ ->
                 let
-                    queryResult : Result Query.Error (Tree String)
+                    queryResult : Result QueryHelper.Error (Tree String)
                     queryResult =
                         QueryHelper.fromJson json (QueryHelper.nodeTree 26)
                             |> Result.map (Tree.map (\(Node node) -> node.name |> Maybe.withDefault "Unknown"))
