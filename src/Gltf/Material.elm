@@ -1,4 +1,4 @@
-module Gltf.Query.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
+module Gltf.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
 
 {-| TODO: Docs
 

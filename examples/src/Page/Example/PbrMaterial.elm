@@ -1,13 +1,12 @@
 module Page.Example.PbrMaterial exposing (Config, renderer)
 
-import Gltf.Query.Material
+import Gltf.Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Settings
-import WebGL.Settings.Blend
 import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -149,12 +148,12 @@ renderer :
         , occlusionTexture : Texture
         , emissiveTexture : Texture
         }
-    -> Gltf.Query.Material.Material
+    -> Gltf.Material.Material
     -> Material.Options
     -> Scene.Uniforms u
     -> Object objectId materialId
     -> Entity
-renderer config textures (Gltf.Query.Material.Material pbr) options uniforms object =
+renderer config textures (Gltf.Material.Material pbr) options uniforms object =
     let
         boneTransforms : BoneTransforms
         boneTransforms =
@@ -195,15 +194,15 @@ renderer config textures (Gltf.Query.Material.Material pbr) options uniforms obj
         settingsWithAlpha : List WebGL.Settings.Setting -> List WebGL.Settings.Setting
         settingsWithAlpha x =
             case pbr.alphaMode of
-                Gltf.Query.Material.Opaque ->
+                Gltf.Material.Opaque ->
                     x
 
-                Gltf.Query.Material.Mask cutoff ->
+                Gltf.Material.Mask cutoff ->
                     WebGL.Settings.sampleCoverage cutoff True
                         :: WebGL.Settings.sampleAlphaToCoverage
                         :: x
 
-                Gltf.Query.Material.Blend ->
+                Gltf.Material.Blend ->
                     x
 
         settings : List WebGL.Settings.Setting

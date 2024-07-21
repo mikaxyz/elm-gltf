@@ -6,7 +6,7 @@ module Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Joints, Vertex)
 
 -}
 
-import Gltf.Query.Material exposing (Material)
+import Gltf.Material exposing (Material)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)

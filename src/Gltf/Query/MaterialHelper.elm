@@ -1,7 +1,7 @@
 module Gltf.Query.MaterialHelper exposing (fromPrimitive)
 
 import Common
-import Gltf.Query.Material exposing (AlphaMode(..), Material(..))
+import Gltf.Material exposing (AlphaMode(..), Material(..))
 import Gltf.Query.TextureIndex exposing (TextureIndex(..))
 import Internal.Gltf exposing (Gltf)
 import Internal.Material as Internal
@@ -51,7 +51,7 @@ fromPrimitive gltf primitive =
             in
             Material
                 { name = material.name
-                , index = Gltf.Query.Material.Index index
+                , index = Gltf.Material.Index index
                 , normalTexture = normalTexture
                 , normalTextureScale = material.normalTexture |> Maybe.map .scale |> Maybe.withDefault 1.0
                 , occlusionTexture = occlusionTexture

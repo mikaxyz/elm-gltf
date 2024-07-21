@@ -39,8 +39,8 @@ import Array
 import Common
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera exposing (Camera)
+import Gltf.Material
 import Gltf.Query.AnimationHelper as AnimationHelper
-import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.SkinHelper as SkinHelper
@@ -102,7 +102,7 @@ type QueryResult
 {-| TODO: Docs
 -}
 type QueryResultEffect
-    = QueryResultLoadTextureEffect Gltf.Query.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
+    = QueryResultLoadTextureEffect Gltf.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
 
 
 {-| TODO: Docs
@@ -133,16 +133,16 @@ sceneQuery index gltf =
 queryResultRun : (QueryResultEffect -> msg) -> QueryResult -> Cmd msg
 queryResultRun msg (QueryResult gltf textureStore trees) =
     let
-        imageEffect : Gltf.Query.Material.TextureIndex -> Maybe Internal.Sampler.Sampler -> Internal.Image.Image -> QueryResultEffect
+        imageEffect : Gltf.Material.TextureIndex -> Maybe Internal.Sampler.Sampler -> Internal.Image.Image -> QueryResultEffect
         imageEffect id maybeSampler image =
             QueryResultLoadTextureEffect id image maybeSampler
 
         textureSourceCmd : TriangularMesh -> Maybe (Cmd msg)
         textureSourceCmd mesh =
             case TriangularMeshHelper.toMaterial mesh of
-                Just (Gltf.Query.Material.Material m) ->
+                Just (Gltf.Material.Material m) ->
                     let
-                        maybeEffect : Maybe Gltf.Query.Material.TextureIndex -> Maybe QueryResultEffect
+                        maybeEffect : Maybe Gltf.Material.TextureIndex -> Maybe QueryResultEffect
                         maybeEffect maybeTextureIndex =
                             maybeTextureIndex
                                 |> Maybe.andThen (\textureIndex -> TextureStore.get textureIndex textureStore)
@@ -199,7 +199,7 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 -}
 applyQueryResultEffect :
     QueryResultEffect
-    -> (Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> msg)
+    -> (Gltf.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> msg)
     -> QueryResult
     -> ( QueryResult, Cmd msg )
 applyQueryResultEffect effect msg (QueryResult gltf textureStore queryResult) =
@@ -222,7 +222,7 @@ applyQueryResultEffect effect msg (QueryResult gltf textureStore queryResult) =
 
 {-| TODO: Docs
 -}
-applyQueryResult : Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> QueryResult -> QueryResult
+applyQueryResult : Gltf.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> QueryResult -> QueryResult
 applyQueryResult textureIndex textureLoadResult (QueryResult gltf textureStore queryResult) =
     case textureLoadResult of
         Ok texture ->
@@ -272,7 +272,7 @@ cameraByIndex (Gltf.Camera.Index index) (QueryResult gltf _ _) =
 
 {-| TODO: Needed?
 -}
-textureWithIndex : QueryResult -> Gltf.Query.Material.TextureIndex -> Maybe WebGL.Texture.Texture
+textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
 textureWithIndex (QueryResult _ textureStore _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 

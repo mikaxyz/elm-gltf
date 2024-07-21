@@ -4,8 +4,8 @@ module Gltf.Query.TriangularMeshHelper exposing
     )
 
 import Common
+import Gltf.Material exposing (Material)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
-import Gltf.Query.Material exposing (Material)
 import Gltf.Query.MaterialHelper
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
@@ -27,7 +27,7 @@ type alias VertexAttributes =
     }
 
 
-toMaterial : TriangularMesh -> Maybe Gltf.Query.Material.Material
+toMaterial : TriangularMesh -> Maybe Gltf.Material.Material
 toMaterial mesh =
     case mesh of
         TriangularMesh material _ ->

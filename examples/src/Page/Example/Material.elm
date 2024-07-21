@@ -1,7 +1,7 @@
 module Page.Example.Material exposing (Name(..), renderer)
 
+import Gltf.Material
 import Gltf.Query
-import Gltf.Query.Material
 import Page.Example.PbrMaterial
 import WebGL exposing (Entity)
 import WebGL.Texture
@@ -17,7 +17,7 @@ type Name
     = Simple
     | Color
     | Advanced
-    | PbrMaterial Gltf.Query.Material.Material
+    | PbrMaterial Gltf.Material.Material
 
 
 renderer :
@@ -40,7 +40,7 @@ renderer fallbackTexture config gltfQueryResult name =
         Advanced ->
             XYZMika.XYZ.Material.Advanced.renderer
 
-        PbrMaterial (Gltf.Query.Material.Material pbr) ->
+        PbrMaterial (Gltf.Material.Material pbr) ->
             Page.Example.PbrMaterial.renderer config
                 { pbrMetallicRoughness =
                     { baseColorTexture =
@@ -65,4 +65,4 @@ renderer fallbackTexture config gltfQueryResult name =
                         |> Maybe.andThen (Gltf.Query.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 }
-                (Gltf.Query.Material.Material pbr)
+                (Gltf.Material.Material pbr)

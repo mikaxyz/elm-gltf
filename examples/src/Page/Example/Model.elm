@@ -14,8 +14,8 @@ import Browser.Dom
 import Gltf
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
+import Gltf.Material
 import Gltf.Query as Query
-import Gltf.Query.Material
 import Keyboard
 import Page.Example.Material as Material
 import Page.Example.Scene as Scene
@@ -50,7 +50,7 @@ type Msg
     | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | GltfReceived (Result Gltf.Error Query.QueryResult)
     | GltfApplyQueryResultEffect Query.QueryResultEffect
-    | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | GltfApplyQueryResult Gltf.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
     | UserSelectedCamera (Maybe Gltf.Camera.Index)

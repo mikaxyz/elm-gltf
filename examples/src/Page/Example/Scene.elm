@@ -9,8 +9,8 @@ module Page.Example.Scene exposing
 import Color
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
+import Gltf.Material
 import Gltf.Query as Query
-import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin exposing (Skin)
 import Gltf.Query.Transform as Transform exposing (Transform)
@@ -352,7 +352,7 @@ objectsFromNode objectIdMap node =
 objectFromMesh : objectId -> TriangularMesh -> Object objectId Material.Name
 objectFromMesh objectId triangularMesh =
     let
-        withMaterial : Maybe Gltf.Query.Material.Material -> Object id Material.Name -> Object id Material.Name
+        withMaterial : Maybe Gltf.Material.Material -> Object id Material.Name -> Object id Material.Name
         withMaterial maybeMaterial =
             case maybeMaterial of
                 Just material ->

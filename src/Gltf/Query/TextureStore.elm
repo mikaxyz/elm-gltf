@@ -9,7 +9,7 @@ module Gltf.Query.TextureStore exposing
     )
 
 import Dict exposing (Dict)
-import Gltf.Query.Material
+import Gltf.Material
 import Gltf.Query.TextureIndex as TextureIndex
 import WebGL.Texture
 
@@ -19,17 +19,17 @@ init =
     TextureStore Dict.empty
 
 
-insert : Gltf.Query.Material.TextureIndex -> WebGL.Texture.Texture -> TextureStore -> TextureStore
+insert : Gltf.Material.TextureIndex -> WebGL.Texture.Texture -> TextureStore -> TextureStore
 insert index texture (TextureStore store) =
     TextureStore <| Dict.insert (TextureIndex.toComparable index) (SampledTexture texture) store
 
 
-insertLoading : Gltf.Query.Material.TextureIndex -> TextureStore -> TextureStore
+insertLoading : Gltf.Material.TextureIndex -> TextureStore -> TextureStore
 insertLoading index (TextureStore store) =
     TextureStore <| Dict.insert (TextureIndex.toComparable index) SampledTextureLoading store
 
 
-get : Gltf.Query.Material.TextureIndex -> TextureStore -> Maybe SampledTexture
+get : Gltf.Material.TextureIndex -> TextureStore -> Maybe SampledTexture
 get index (TextureStore store) =
     Dict.get (TextureIndex.toComparable index) store
 
@@ -43,7 +43,7 @@ type SampledTexture
     | SampledTexture WebGL.Texture.Texture
 
 
-textureWithTextureIndex : Gltf.Query.Material.TextureIndex -> TextureStore -> Maybe WebGL.Texture.Texture
+textureWithTextureIndex : Gltf.Material.TextureIndex -> TextureStore -> Maybe WebGL.Texture.Texture
 textureWithTextureIndex index (TextureStore store) =
     Dict.get (TextureIndex.toComparable index) store
         |> Maybe.andThen
