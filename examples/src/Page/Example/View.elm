@@ -1,8 +1,8 @@
 module Page.Example.View exposing (view)
 
 import Gltf.Animation exposing (Animation(..))
+import Gltf.Camera
 import Gltf.Query
-import Gltf.Query.Camera
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
@@ -88,7 +88,7 @@ sceneOptionsView model gltfQueryResult =
                 |> List.map
                     (\camera ->
                         { name = camera.name
-                        , index = camera.index |> (\(Gltf.Query.Camera.Index index) -> index) |> Just
+                        , index = camera.index |> (\(Gltf.Camera.Index index) -> index) |> Just
                         }
                     )
           of
@@ -107,7 +107,7 @@ sceneOptionsView model gltfQueryResult =
                                     [ text (camera.name |> Maybe.withDefault ("Camera " ++ String.fromInt (Maybe.withDefault -1 camera.index)))
                                     ]
                             )
-                        |> select [ onChange (String.toInt >> Maybe.map Gltf.Query.Camera.Index >> UserSelectedCamera) ]
+                        |> select [ onChange (String.toInt >> Maybe.map Gltf.Camera.Index >> UserSelectedCamera) ]
                     ]
         , case model.animations of
             [] ->

@@ -13,8 +13,8 @@ module Page.Example.Model exposing
 import Browser.Dom
 import Gltf
 import Gltf.Animation exposing (Animation)
+import Gltf.Camera
 import Gltf.Query as Query
-import Gltf.Query.Camera
 import Gltf.Query.Material
 import Keyboard
 import Page.Example.Material as Material
@@ -53,7 +53,7 @@ type Msg
     | GltfApplyQueryResult Gltf.Query.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
-    | UserSelectedCamera (Maybe Gltf.Query.Camera.Index)
+    | UserSelectedCamera (Maybe Gltf.Camera.Index)
     | UserSelectedAnimation (Maybe Int)
 
 
@@ -86,7 +86,7 @@ type alias Model =
     , queryResult : RemoteData Error Query.QueryResult
     , animations : List Animation
     , activeAnimation : Maybe Animation
-    , activeCamera : Maybe Gltf.Query.Camera.Index
+    , activeCamera : Maybe Gltf.Camera.Index
     }
 
 

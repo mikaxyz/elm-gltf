@@ -8,8 +8,8 @@ module Page.Example.Scene exposing
 
 import Color
 import Gltf.Animation exposing (Animation)
+import Gltf.Camera
 import Gltf.Query as Query
-import Gltf.Query.Camera
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin exposing (Skin)
@@ -35,7 +35,7 @@ type ObjectId
     = Mesh NodeIndex
     | SkinnedMesh Gltf.Query.Skin.Index
     | Bone NodeIndex
-    | Camera Gltf.Query.Camera.Index NodeIndex
+    | Camera Gltf.Camera.Index NodeIndex
 
 
 type alias Config =

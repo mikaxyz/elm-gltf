@@ -7,8 +7,8 @@
     "exposed-modules": [
         "Gltf",
         "Gltf.Animation",
+        "Gltf.Camera",
         "Gltf.Query",
-        "Gltf.Query.Camera",
         "Gltf.Query.Material",
         "Gltf.Query.NodeIndex",
         "Gltf.Query.Skin",

@@ -2,8 +2,8 @@ module Page.Example.Update exposing (update)
 
 import Browser.Dom
 import Color
+import Gltf.Camera
 import Gltf.Query as Query
-import Gltf.Query.Camera
 import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Keyboard
 import Math.Vector2 as Vec2 exposing (vec2)
@@ -504,20 +504,20 @@ update msg model =
                                             |> List.filterMap identity
                                             |> List.head
 
-                                    maybeGltfCamera : Maybe Gltf.Query.Camera.Camera
+                                    maybeGltfCamera : Maybe Gltf.Camera.Camera
                                     maybeGltfCamera =
                                         model.queryResult |> RemoteData.toMaybe |> Maybe.andThen (Query.cameraByIndex index)
 
                                     applyProjection =
                                         case maybeGltfCamera |> Maybe.map .projection of
-                                            Just (Gltf.Query.Camera.Perspective p) ->
+                                            Just (Gltf.Camera.Perspective p) ->
                                                 XYZScene.withPerspectiveProjection
                                                     { fov = 180 / pi * p.yFov
                                                     , near = p.zNear
                                                     , far = p.zFar |> Maybe.withDefault 1000
                                                     }
 
-                                            Just (Gltf.Query.Camera.Orthographic p) ->
+                                            Just (Gltf.Camera.Orthographic p) ->
                                                 XYZScene.withOrthographicProjection
                                                     { xMag = p.xMag
                                                     , yMag = p.yMag

@@ -38,8 +38,8 @@ module Gltf.Query exposing
 import Array
 import Common
 import Gltf.Animation exposing (Animation)
+import Gltf.Camera exposing (Camera)
 import Gltf.Query.AnimationHelper as AnimationHelper
-import Gltf.Query.Camera as Camera exposing (Camera)
 import Gltf.Query.Material
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skin as Skin exposing (Skin)
@@ -78,7 +78,7 @@ type Error
 -}
 type Node
     = EmptyNode Properties
-    | CameraNode Camera.Index Properties
+    | CameraNode Gltf.Camera.Index Properties
     | MeshNode (List TriangularMesh) Properties
     | SkinnedMeshNode (List TriangularMesh) Skin.Index Properties
 
@@ -265,8 +265,8 @@ nodeTrees (QueryResult _ _ nodes) =
 
 {-| TODO: Docs
 -}
-cameraByIndex : Camera.Index -> QueryResult -> Maybe Camera
-cameraByIndex (Camera.Index index) (QueryResult gltf _ _) =
+cameraByIndex : Gltf.Camera.Index -> QueryResult -> Maybe Camera
+cameraByIndex (Gltf.Camera.Index index) (QueryResult gltf _ _) =
     Array.get index gltf.cameras
 
 

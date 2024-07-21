@@ -1,4 +1,4 @@
-module Gltf.Query.Camera exposing (Camera, Index(..), Projection(..), OrthographicCamera, PerspectiveCamera)
+module Gltf.Camera exposing (Camera, Index(..), Projection(..), OrthographicCamera, PerspectiveCamera)
 
 {-| TODO: Docs
 

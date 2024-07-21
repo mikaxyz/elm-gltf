@@ -3,7 +3,7 @@ module Internal.Camera exposing
     , indexDecoder
     )
 
-import Gltf.Query.Camera
+import Gltf.Camera
     exposing
         ( Camera
         , Index(..)
