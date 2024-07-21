@@ -1,13 +1,13 @@
-module Gltf.Query.Skin exposing (Index(..), Skin(..))
+module Gltf.Query.Skin exposing (Index(..), Skin(..), Skeleton)
 
 {-| TODO: Docs
 
-@docs Index, Skin
+@docs Index, Skin, Skeleton
 
 -}
 
 import Gltf.Query.NodeIndex exposing (NodeIndex)
-import Gltf.Query.Skeleton exposing (Skeleton)
+import Gltf.Query.Skeleton
 import Math.Matrix4 exposing (Mat4)
 
 
@@ -26,3 +26,9 @@ type Skin
         , index : Index
         , skeleton : Skeleton
         }
+
+
+{-| TODO: Docs
+-}
+type alias Skeleton =
+    Gltf.Query.Skeleton.Skeleton
