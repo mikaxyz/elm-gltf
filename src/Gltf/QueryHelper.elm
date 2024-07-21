@@ -9,6 +9,7 @@ module Gltf.QueryHelper exposing
 
 import Common
 import Gltf.Mesh exposing (Mesh)
+import Gltf.Node
 import Gltf.Query as Query
 import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
@@ -36,19 +37,19 @@ fromJson json f =
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
 -}
-meshesFromNode : Query.Node -> List Mesh
+meshesFromNode : Gltf.Node.Node -> List Mesh
 meshesFromNode node =
     case node of
-        Query.EmptyNode _ ->
+        Gltf.Node.EmptyNode _ ->
             []
 
-        Query.CameraNode _ _ ->
+        Gltf.Node.CameraNode _ _ ->
             []
 
-        Query.MeshNode triangularMeshes _ ->
+        Gltf.Node.MeshNode triangularMeshes _ ->
             triangularMeshes
 
-        Query.SkinnedMeshNode triangularMeshes _ _ ->
+        Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
 
 
@@ -78,7 +79,7 @@ sceneNodeTrees index gltf =
 
 {-| TODO: Use queries in tests?
 -}
-treeFromNode : Node.Index -> Gltf -> Result Query.Error (Tree Query.Node)
+treeFromNode : Node.Index -> Gltf -> Result Query.Error (Tree Gltf.Node.Node)
 treeFromNode index gltf =
     Common.maybeNodeTree gltf index
         |> Maybe.map (Tree.map (nodeFromNode gltf))
@@ -87,37 +88,37 @@ treeFromNode index gltf =
 
 {-| TODO: Docs
 -}
-nodeFromNode : Gltf -> Node -> Query.Node
+nodeFromNode : Gltf -> Node -> Gltf.Node.Node
 nodeFromNode gltf node =
     case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Query.SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> Query.CameraNode cameraIndex
+                        |> Gltf.Node.CameraNode cameraIndex
 
                 Nothing ->
                     case triangularMeshesFromNode gltf node of
                         Just meshes ->
                             node
                                 |> propertiesFromNode
-                                |> Query.MeshNode meshes
+                                |> Gltf.Node.MeshNode meshes
 
                         Nothing ->
                             node
                                 |> propertiesFromNode
-                                |> Query.EmptyNode
+                                |> Gltf.Node.EmptyNode
 
 
-propertiesFromNode : Node -> Query.Properties
+propertiesFromNode : Node -> Gltf.Node.Properties
 propertiesFromNode (Node.Node node) =
-    Query.Properties
+    Gltf.Node.Properties
         { nodeIndex = nodeIndexFromNode node.index
         , nodeName = node.name
         , transform = node.transform

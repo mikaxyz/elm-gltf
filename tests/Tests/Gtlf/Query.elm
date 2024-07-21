@@ -2,7 +2,7 @@ module Tests.Gtlf.Query exposing (suite)
 
 import Expect
 import Gltf.Mesh exposing (Mesh(..), Vertex)
-import Gltf.Query as Query
+import Gltf.Node
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.SkinHelper as SkinHelper
@@ -107,7 +107,7 @@ suite =
         , test "Extracts simpleSkin mesh with correct number of indices and vertices" <|
             \_ ->
                 let
-                    queryResult : Result QueryHelper.Error Query.Node
+                    queryResult : Result QueryHelper.Error Gltf.Node.Node
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -217,7 +217,7 @@ suite =
                             )
                         ]
 
-                    queryResult : Result QueryHelper.Error Query.Node
+                    queryResult : Result QueryHelper.Error Gltf.Node.Node
                     queryResult =
                         QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -231,7 +231,7 @@ suite =
         , test "Extracts IndexedTriangularMesh from Triangle" <|
             \_ ->
                 let
-                    queryResult : Result QueryHelper.Error Query.Node
+                    queryResult : Result QueryHelper.Error Gltf.Node.Node
                     queryResult =
                         QueryHelper.fromJson triangle (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
@@ -281,7 +281,7 @@ suite =
         , test "Extracts TriangularMesh from TriangleWithoutIndices" <|
             \_ ->
                 let
-                    queryResult : Result QueryHelper.Error Query.Node
+                    queryResult : Result QueryHelper.Error Gltf.Node.Node
                     queryResult =
                         QueryHelper.fromJson triangleWithoutIndices (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label

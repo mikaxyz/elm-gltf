@@ -10,6 +10,7 @@
         "Gltf.Camera",
         "Gltf.Mesh",
         "Gltf.Material",
+        "Gltf.Node",
         "Gltf.Query",
         "Gltf.Query.NodeIndex",
         "Gltf.Skin",

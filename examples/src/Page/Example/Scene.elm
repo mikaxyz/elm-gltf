@@ -11,7 +11,7 @@ import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Gltf.Material
 import Gltf.Mesh exposing (Mesh(..))
-import Gltf.Query as Query
+import Gltf.Node
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Skin exposing (Skin)
 import Gltf.Transform exposing (Transform)
@@ -45,7 +45,7 @@ type alias Config =
     }
 
 
-initWithNodes : List (Tree Query.Node) -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
+initWithNodes : List (Tree Gltf.Node.Node) -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
 initWithNodes nodes objectIdMap config =
     let
         { cameraTarget, cameraPosition, cameraProjection, bounds } =
@@ -58,10 +58,10 @@ initWithNodes nodes objectIdMap config =
         |> Scene.withPerspectiveProjection cameraProjection
 
 
-graphFromNodes : List (Tree Query.Node) -> (ObjectId -> objectId) -> Config -> Graph (Object objectId Material.Name)
+graphFromNodes : List (Tree Gltf.Node.Node) -> (ObjectId -> objectId) -> Config -> Graph (Object objectId Material.Name)
 graphFromNodes nodeTrees objectIdMap config =
     let
-        nodesToObjects : Tree Query.Node -> Tree (Object objectId Material.Name)
+        nodesToObjects : Tree Gltf.Node.Node -> Tree (Object objectId Material.Name)
         nodesToObjects nodes =
             nodes
                 |> Tree.map (objectsFromNode objectIdMap)
@@ -81,7 +81,7 @@ graphFromNodes nodeTrees objectIdMap config =
 
 frameScene :
     Config
-    -> List (Tree Query.Node)
+    -> List (Tree Gltf.Node.Node)
     ->
         { cameraTarget : Vec3
         , cameraPosition : Vec3
@@ -138,7 +138,7 @@ frameScene config nodes =
                 |> List.map triangularMeshToBounds
                 |> joinBoundingBoxes
 
-        nodeTransformAndBounds : Query.Node -> ( Mat4, Maybe ( Vec3, Vec3 ) )
+        nodeTransformAndBounds : Gltf.Node.Node -> ( Mat4, Maybe ( Vec3, Vec3 ) )
         nodeTransformAndBounds node =
             let
                 transformToMat : Transform -> Mat4
@@ -162,16 +162,16 @@ frameScene config nodes =
                             mat
             in
             case node of
-                Query.CameraNode _ (Query.Properties properties) ->
+                Gltf.Node.CameraNode _ (Gltf.Node.Properties properties) ->
                     ( transformToMat properties.transform, Nothing )
 
-                Query.EmptyNode (Query.Properties properties) ->
+                Gltf.Node.EmptyNode (Gltf.Node.Properties properties) ->
                     ( transformToMat properties.transform, Nothing )
 
-                Query.MeshNode meshes (Query.Properties properties) ->
+                Gltf.Node.MeshNode meshes (Gltf.Node.Properties properties) ->
                     ( transformToMat properties.transform, Just (triangularMeshesToBounds meshes) )
 
-                Query.SkinnedMeshNode meshes _ (Query.Properties properties) ->
+                Gltf.Node.SkinnedMeshNode meshes _ (Gltf.Node.Properties properties) ->
                     ( transformToMat properties.transform, Just (triangularMeshesToBounds meshes) )
 
         treeWithGlobalMatrix : Mat4 -> Tree ( Mat4, Maybe ( Vec3, Vec3 ) ) -> Tree ( Mat4, Maybe ( Vec3, Vec3 ) )
@@ -271,7 +271,7 @@ frameScene config nodes =
     }
 
 
-objectsFromNode : (ObjectId -> objectId) -> Query.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
+objectsFromNode : (ObjectId -> objectId) -> Gltf.Node.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
 objectsFromNode objectIdMap node =
     let
         applyTransform : Transform -> Object id materialId -> Object id materialId
@@ -298,21 +298,21 @@ objectsFromNode objectIdMap node =
                     Object.withRotation mat object
     in
     case node of
-        Query.EmptyNode (Query.Properties properties) ->
+        Gltf.Node.EmptyNode (Gltf.Node.Properties properties) ->
             ( Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , []
             )
 
-        Query.CameraNode cameraId (Query.Properties properties) ->
+        Gltf.Node.CameraNode cameraId (Gltf.Node.Properties properties) ->
             ( Object.groupWithId (objectIdMap (Camera cameraId properties.nodeIndex)) "CAMERA"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , []
             )
 
-        Query.MeshNode (mesh :: rest) (Query.Properties properties) ->
+        Gltf.Node.MeshNode (mesh :: rest) (Gltf.Node.Properties properties) ->
             ( mesh
                 |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
@@ -320,7 +320,7 @@ objectsFromNode objectIdMap node =
             , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
             )
 
-        Query.SkinnedMeshNode (mesh :: rest) skinIndex (Query.Properties properties) ->
+        Gltf.Node.SkinnedMeshNode (mesh :: rest) skinIndex (Gltf.Node.Properties properties) ->
             ( mesh
                 |> objectFromMesh (objectIdMap (SkinnedMesh skinIndex))
                 --|> GltfHelper.objectWithSkin skin
@@ -329,7 +329,7 @@ objectsFromNode objectIdMap node =
             , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
             )
 
-        Query.MeshNode [] (Query.Properties properties) ->
+        Gltf.Node.MeshNode [] (Gltf.Node.Properties properties) ->
             let
                 name (NodeIndex nodeIndex) =
                     Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
@@ -343,7 +343,7 @@ objectsFromNode objectIdMap node =
             , []
             )
 
-        Query.SkinnedMeshNode [] _ (Query.Properties _) ->
+        Gltf.Node.SkinnedMeshNode [] _ (Gltf.Node.Properties _) ->
             ( Object.group ""
             , []
             )

@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Error(..), Node(..), Properties(..)
+    ( Error(..)
     , QueryResult, QueryResultEffect
     , defaultSceneQuery, sceneQuery
     , queryResultRun, applyQueryResultEffect, applyQueryResult
@@ -13,7 +13,7 @@ module Gltf.Query exposing
 
 # Types
 
-@docs Error, Node, Properties
+@docs Error
 @docs QueryResult, QueryResultEffect
 
 
@@ -41,6 +41,7 @@ import Gltf.Animation exposing (Animation)
 import Gltf.Camera exposing (Camera)
 import Gltf.Material
 import Gltf.Mesh exposing (Mesh)
+import Gltf.Node exposing (Node)
 import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
@@ -49,7 +50,6 @@ import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Skin exposing (Skin)
-import Gltf.Transform exposing (Transform)
 import Internal.Gltf
 import Internal.Image
 import Internal.Node
@@ -72,25 +72,6 @@ type alias Gltf =
 type Error
     = SceneNotFound
     | NodeNotFound
-
-
-{-| TODO: Docs
--}
-type Node
-    = EmptyNode Properties
-    | CameraNode Gltf.Camera.Index Properties
-    | MeshNode (List Mesh) Properties
-    | SkinnedMeshNode (List Mesh) Gltf.Skin.Index Properties
-
-
-{-| TODO: Docs
--}
-type Properties
-    = Properties
-        { nodeIndex : NodeIndex
-        , nodeName : Maybe String
-        , transform : Transform
-        }
 
 
 {-| TODO: Docs
@@ -291,16 +272,16 @@ nodeIndexFromNode (Internal.Node.Index index) =
 meshesFromNode : Node -> List Mesh
 meshesFromNode node =
     case node of
-        EmptyNode _ ->
+        Gltf.Node.EmptyNode _ ->
             []
 
-        CameraNode _ _ ->
+        Gltf.Node.CameraNode _ _ ->
             []
 
-        MeshNode triangularMeshes _ ->
+        Gltf.Node.MeshNode triangularMeshes _ ->
             triangularMeshes
 
-        SkinnedMeshNode triangularMeshes _ _ ->
+        Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
 
 
@@ -312,31 +293,31 @@ nodeFromNode gltf node =
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> CameraNode cameraIndex
+                        |> Gltf.Node.CameraNode cameraIndex
 
                 Nothing ->
                     case triangularMeshesFromNode gltf node of
                         Just meshes ->
                             node
                                 |> propertiesFromNode
-                                |> MeshNode meshes
+                                |> Gltf.Node.MeshNode meshes
 
                         Nothing ->
                             node
                                 |> propertiesFromNode
-                                |> EmptyNode
+                                |> Gltf.Node.EmptyNode
 
 
-propertiesFromNode : Internal.Node.Node -> Properties
+propertiesFromNode : Internal.Node.Node -> Gltf.Node.Properties
 propertiesFromNode (Internal.Node.Node node) =
-    Properties
+    Gltf.Node.Properties
         { nodeIndex = nodeIndexFromNode node.index
         , nodeName = node.name
         , transform = node.transform

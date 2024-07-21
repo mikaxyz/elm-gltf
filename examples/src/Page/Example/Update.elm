@@ -3,6 +3,7 @@ module Page.Example.Update exposing (update)
 import Browser.Dom
 import Color
 import Gltf.Camera
+import Gltf.Node
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex)
 import Keyboard
@@ -430,7 +431,7 @@ update msg model =
                 cmd =
                     Query.queryResultRun GltfApplyQueryResultEffect queryResult
 
-                nodes : List (Tree.Tree Query.Node)
+                nodes : List (Tree.Tree Gltf.Node.Node)
                 nodes =
                     Query.nodeTrees queryResult
 
@@ -490,7 +491,7 @@ update msg model =
                                                         |> List.map
                                                             (\node ->
                                                                 case node of
-                                                                    Query.CameraNode cameraIndex (Query.Properties properties) ->
+                                                                    Gltf.Node.CameraNode cameraIndex (Gltf.Node.Properties properties) ->
                                                                         if cameraIndex == index then
                                                                             Just properties.nodeIndex
 
