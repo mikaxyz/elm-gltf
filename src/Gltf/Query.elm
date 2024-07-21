@@ -1,5 +1,5 @@
 module Gltf.Query exposing
-    ( Gltf, Error(..), Node(..), Properties(..), InternalNode, InternalNodeIndex
+    ( Gltf, Error(..), Node(..), Properties(..)
     , skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
@@ -7,7 +7,7 @@ module Gltf.Query exposing
 
 {-| Query contents of Gltf
 
-@docs Gltf, Error, Node, Properties, InternalNode, InternalNodeIndex
+@docs Gltf, Error, Node, Properties
 @docs skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
@@ -31,7 +31,7 @@ import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Internal.Gltf as Gltf
 import Internal.Image
-import Internal.Node as Node
+import Internal.Node
 import Internal.Sampler
 import Internal.Scene as Scene exposing (Scene(..))
 import Internal.Skin
@@ -44,18 +44,6 @@ import WebGL.Texture
 -}
 type alias Gltf =
     Gltf.Gltf
-
-
-{-| TODO: REMOVE?
--}
-type alias InternalNode =
-    Node.Node
-
-
-{-| TODO: REMOVE?
--}
-type alias InternalNodeIndex =
-    Node.Index
 
 
 {-| TODO: Needed?
@@ -96,8 +84,8 @@ type Error
     | NodeNotFound
 
 
-nodeIndexFromNode : Node.Index -> NodeIndex
-nodeIndexFromNode (Node.Index index) =
+nodeIndexFromNode : Internal.Node.Index -> NodeIndex
+nodeIndexFromNode (Internal.Node.Index index) =
     NodeIndex index
 
 
@@ -170,7 +158,7 @@ sceneQuery index gltf =
             (\(Scene scene) ->
                 scene.nodes
                     |> List.filterMap
-                        (\(Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
+                        (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
                     |> List.map (Tree.map (nodeFromNode gltf))
                     |> QueryResult gltf TextureStore.init
             )
@@ -283,16 +271,16 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 
 {-| TODO: Docs
 -}
-nodeFromNode : Gltf -> InternalNode -> Node
+nodeFromNode : Gltf -> Internal.Node.Node -> Node
 nodeFromNode gltf node =
-    case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
+    case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode
                 |> SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
-            case node |> (\(Node.Node x) -> x.cameraIndex) of
+            case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
@@ -311,8 +299,8 @@ nodeFromNode gltf node =
                                 |> EmptyNode
 
 
-propertiesFromNode : InternalNode -> Properties
-propertiesFromNode (Node.Node node) =
+propertiesFromNode : Internal.Node.Node -> Properties
+propertiesFromNode (Internal.Node.Node node) =
     Properties
         { nodeIndex = nodeIndexFromNode node.index
         , nodeName = node.name
@@ -332,15 +320,15 @@ type Properties
 
 {-| TODO: Needed?
 -}
-nodeTree : Int -> Gltf -> Result Error (Tree InternalNode)
+nodeTree : Int -> Gltf -> Result Error (Tree Internal.Node.Node)
 nodeTree index gltf =
-    Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe NodeNotFound
+    Common.maybeNodeTree gltf (Internal.Node.Index index) |> Result.fromMaybe NodeNotFound
 
 
 {-| TODO: Needed?
 -}
-triangularMeshesFromNode : Gltf -> InternalNode -> Maybe (List TriangularMesh)
-triangularMeshesFromNode gltf (Node.Node node) =
+triangularMeshesFromNode : Gltf -> Internal.Node.Node -> Maybe (List TriangularMesh)
+triangularMeshesFromNode gltf (Internal.Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
