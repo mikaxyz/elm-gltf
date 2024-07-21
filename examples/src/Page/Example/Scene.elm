@@ -12,9 +12,9 @@ import Gltf.Camera
 import Gltf.Material
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Skin exposing (Skin)
 import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
+import Gltf.Skin exposing (Skin)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4
@@ -33,7 +33,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (BoneTransforms, Object)
 
 type ObjectId
     = Mesh NodeIndex
-    | SkinnedMesh Gltf.Query.Skin.Index
+    | SkinnedMesh Gltf.Skin.Index
     | Bone NodeIndex
     | Camera Gltf.Camera.Index NodeIndex
 
@@ -387,15 +387,15 @@ modifiers theta maybeAnimation skins =
             []
 
 
-boneTransformModifiers : Float -> (Gltf.Query.Skin.Index -> objectId) -> List Animation -> List Skin -> List (Scene.Modifier objectId Material.Name)
+boneTransformModifiers : Float -> (Gltf.Skin.Index -> objectId) -> List Animation -> List Skin -> List (Scene.Modifier objectId Material.Name)
 boneTransformModifiers theta objectId animations skins =
     skins
         |> List.map
-            (\(Gltf.Query.Skin.Skin skin) ->
+            (\(Gltf.Skin.Skin skin) ->
                 let
                     boneTransforms : BoneTransforms
                     boneTransforms =
-                        GltfHelper.boneTransformsFromAnimations theta animations (Gltf.Query.Skin.Skin skin)
+                        GltfHelper.boneTransformsFromAnimations theta animations (Gltf.Skin.Skin skin)
                 in
                 Scene.ObjectModifier (objectId skin.index) (Object.withBoneTransforms boneTransforms)
             )

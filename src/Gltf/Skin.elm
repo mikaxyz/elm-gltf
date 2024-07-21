@@ -1,4 +1,4 @@
-module Gltf.Query.Skin exposing (Index(..), Skin(..), Skeleton)
+module Gltf.Skin exposing (Index(..), Skin(..), Skeleton)
 
 {-| TODO: Docs
 

@@ -42,7 +42,6 @@ import Gltf.Camera exposing (Camera)
 import Gltf.Material
 import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Skin as Skin exposing (Skin)
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
@@ -50,6 +49,7 @@ import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.Transform exposing (Transform)
 import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
+import Gltf.Skin exposing (Skin)
 import Internal.Gltf
 import Internal.Image
 import Internal.Node
@@ -80,7 +80,7 @@ type Node
     = EmptyNode Properties
     | CameraNode Gltf.Camera.Index Properties
     | MeshNode (List TriangularMesh) Properties
-    | SkinnedMeshNode (List TriangularMesh) Skin.Index Properties
+    | SkinnedMeshNode (List TriangularMesh) Gltf.Skin.Index Properties
 
 
 {-| TODO: Docs
@@ -252,7 +252,7 @@ skins : QueryResult -> List Skin
 skins (QueryResult gltf _ _) =
     gltf.skins
         |> Array.toIndexedList
-        |> List.map (Tuple.first >> Skin.Index)
+        |> List.map (Tuple.first >> Gltf.Skin.Index)
         |> List.filterMap (SkinHelper.skinAtIndex gltf)
 
 
@@ -308,7 +308,7 @@ meshesFromNode node =
 -}
 nodeFromNode : Gltf -> Internal.Node.Node -> Node
 nodeFromNode gltf node =
-    case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
+    case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode

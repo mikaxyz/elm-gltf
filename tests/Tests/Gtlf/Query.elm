@@ -4,11 +4,11 @@ import Expect
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton exposing (Skeleton(..))
-import Gltf.Query.Skin as Skin exposing (Skin(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
 import Gltf.QueryHelper as QueryHelper
+import Gltf.Skin exposing (Skin(..))
 import Internal.Gltf
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
@@ -333,7 +333,7 @@ suite =
                     maybeSkin : Maybe Skin
                     maybeSkin =
                         JD.decodeString Internal.Gltf.decoder simpleSkin
-                            |> Result.map (\x -> SkinHelper.skinAtIndex x (Skin.Index 0))
+                            |> Result.map (\x -> SkinHelper.skinAtIndex x (Gltf.Skin.Index 0))
                             |> Result.withDefault Nothing
                 in
                 case maybeSkin of
@@ -344,7 +344,7 @@ suite =
                                 , Mat4.makeTranslate (Vec3.vec3 0 -1 0)
                                 ]
                             , joints = [ NodeIndex 1, NodeIndex 2 ]
-                            , index = Skin.Index 0
+                            , index = Gltf.Skin.Index 0
                             , numberOfBones = 2
                             }
                             { inverseBindMatrices = skin.inverseBindMatrices

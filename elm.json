@@ -11,9 +11,9 @@
         "Gltf.Material",
         "Gltf.Query",
         "Gltf.Query.NodeIndex",
-        "Gltf.Query.Skin",
         "Gltf.Query.Transform",
-        "Gltf.Query.TriangularMesh"
+        "Gltf.Query.TriangularMesh",
+        "Gltf.Skin"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {

@@ -28,8 +28,8 @@ import Dict exposing (Dict)
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Skeleton as Skeleton exposing (Skeleton(..))
-import Gltf.Query.Skin exposing (Skin(..))
 import Gltf.Query.Transform as Transform
+import Gltf.Skin exposing (Skin(..))
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)

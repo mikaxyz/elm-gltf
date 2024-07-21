@@ -10,9 +10,9 @@ module Gltf.QueryHelper exposing
 import Common
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Skin as Skin
 import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
+import Gltf.Skin
 import Internal.Gltf as Gltf exposing (Gltf)
 import Internal.Node as Node exposing (Node)
 import Internal.Scene as Scene exposing (Scene(..))
@@ -89,7 +89,7 @@ treeFromNode index gltf =
 -}
 nodeFromNode : Gltf -> Node -> Query.Node
 nodeFromNode gltf node =
-    case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
+    case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode
