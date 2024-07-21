@@ -1,7 +1,6 @@
 module Gltf.Query exposing
     ( Gltf, Error(..), Node(..), Properties(..), QueryError(..), InternalNode, InternalNodeIndex
-    , fromJson, nodeTree, sceneNodeTrees
-    , treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
+    , skins, cameras, cameraByIndex, animations
     , QueryResult, QueryResultEffect
     , textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
     )
@@ -9,8 +8,7 @@ module Gltf.Query exposing
 {-| Query contents of Gltf
 
 @docs Gltf, Error, Node, Properties, QueryError, InternalNode, InternalNodeIndex
-@docs fromJson, nodeTree, sceneNodeTrees
-@docs treeFromNode, meshesFromNode, skins, cameras, cameraByIndex, animations
+@docs skins, cameras, cameraByIndex, animations
 @docs QueryResult, QueryResultEffect
 @docs textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
 
@@ -101,16 +99,6 @@ type Error
 
 {-| TODO: Needed?
 -}
-fromJson : String -> (Gltf -> Result QueryError b) -> Result Error b
-fromJson json f =
-    json
-        |> JD.decodeString Gltf.decoder
-        |> Result.mapError DecodeError
-        |> Result.andThen (\gltf -> f gltf |> Result.mapError QueryError)
-
-
-{-| TODO: Needed?
--}
 type QueryError
     = SceneNotFound
     | NodeNotFound
@@ -146,15 +134,6 @@ meshesFromNode node =
 
         SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
-
-
-{-| TODO: Needed?
--}
-treeFromNode : InternalNodeIndex -> Gltf -> Result QueryError (Tree Node)
-treeFromNode index gltf =
-    Common.maybeNodeTree gltf index
-        |> Maybe.map (Tree.map (nodeFromNode gltf))
-        |> Result.fromMaybe NodeNotFound
 
 
 {-| TODO: Docs
@@ -357,23 +336,6 @@ type Properties
         , nodeName : Maybe String
         , transform : Transform
         }
-
-
-{-| TODO: Needed?
--}
-sceneNodeTrees : Int -> Gltf -> Result QueryError (List (Tree InternalNode))
-sceneNodeTrees index gltf =
-    Common.sceneAtIndex gltf (Scene.Index index)
-        |> Maybe.map
-            (\(Scene scene) ->
-                scene.nodes
-                    |> List.filterMap
-                        (\(Node.Index nodeIndex) ->
-                            nodeTree nodeIndex gltf
-                                |> Result.toMaybe
-                        )
-            )
-        |> Result.fromMaybe SceneNotFound
 
 
 {-| TODO: Needed?

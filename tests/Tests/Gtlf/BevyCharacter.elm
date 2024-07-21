@@ -3,6 +3,7 @@ module Tests.Gtlf.BevyCharacter exposing (suite)
 import Expect
 import Gltf.Query as Query
 import Gltf.Query.Transform as Transform
+import Gltf.QueryHelper as QueryHelper
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
 import Internal.Skin as Skin
@@ -18,7 +19,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node)
                     queryResult =
-                        Query.fromJson json (Query.nodeTree 25)
+                        QueryHelper.fromJson json (QueryHelper.nodeTree 25)
 
                     expected : Node
                     expected =
@@ -50,7 +51,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree String)
                     queryResult =
-                        Query.fromJson json (Query.nodeTree 26)
+                        QueryHelper.fromJson json (QueryHelper.nodeTree 26)
                             |> Result.map (Tree.map (\(Node node) -> node.name |> Maybe.withDefault "Unknown"))
 
                     expected : Tree String

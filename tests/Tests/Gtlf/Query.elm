@@ -8,6 +8,7 @@ import Gltf.Query.Skin as Skin exposing (Skin(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Transform as Transform
 import Gltf.Query.TriangularMesh exposing (TriangularMesh(..), Vertex)
+import Gltf.QueryHelper as QueryHelper
 import Internal.Gltf
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
@@ -28,7 +29,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node)
                     queryResult =
-                        Query.fromJson simpleSkin (Query.nodeTree 0)
+                        QueryHelper.fromJson simpleSkin (QueryHelper.nodeTree 0)
 
                     expected : Node
                     expected =
@@ -60,7 +61,7 @@ suite =
                 let
                     queryResult : Result Query.Error (Tree Node.Index)
                     queryResult =
-                        Query.fromJson simpleSkin (Query.nodeTree 1)
+                        QueryHelper.fromJson simpleSkin (QueryHelper.nodeTree 1)
                             |> Result.map (Tree.map (\(Node node) -> node.index))
 
                     expected : Tree Node.Index
@@ -85,7 +86,7 @@ suite =
 
                     queryResult : Result Query.Error (List (Tree Node.Index))
                     queryResult =
-                        Query.fromJson simpleSkin (Query.sceneNodeTrees 0)
+                        QueryHelper.fromJson simpleSkin (QueryHelper.sceneNodeTrees 0)
                             |> Result.map (List.map (Tree.map nodeToIndex))
 
                     expected : List (Tree Node.Index)
@@ -108,7 +109,7 @@ suite =
                 let
                     queryResult : Result Query.Error Query.Node
                     queryResult =
-                        Query.fromJson simpleSkin (Query.treeFromNode (Node.Index 0))
+                        QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
                 in
                 case queryResult of
@@ -116,7 +117,7 @@ suite =
                         Expect.all
                             [ \x ->
                                 Expect.equal [ ( 10, 8 ) ]
-                                    (Query.meshesFromNode x
+                                    (QueryHelper.meshesFromNode x
                                         |> List.filterMap
                                             (\mesh ->
                                                 case mesh of
@@ -218,12 +219,12 @@ suite =
 
                     queryResult : Result Query.Error Query.Node
                     queryResult =
-                        Query.fromJson simpleSkin (Query.treeFromNode (Node.Index 0))
+                        QueryHelper.fromJson simpleSkin (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
                 in
                 case queryResult of
                     Ok mesh ->
-                        Expect.equal expected (Query.meshesFromNode mesh)
+                        Expect.equal expected (QueryHelper.meshesFromNode mesh)
 
                     Err _ ->
                         Expect.fail "Extract failed"
@@ -232,7 +233,7 @@ suite =
                 let
                     queryResult : Result Query.Error Query.Node
                     queryResult =
-                        Query.fromJson triangle (Query.treeFromNode (Node.Index 0))
+                        QueryHelper.fromJson triangle (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
                     expected : List TriangularMesh
@@ -271,7 +272,7 @@ suite =
                     Ok thing ->
                         Expect.all
                             [ \x ->
-                                Expect.equal expected (Query.meshesFromNode x)
+                                Expect.equal expected (QueryHelper.meshesFromNode x)
                             ]
                             thing
 
@@ -282,7 +283,7 @@ suite =
                 let
                     queryResult : Result Query.Error Query.Node
                     queryResult =
-                        Query.fromJson triangleWithoutIndices (Query.treeFromNode (Node.Index 0))
+                        QueryHelper.fromJson triangleWithoutIndices (QueryHelper.treeFromNode (Node.Index 0))
                             |> Result.map Tree.label
 
                     expected : List TriangularMesh
@@ -320,7 +321,7 @@ suite =
                     Ok thing ->
                         Expect.all
                             [ \x ->
-                                Expect.equal expected (Query.meshesFromNode x)
+                                Expect.equal expected (QueryHelper.meshesFromNode x)
                             ]
                             thing
 
