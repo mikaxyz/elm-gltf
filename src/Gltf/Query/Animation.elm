@@ -1,12 +1,25 @@
 module Gltf.Query.Animation exposing
-    ( Animation(..), AnimatedBone(..), AnimatedProperty(..), Channel(..), Sampler(..), Interpolation(..), Path(..), Attribute
-    , animatedBoneTransforms, animatedProperties
+    ( Animation(..), AnimatedBone(..), AnimatedProperty(..)
+    , animatedProperties, animatedBoneTransforms
+    , Channel(..), Sampler(..), Interpolation(..), Path(..), Attribute
     )
 
 {-| TODO: Docs
 
-@docs Animation, AnimatedBone, AnimatedProperty, Channel, Sampler, Interpolation, Path, Attribute
-@docs animatedBoneTransforms, animatedProperties
+
+# Types
+
+@docs Animation, AnimatedBone, AnimatedProperty
+
+
+# Get transformation of nodes/bones in a specific point of time
+
+@docs animatedProperties, animatedBoneTransforms
+
+
+# TODO: Internal, move out
+
+@docs Channel, Sampler, Interpolation, Path, Attribute
 
 -}
 
