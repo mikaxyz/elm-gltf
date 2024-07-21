@@ -432,7 +432,7 @@ update msg model =
 
                 nodes : List (Tree.Tree Query.Node)
                 nodes =
-                    Query.queryResultNodes queryResult
+                    Query.nodeTrees queryResult
 
                 scene : XYZScene.Scene Scene.ObjectId Material.Name
                 scene =
@@ -482,7 +482,7 @@ update msg model =
                                     cameraNodeIndex : Maybe NodeIndex
                                     cameraNodeIndex =
                                         model.queryResult
-                                            |> RemoteData.map Query.queryResultNodes
+                                            |> RemoteData.map Query.nodeTrees
                                             |> RemoteData.withDefault []
                                             |> List.concatMap
                                                 (\tree ->

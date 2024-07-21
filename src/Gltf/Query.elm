@@ -1,16 +1,37 @@
 module Gltf.Query exposing
-    ( Gltf, Error(..), Node(..), Properties(..)
-    , skins, cameras, cameraByIndex, animations
+    ( Error(..), Node(..), Properties(..)
     , QueryResult, QueryResultEffect
-    , textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
+    , defaultSceneQuery, sceneQuery
+    , queryResultRun, applyQueryResultEffect, applyQueryResult
+    , animations, cameras, nodeTrees, skins
+    , cameraByIndex, textureWithIndex
+    , Gltf
     )
 
 {-| Query contents of Gltf
 
-@docs Gltf, Error, Node, Properties
-@docs skins, cameras, cameraByIndex, animations
+
+# Types
+
+@docs Error, Node, Properties
 @docs QueryResult, QueryResultEffect
-@docs textureWithIndex, queryResultRun, queryResultNodes, defaultSceneQuery, sceneQuery, applyQueryResultEffect, applyQueryResult
+
+
+# Queries
+
+@docs defaultSceneQuery, sceneQuery
+@docs queryResultRun, applyQueryResultEffect, applyQueryResult
+
+
+# Content
+
+@docs animations, cameras, nodeTrees, skins
+@docs cameraByIndex, textureWithIndex
+
+
+# Internal
+
+@docs Gltf
 
 -}
 
@@ -29,7 +50,7 @@ import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Query.Transform exposing (Transform)
 import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
-import Internal.Gltf as Gltf
+import Internal.Gltf
 import Internal.Image
 import Internal.Node
 import Internal.Sampler
@@ -40,53 +61,17 @@ import Tree exposing (Tree)
 import WebGL.Texture
 
 
-{-| TODO: REMOVE?
+{-| Type representing raw data from a .gltf/.glb file
 -}
 type alias Gltf =
-    Gltf.Gltf
+    Internal.Gltf.Gltf
 
 
-{-| TODO: Needed?
--}
-skins : QueryResult -> List Skin
-skins (QueryResult gltf _ _) =
-    gltf.skins
-        |> Array.toIndexedList
-        |> List.map (Tuple.first >> Skin.Index)
-        |> List.filterMap (SkinHelper.skinAtIndex gltf)
-
-
-{-| TODO: Docs
--}
-cameras : QueryResult -> List Camera
-cameras (QueryResult gltf _ _) =
-    gltf.cameras |> Array.toList
-
-
-{-| TODO: Docs
--}
-cameraByIndex : Camera.Index -> QueryResult -> Maybe Camera
-cameraByIndex (Camera.Index index) (QueryResult gltf _ _) =
-    Array.get index gltf.cameras
-
-
-{-| TODO: Docs
--}
-animations : QueryResult -> List Animation
-animations (QueryResult gltf _ _) =
-    AnimationHelper.extractAnimations gltf
-
-
-{-| TODO: Needed?
+{-| All possible failures
 -}
 type Error
     = SceneNotFound
     | NodeNotFound
-
-
-nodeIndexFromNode : Internal.Node.Index -> NodeIndex
-nodeIndexFromNode (Internal.Node.Index index) =
-    NodeIndex index
 
 
 {-| TODO: Docs
@@ -98,22 +83,14 @@ type Node
     | SkinnedMeshNode (List TriangularMesh) Skin.Index Properties
 
 
-{-| TODO: Needed?
+{-| TODO: Docs
 -}
-meshesFromNode : Node -> List TriangularMesh
-meshesFromNode node =
-    case node of
-        EmptyNode _ ->
-            []
-
-        CameraNode _ _ ->
-            []
-
-        MeshNode triangularMeshes _ ->
-            triangularMeshes
-
-        SkinnedMeshNode triangularMeshes _ _ ->
-            triangularMeshes
+type Properties
+    = Properties
+        { nodeIndex : NodeIndex
+        , nodeName : Maybe String
+        , transform : Transform
+        }
 
 
 {-| TODO: Docs
@@ -126,20 +103,6 @@ type QueryResult
 -}
 type QueryResultEffect
     = QueryResultLoadTextureEffect Gltf.Query.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
-
-
-{-| TODO: Docs
--}
-queryResultNodes : QueryResult -> List (Tree Node)
-queryResultNodes (QueryResult _ _ nodes) =
-    nodes
-
-
-{-| TODO: Needed?
--}
-textureWithIndex : QueryResult -> Gltf.Query.Material.TextureIndex -> Maybe WebGL.Texture.Texture
-textureWithIndex (QueryResult _ textureStore _) textureIndex =
-    TextureStore.textureWithTextureIndex textureIndex textureStore
 
 
 {-| TODO: Docs
@@ -163,43 +126,6 @@ sceneQuery index gltf =
                     |> QueryResult gltf TextureStore.init
             )
         |> Result.fromMaybe SceneNotFound
-
-
-{-| TODO: Docs
--}
-applyQueryResult : Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> QueryResult -> QueryResult
-applyQueryResult textureIndex textureLoadResult (QueryResult gltf textureStore queryResult) =
-    case textureLoadResult of
-        Ok texture ->
-            QueryResult gltf (TextureStore.insert textureIndex texture textureStore) queryResult
-
-        Err _ ->
-            QueryResult gltf textureStore queryResult
-
-
-{-| TODO: Docs
--}
-applyQueryResultEffect :
-    QueryResultEffect
-    -> (Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> msg)
-    -> QueryResult
-    -> ( QueryResult, Cmd msg )
-applyQueryResultEffect effect msg (QueryResult gltf textureStore queryResult) =
-    case effect of
-        QueryResultLoadTextureEffect textureIndex image maybeSampler ->
-            case TextureStore.get textureIndex textureStore of
-                Just _ ->
-                    ( QueryResult gltf textureStore queryResult, Cmd.none )
-
-                Nothing ->
-                    case Gltf.Query.Task.loadTextureTask gltf image maybeSampler of
-                        Just task ->
-                            ( QueryResult gltf (TextureStore.insertLoading textureIndex textureStore) queryResult
-                            , Task.attempt (msg textureIndex) task
-                            )
-
-                        Nothing ->
-                            ( QueryResult gltf textureStore queryResult, Cmd.none )
 
 
 {-| TODO: Docs
@@ -271,6 +197,115 @@ queryResultRun msg (QueryResult gltf textureStore trees) =
 
 {-| TODO: Docs
 -}
+applyQueryResultEffect :
+    QueryResultEffect
+    -> (Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> msg)
+    -> QueryResult
+    -> ( QueryResult, Cmd msg )
+applyQueryResultEffect effect msg (QueryResult gltf textureStore queryResult) =
+    case effect of
+        QueryResultLoadTextureEffect textureIndex image maybeSampler ->
+            case TextureStore.get textureIndex textureStore of
+                Just _ ->
+                    ( QueryResult gltf textureStore queryResult, Cmd.none )
+
+                Nothing ->
+                    case Gltf.Query.Task.loadTextureTask gltf image maybeSampler of
+                        Just task ->
+                            ( QueryResult gltf (TextureStore.insertLoading textureIndex textureStore) queryResult
+                            , Task.attempt (msg textureIndex) task
+                            )
+
+                        Nothing ->
+                            ( QueryResult gltf textureStore queryResult, Cmd.none )
+
+
+{-| TODO: Docs
+-}
+applyQueryResult : Gltf.Query.Material.TextureIndex -> Result WebGL.Texture.Error WebGL.Texture.Texture -> QueryResult -> QueryResult
+applyQueryResult textureIndex textureLoadResult (QueryResult gltf textureStore queryResult) =
+    case textureLoadResult of
+        Ok texture ->
+            QueryResult gltf (TextureStore.insert textureIndex texture textureStore) queryResult
+
+        Err _ ->
+            QueryResult gltf textureStore queryResult
+
+
+{-| TODO: Docs
+-}
+animations : QueryResult -> List Animation
+animations (QueryResult gltf _ _) =
+    AnimationHelper.extractAnimations gltf
+
+
+{-| TODO: Docs
+-}
+cameras : QueryResult -> List Camera
+cameras (QueryResult gltf _ _) =
+    gltf.cameras |> Array.toList
+
+
+{-| TODO: Needed?
+-}
+skins : QueryResult -> List Skin
+skins (QueryResult gltf _ _) =
+    gltf.skins
+        |> Array.toIndexedList
+        |> List.map (Tuple.first >> Skin.Index)
+        |> List.filterMap (SkinHelper.skinAtIndex gltf)
+
+
+{-| TODO: Docs
+-}
+nodeTrees : QueryResult -> List (Tree Node)
+nodeTrees (QueryResult _ _ nodes) =
+    nodes
+
+
+{-| TODO: Docs
+-}
+cameraByIndex : Camera.Index -> QueryResult -> Maybe Camera
+cameraByIndex (Camera.Index index) (QueryResult gltf _ _) =
+    Array.get index gltf.cameras
+
+
+{-| TODO: Needed?
+-}
+textureWithIndex : QueryResult -> Gltf.Query.Material.TextureIndex -> Maybe WebGL.Texture.Texture
+textureWithIndex (QueryResult _ textureStore _) textureIndex =
+    TextureStore.textureWithTextureIndex textureIndex textureStore
+
+
+
+--------------------------------------------------- INTERNAL
+
+
+nodeIndexFromNode : Internal.Node.Index -> NodeIndex
+nodeIndexFromNode (Internal.Node.Index index) =
+    NodeIndex index
+
+
+{-| TODO: Needed?
+-}
+meshesFromNode : Node -> List TriangularMesh
+meshesFromNode node =
+    case node of
+        EmptyNode _ ->
+            []
+
+        CameraNode _ _ ->
+            []
+
+        MeshNode triangularMeshes _ ->
+            triangularMeshes
+
+        SkinnedMeshNode triangularMeshes _ _ ->
+            triangularMeshes
+
+
+{-| TODO: Docs
+-}
 nodeFromNode : Gltf -> Internal.Node.Node -> Node
 nodeFromNode gltf node =
     case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Skin.Index index) of
@@ -305,16 +340,6 @@ propertiesFromNode (Internal.Node.Node node) =
         { nodeIndex = nodeIndexFromNode node.index
         , nodeName = node.name
         , transform = node.transform
-        }
-
-
-{-| TODO: Docs
--}
-type Properties
-    = Properties
-        { nodeIndex : NodeIndex
-        , nodeName : Maybe String
-        , transform : Transform
         }
 
 
