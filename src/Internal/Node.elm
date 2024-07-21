@@ -6,7 +6,7 @@ module Internal.Node exposing
     )
 
 import Gltf.Camera
-import Gltf.Query.Transform exposing (Transform(..))
+import Gltf.Transform exposing (Transform(..))
 import Internal.Camera as Camera
 import Internal.Mesh as Mesh
 import Internal.Skin as Skin

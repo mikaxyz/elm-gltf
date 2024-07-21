@@ -1,4 +1,4 @@
-module Gltf.Query.Transform exposing (Transform(..))
+module Gltf.Transform exposing (Transform(..))
 
 {-| TODO: Docs
 

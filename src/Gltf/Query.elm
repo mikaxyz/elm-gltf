@@ -46,10 +46,10 @@ import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
-import Gltf.Query.Transform exposing (Transform)
 import Gltf.Query.TriangularMesh exposing (TriangularMesh)
 import Gltf.Query.TriangularMeshHelper as TriangularMeshHelper
 import Gltf.Skin exposing (Skin)
+import Gltf.Transform exposing (Transform)
 import Internal.Gltf
 import Internal.Image
 import Internal.Node

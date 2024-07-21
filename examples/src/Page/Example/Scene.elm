@@ -12,9 +12,9 @@ import Gltf.Camera
 import Gltf.Material
 import Gltf.Query as Query
 import Gltf.Query.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Transform as Transform exposing (Transform)
 import Gltf.Query.TriangularMesh as TriangularMesh exposing (TriangularMesh(..))
 import Gltf.Skin exposing (Skin)
+import Gltf.Transform exposing (Transform)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4
@@ -144,7 +144,7 @@ frameScene config nodes =
                 transformToMat : Transform -> Mat4
                 transformToMat transform =
                     case transform of
-                        Transform.TRS { translation, rotation, scale } ->
+                        Gltf.Transform.TRS { translation, rotation, scale } ->
                             let
                                 r =
                                     rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
@@ -158,7 +158,7 @@ frameScene config nodes =
                                 |> Mat4.mul r
                                 |> Mat4.mul s
 
-                        Transform.Matrix mat ->
+                        Gltf.Transform.Matrix mat ->
                             mat
             in
             case node of
@@ -277,7 +277,7 @@ objectsFromNode objectIdMap node =
         applyTransform : Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
             case transform of
-                Transform.TRS { translation, rotation, scale } ->
+                Gltf.Transform.TRS { translation, rotation, scale } ->
                     object
                         |> (translation |> Maybe.map Object.withPosition |> Maybe.withDefault identity)
                         |> (\object_ ->
@@ -294,7 +294,7 @@ objectsFromNode objectIdMap node =
                                 object_ |> Object.withRotation (Mat4.mulAffine s r)
                            )
 
-                Transform.Matrix mat ->
+                Gltf.Transform.Matrix mat ->
                     Object.withRotation mat object
     in
     case node of

@@ -1,7 +1,7 @@
 module Gltf.Query.Skeleton exposing (Bone, Skeleton(..))
 
 import Gltf.Query.NodeIndex exposing (NodeIndex)
-import Gltf.Query.Transform exposing (Transform)
+import Gltf.Transform exposing (Transform)
 import Tree exposing (Tree)
 
 
