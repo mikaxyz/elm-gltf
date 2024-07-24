@@ -63,7 +63,11 @@ toLoadableImage : Gltf -> Image -> Maybe LoadableImage
 toLoadableImage gltf image =
     case image.uri of
         Just uri ->
-            Just (Uri uri)
+            if String.startsWith "data:image" uri then
+                Just (DataUri uri)
+
+            else
+                Just (Uri uri)
 
         Nothing ->
             case Maybe.map2 Tuple.pair image.mimeType image.bufferView of
