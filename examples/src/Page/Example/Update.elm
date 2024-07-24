@@ -2,10 +2,10 @@ module Page.Example.Update exposing (update)
 
 import Browser.Dom
 import Color
+import Gltf
 import Gltf.Camera
 import Gltf.Node
 import Gltf.NodeIndex exposing (NodeIndex)
-import Gltf.Query as Query
 import Keyboard
 import Math.Vector2 as Vec2 exposing (vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -136,7 +136,7 @@ update msg model =
                         (model.queryResult
                             |> RemoteData.map
                                 (\queryResult ->
-                                    Scene.modifiers model.time model.activeAnimation (Query.skins queryResult)
+                                    Scene.modifiers model.time model.activeAnimation (Gltf.skins queryResult)
                                 )
                             |> RemoteData.withDefault []
                         )
@@ -410,53 +410,35 @@ update msg model =
                     , Cmd.none
                     )
 
-        GltfApplyQueryResult textureIndex result ->
+        GltfMsg msg_ ->
+            Gltf.update
+                { toMsg = GltfMsg
+                , onComplete = GltfOnComplete
+                }
+                msg_
+                model.gltf
+                |> Tuple.mapFirst (\gltf -> { model | gltf = gltf })
+
+        GltfOnComplete (Ok queryResult) ->
             ( { model
-                | queryResult =
-                    model.queryResult
-                        |> RemoteData.map (Query.applyQueryResult textureIndex result)
-              }
-            , Cmd.none
-            )
-
-        GltfApplyQueryResultEffect effect ->
-            model.queryResult
-                |> RemoteData.map (Query.applyQueryResultEffect effect GltfApplyQueryResult)
-                |> RemoteData.map (Tuple.mapFirst (\r -> { model | queryResult = RemoteData.Success r }))
-                |> RemoteData.withDefault ( model, Cmd.none )
-
-        GltfReceived (Ok queryResult) ->
-            let
-                cmd : Cmd Msg
-                cmd =
-                    Query.queryResultRun GltfApplyQueryResultEffect queryResult
-
-                nodes : List (Tree.Tree Gltf.Node.Node)
-                nodes =
-                    Query.nodeTrees queryResult
-
-                scene : XYZScene.Scene Scene.ObjectId Material.Name
-                scene =
+                | queryResult = queryResult |> RemoteData.Success
+                , animations = Gltf.animations queryResult
+                , scene =
                     Scene.initWithNodes
-                        nodes
+                        (Gltf.nodeTrees queryResult)
                         identity
                         { camera = default.camera
                         , projection = default.projection
                         , sceneSize = model.sceneSize
                         }
-            in
-            ( { model
-                | queryResult = queryResult |> RemoteData.Success
-                , animations = Query.animations queryResult
-                , scene = scene |> RemoteData.Success
+                        |> RemoteData.Success
               }
                 |> setActiveAnimation 0
                 |> setSceneSize
-            , [ cmd, getViewPort ]
-                |> Cmd.batch
+            , getViewPort
             )
 
-        GltfReceived (Err error) ->
+        GltfOnComplete (Err error) ->
             ( { model | queryResult = RemoteData.Failure (Model.GltfError error) }
             , Cmd.none
             )
@@ -483,7 +465,7 @@ update msg model =
                                     cameraNodeIndex : Maybe NodeIndex
                                     cameraNodeIndex =
                                         model.queryResult
-                                            |> RemoteData.map Query.nodeTrees
+                                            |> RemoteData.map Gltf.nodeTrees
                                             |> RemoteData.withDefault []
                                             |> List.concatMap
                                                 (\tree ->
@@ -507,7 +489,7 @@ update msg model =
 
                                     maybeGltfCamera : Maybe Gltf.Camera.Camera
                                     maybeGltfCamera =
-                                        model.queryResult |> RemoteData.toMaybe |> Maybe.andThen (Query.cameraByIndex index)
+                                        model.queryResult |> RemoteData.toMaybe |> Maybe.andThen (Gltf.cameraByIndex index)
 
                                     applyProjection =
                                         case maybeGltfCamera |> Maybe.map .projection of

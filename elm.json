@@ -12,7 +12,6 @@
         "Gltf.Material",
         "Gltf.Node",
         "Gltf.NodeIndex",
-        "Gltf.Query",
         "Gltf.Skin",
         "Gltf.Transform"
     ],

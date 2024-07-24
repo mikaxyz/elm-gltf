@@ -8,10 +8,10 @@ module Gltf.QueryHelper exposing
     )
 
 import Common
+import Gltf
 import Gltf.Mesh exposing (Mesh)
 import Gltf.Node
 import Gltf.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query as Query
 import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Skin
 import Internal.Gltf as Gltf exposing (Gltf)
@@ -24,15 +24,15 @@ import Tree exposing (Tree)
 
 type Error
     = DecodeError JD.Error
-    | QueryError Query.Error
+    | GltfError Gltf.Error
 
 
-fromJson : String -> (Gltf -> Result Query.Error b) -> Result Error b
+fromJson : String -> (Gltf -> Result Gltf.Error b) -> Result Error b
 fromJson json f =
     json
         |> JD.decodeString Gltf.decoder
         |> Result.mapError DecodeError
-        |> Result.andThen (\gltf -> f gltf |> Result.mapError QueryError)
+        |> Result.andThen (\gltf -> f gltf |> Result.mapError GltfError)
 
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
@@ -55,14 +55,14 @@ meshesFromNode node =
 
 {-| TODO: DUPE exists in Query also, Use queries in tests?
 -}
-nodeTree : Int -> Gltf -> Result Query.Error (Tree Node)
+nodeTree : Int -> Gltf -> Result Gltf.Error (Tree Node)
 nodeTree index gltf =
-    Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe Query.NodeNotFound
+    Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe Gltf.NodeNotFound
 
 
 {-| TODO: Use queries in tests?
 -}
-sceneNodeTrees : Int -> Gltf -> Result Query.Error (List (Tree Node))
+sceneNodeTrees : Int -> Gltf -> Result Gltf.Error (List (Tree Node))
 sceneNodeTrees index gltf =
     Common.sceneAtIndex gltf (Scene.Index index)
         |> Maybe.map
@@ -74,16 +74,16 @@ sceneNodeTrees index gltf =
                                 |> Result.toMaybe
                         )
             )
-        |> Result.fromMaybe Query.SceneNotFound
+        |> Result.fromMaybe Gltf.SceneNotFound
 
 
 {-| TODO: Use queries in tests?
 -}
-treeFromNode : Node.Index -> Gltf -> Result Query.Error (Tree Gltf.Node.Node)
+treeFromNode : Node.Index -> Gltf -> Result Gltf.Error (Tree Gltf.Node.Node)
 treeFromNode index gltf =
     Common.maybeNodeTree gltf index
         |> Maybe.map (Tree.map (nodeFromNode gltf))
-        |> Result.fromMaybe Query.NodeNotFound
+        |> Result.fromMaybe Gltf.NodeNotFound
 
 
 {-| TODO: Docs

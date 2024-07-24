@@ -11,11 +11,9 @@ module Page.Example.Model exposing
     )
 
 import Browser.Dom
-import Gltf
+import Gltf exposing (Gltf)
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
-import Gltf.Material
-import Gltf.Query as Query
 import Keyboard
 import Page.Example.Material as Material
 import Page.Example.Scene as Scene
@@ -48,9 +46,10 @@ type Msg
     | EnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | SpecularEnvironmentTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | BrdfLUTTextureReceived (Result WebGL.Texture.Error WebGL.Texture.Texture)
-    | GltfReceived (Result Gltf.Error Query.QueryResult)
-    | GltfApplyQueryResultEffect Query.QueryResultEffect
-    | GltfApplyQueryResult Gltf.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
+      --
+    | GltfMsg Gltf.Msg
+    | GltfOnComplete (Result Gltf.Error Gltf.QueryResult)
+      --
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
       --
     | UserSelectedCamera (Maybe Gltf.Camera.Index)
@@ -83,10 +82,11 @@ type alias Model =
     , specularEnvironmentTexture : RemoteData Error WebGL.Texture.Texture
     , brdfLUTTexture : RemoteData Error WebGL.Texture.Texture
     , scene : RemoteData Error (Scene Scene.ObjectId Material.Name)
-    , queryResult : RemoteData Error Query.QueryResult
+    , queryResult : RemoteData Error Gltf.QueryResult
     , animations : List Animation
     , activeAnimation : Maybe Animation
     , activeCamera : Maybe Gltf.Camera.Index
+    , gltf : Gltf
     }
 
 
@@ -113,6 +113,7 @@ init asset =
     , animations = []
     , activeAnimation = Nothing
     , activeCamera = Nothing
+    , gltf = Gltf.init
     }
 
 

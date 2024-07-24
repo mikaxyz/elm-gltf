@@ -5,6 +5,7 @@ module Gltf.Query.TextureStore exposing
     , init
     , insert
     , insertLoading
+    , isComplete
     , textureWithTextureIndex
     )
 
@@ -17,6 +18,13 @@ import WebGL.Texture
 init : TextureStore
 init =
     TextureStore Dict.empty
+
+
+isComplete : TextureStore -> Bool
+isComplete (TextureStore store) =
+    store
+        |> Dict.values
+        |> List.all (\x -> x /= SampledTextureLoading)
 
 
 insert : Gltf.Material.TextureIndex -> WebGL.Texture.Texture -> TextureStore -> TextureStore

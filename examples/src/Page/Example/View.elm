@@ -1,8 +1,8 @@
 module Page.Example.View exposing (view)
 
+import Gltf
 import Gltf.Animation exposing (Animation(..))
 import Gltf.Camera
-import Gltf.Query
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
@@ -80,11 +80,11 @@ progressIndicatorView message =
         ]
 
 
-sceneOptionsView : Model -> Gltf.Query.QueryResult -> Html Msg
+sceneOptionsView : Model -> Gltf.QueryResult -> Html Msg
 sceneOptionsView model gltfQueryResult =
     aside [ class "options" ]
         [ case
-            Gltf.Query.cameras gltfQueryResult
+            Gltf.cameras gltfQueryResult
                 |> List.map
                     (\camera ->
                         { name = camera.name
@@ -148,7 +148,7 @@ onChange tagger =
 renderer :
     WebGL.Texture.Texture
     -> Page.Example.PbrMaterial.Config
-    -> Gltf.Query.QueryResult
+    -> Gltf.QueryResult
     -> Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
@@ -165,7 +165,7 @@ renderer fallbackTexture textures gltfQueryResult name =
 
 sceneView :
     Model
-    -> Gltf.Query.QueryResult
+    -> Gltf.QueryResult
     -> Maybe Animation
     -> Scene Scene.ObjectId Material.Name
     -> WebGL.Texture.Texture
@@ -176,7 +176,7 @@ sceneView model gltfQueryResult animation scene fallbackTexture config =
         model.viewport
         (renderer fallbackTexture config gltfQueryResult)
         |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation (Gltf.Query.skins gltfQueryResult))
+        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation (Gltf.skins gltfQueryResult))
         |> XYZMika.XYZ.withSceneOptions model.sceneOptions
         |> XYZMika.XYZ.withRenderOptions
             (\graph ->
