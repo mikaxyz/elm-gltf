@@ -9,14 +9,16 @@ import Url.Parser exposing ((</>), (<?>), Parser)
 
 type Route
     = Root
-    | ExampleGlb SampleAssets.AssetId
+    | Example SampleAssets.SampleType SampleAssets.AssetId
 
 
 parser : Parser (Route -> a) a
 parser =
     Url.Parser.oneOf
         [ Url.Parser.map Root Url.Parser.top
-        , Url.Parser.map (SampleAssets.AssetId >> ExampleGlb) (Url.Parser.s "glb" </> Url.Parser.string)
+        , Url.Parser.map (SampleAssets.AssetId >> Example SampleAssets.Default) (Url.Parser.s "default" </> Url.Parser.string)
+        , Url.Parser.map (SampleAssets.AssetId >> Example SampleAssets.Binary) (Url.Parser.s "binary" </> Url.Parser.string)
+        , Url.Parser.map (SampleAssets.AssetId >> Example SampleAssets.Embedded) (Url.Parser.s "embedded" </> Url.Parser.string)
         ]
 
 
@@ -31,8 +33,14 @@ toPath route =
         Root ->
             "/"
 
-        ExampleGlb (SampleAssets.AssetId example) ->
-            "/glb/" ++ example
+        Example SampleAssets.Default (SampleAssets.AssetId example) ->
+            "/default/" ++ example
+
+        Example SampleAssets.Binary (SampleAssets.AssetId example) ->
+            "/binary/" ++ example
+
+        Example SampleAssets.Embedded (SampleAssets.AssetId example) ->
+            "/embedded/" ++ example
 
 
 fromUrl : Url -> Maybe Route

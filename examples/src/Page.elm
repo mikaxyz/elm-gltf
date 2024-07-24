@@ -7,9 +7,7 @@ module Page exposing
     , update
     )
 
-import Http
 import Page.Example
-import RemoteData exposing (RemoteData)
 import Route exposing (Route)
 import SampleAssets exposing (SampleAssets)
 
@@ -43,15 +41,16 @@ fromRoute config tagger maybeRoute =
                         |> Tuple.mapFirst Example
                         |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
 
-                Route.ExampleGlb assetId ->
-                    case config.assets |> SampleAssets.getAsset assetId of
-                        Just asset ->
-                            Page.Example.initWithSampleAsset asset
-                                |> Tuple.mapFirst Example
-                                |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
-
-                        Nothing ->
-                            ( Error NotFound, Cmd.none )
+                Route.Example sampleType assetId ->
+                    config.assets
+                        |> SampleAssets.getAsset assetId
+                        |> Maybe.map
+                            (\asset ->
+                                Page.Example.initWithSampleAsset sampleType asset
+                                    |> Tuple.mapFirst Example
+                                    |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
+                            )
+                        |> Maybe.withDefault ( Error NotFound, Cmd.none )
 
         Nothing ->
             ( Error NotFound, Cmd.none )

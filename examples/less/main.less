@@ -177,6 +177,11 @@ html {
     overflow-y: hidden;
     outline: none;
 
+    .selector {
+        opacity: 0.3;
+        transition: opacity 200ms ease-out;
+    }
+
     &:hover,
     &:focus-within {
         overflow-y: auto;
@@ -184,6 +189,10 @@ html {
 
         .panel__content {
             max-height: calc(100vh);
+        }
+
+        .selector {
+            opacity: 1;
         }
     }
 
@@ -208,8 +217,8 @@ html {
         }
 
         h1 {
-            margin: 0.2em 0;
-            font-size: 1.2em;
+            margin: 0 0 0.4em 0;
+            font-size: 1em;
             line-height: 1;
             text-transform: uppercase;
         }
@@ -259,5 +268,34 @@ html {
                 color: var(--color-accent);
             }
         }
+    }
+}
+
+.selector {
+    @radius: 0.5em;
+    background-color: black;
+    box-shadow: 0 0 0 1px var(--color-accent);
+    border-radius: @radius;
+    padding: 2px;
+    display: flex;
+    overflow: hidden;
+
+    &__button {
+        all: unset;
+        flex: 1 1 0;
+        text-align: center;
+        color: var(--color-accent);
+        padding: 0.2em 0.4em;
+
+        &--active {
+            color: black;
+            background-color: var(--color-accent);
+            border-radius: @radius - 0.2em;
+        }
+    }
+
+    &__label {
+        font-size: 0.7em;
+        text-transform: uppercase;
     }
 }

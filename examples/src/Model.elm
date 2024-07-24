@@ -9,7 +9,7 @@ import Http
 import Page exposing (Page)
 import RemoteData exposing (RemoteData)
 import Route exposing (Route)
-import SampleAssets exposing (SampleAssets)
+import SampleAssets exposing (SampleAssets, SampleType)
 import Xyz.Mika.Spa as Spa exposing (Spa)
 
 
@@ -18,6 +18,7 @@ type Msg
     | OnHistoryChange Route
     | SpaMsg Spa.Msg
     | PageMsg Page.Msg
+    | UserClickedSampleType SampleType
     | SampleAssetsReceived (Result Http.Error SampleAssets)
     | ShowModal (Maybe Modal)
     | ShowShareSheet
@@ -28,6 +29,7 @@ type alias Model =
     , page : Maybe Page
     , modal : Maybe Modal
     , sampleAssets : RemoteData Http.Error SampleAssets
+    , sampleType : SampleType
     }
 
 
@@ -41,4 +43,5 @@ init spa =
     , page = Nothing
     , modal = Nothing
     , sampleAssets = RemoteData.Loading
+    , sampleType = SampleAssets.Binary
     }

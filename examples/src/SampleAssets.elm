@@ -2,16 +2,22 @@ module SampleAssets exposing
     ( Asset
     , AssetId(..)
     , SampleAssets
+    , SampleType(..)
     , decoder
     , getAsset
-    , toBinaryIdentifier
-    , toBinaryUrl
     , toList
+    , toUrl
     )
 
 import Dict exposing (Dict)
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
+
+
+type SampleType
+    = Default
+    | Binary
+    | Embedded
 
 
 type SampleAssets
@@ -56,33 +62,37 @@ getAsset (AssetId id) (SampleAssets assets) =
     Dict.get id assets
 
 
-toBinaryUrl : Asset -> Maybe String
-toBinaryUrl asset =
-    case asset.variants.binary of
-        Just (Path path) ->
+toUrl : SampleType -> Asset -> Maybe String
+toUrl type_ asset =
+    let
+        toAssetUrl (Path path) =
             [ "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models"
             , asset.name
-            , "glTF-Binary"
+            , case type_ of
+                Default ->
+                    "glTF"
+
+                Binary ->
+                    "glTF-Binary"
+
+                Embedded ->
+                    "glTF-Embedded"
             , path
             ]
                 |> String.join "/"
-                |> Just
+    in
+    case type_ of
+        Default ->
+            asset.variants.default
+                |> Maybe.map toAssetUrl
 
-        Nothing ->
-            Nothing
+        Binary ->
+            asset.variants.binary
+                |> Maybe.map toAssetUrl
 
-
-toBinaryIdentifier : Asset -> Maybe String
-toBinaryIdentifier asset =
-    -- https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Triangle/glTF-Embedded/Triangle.gltf
-    case asset.variants.binary of
-        Just (Path path) ->
-            path
-                |> String.replace ".glb" ""
-                |> Just
-
-        Nothing ->
-            Nothing
+        Embedded ->
+            asset.variants.embedded
+                |> Maybe.map toAssetUrl
 
 
 decoder : JD.Decoder SampleAssets

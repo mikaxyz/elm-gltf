@@ -8,6 +8,7 @@ import Page
 import Ports
 import RemoteData
 import Route exposing (Route)
+import SampleAssets
 import Xyz.Mika.Spa as Spa
 
 
@@ -22,6 +23,16 @@ spaConfig =
 
 updateWithRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 updateWithRoute maybeRoute model =
+    let
+        sampleType : SampleAssets.SampleType
+        sampleType =
+            case maybeRoute of
+                Just (Route.Example sampleAssets _) ->
+                    sampleAssets
+
+                _ ->
+                    SampleAssets.Binary
+    in
     model.sampleAssets
         |> RemoteData.map
             (\assets ->
@@ -31,9 +42,9 @@ updateWithRoute maybeRoute model =
                     }
                     PageMsg
                     maybeRoute
-                    |> Tuple.mapFirst (\page -> { model | page = Just page })
+                    |> Tuple.mapFirst (\page -> { model | page = Just page, sampleType = sampleType })
             )
-        |> RemoteData.withDefault ( model, Cmd.none )
+        |> RemoteData.withDefault ( { model | sampleType = sampleType }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -69,6 +80,9 @@ update msg model =
                     ( { model | sampleAssets = RemoteData.Failure error }
                     , Cmd.none
                     )
+
+        UserClickedSampleType sampleType ->
+            ( { model | sampleType = sampleType }, Cmd.none )
 
         ShowModal modal ->
             ( { model | modal = modal }

@@ -78,12 +78,23 @@ loadSpecularEnvironmentTexture msg =
         |> Task.attempt msg
 
 
-initWithSampleAsset : SampleAssets.Asset -> ( Model, Cmd Msg )
-initWithSampleAsset asset =
+initWithSampleAsset : SampleAssets.SampleType -> SampleAssets.Asset -> ( Model, Cmd Msg )
+initWithSampleAsset assetType asset =
     ( Model.init (Model.SampleAsset asset)
     , Cmd.batch
-        [ SampleAssets.toBinaryUrl asset
-            |> Maybe.map (\url -> Gltf.getBinary url GltfMsg)
+        [ SampleAssets.toUrl assetType asset
+            |> Maybe.map
+                (\url ->
+                    case assetType of
+                        SampleAssets.Default ->
+                            Gltf.getEmbedded url GltfMsg
+
+                        SampleAssets.Binary ->
+                            Gltf.getBinary url GltfMsg
+
+                        SampleAssets.Embedded ->
+                            Gltf.getEmbedded url GltfMsg
+                )
             |> Maybe.withDefault Cmd.none
         , loadFallbackTexture FallbackTextureReceived
         , loadEnvironmentTexture EnvironmentTextureReceived
