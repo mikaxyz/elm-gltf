@@ -16,6 +16,7 @@ type Index
 
 type Buffer
     = Buffer Bytes
+    | Remote { byteLength : Int, uri : String }
 
 
 indexDecoder : JD.Decoder Index
@@ -25,6 +26,20 @@ indexDecoder =
 
 decoder : JD.Decoder Buffer
 decoder =
+    JD.field "uri" JD.string
+        |> JD.andThen
+            (\uri ->
+                if String.startsWith "data:application" uri then
+                    base64decoder
+
+                else
+                    JD.map (\byteLength -> Remote { byteLength = byteLength, uri = uri })
+                        (JD.field "byteLength" JD.int)
+            )
+
+
+base64decoder : JD.Decoder Buffer
+base64decoder =
     JD.map Buffer
         (JD.field "uri" JD.string
             |> JD.map (String.replace "data:application/gltf-buffer;base64," "")

@@ -4,7 +4,8 @@ import Base64.Encode
 import Bytes exposing (Bytes)
 import Bytes.Extra
 import Common
-import Internal.Buffer exposing (Buffer(..))
+import Gltf.Query.Buffer exposing (Buffer(..))
+import Gltf.Query.BufferStore as BufferStore exposing (BufferStore)
 import Internal.BufferView exposing (BufferView)
 import Internal.Gltf exposing (Gltf)
 import Internal.Image as Image exposing (Image)
@@ -13,45 +14,50 @@ import Task exposing (Task)
 import WebGL.Texture
 
 
-loadTextureTask : Gltf -> Image -> Maybe Sampler -> Maybe (Task WebGL.Texture.Error WebGL.Texture.Texture)
-loadTextureTask gltf image maybeSampler =
-    case toLoadableImage gltf image of
+loadTextureTask : Gltf -> BufferStore -> Image -> Maybe Sampler -> Maybe (Task WebGL.Texture.Error WebGL.Texture.Texture)
+loadTextureTask gltf bufferStore image maybeSampler =
+    case toLoadableImage gltf bufferStore image of
         Just (DataUri dataUri) ->
-            let
-                defaultOptions : WebGL.Texture.Options
-                defaultOptions =
-                    WebGL.Texture.defaultOptions
+            Just <| loadTexture maybeSampler dataUri
 
-                options : WebGL.Texture.Options
-                options =
-                    case maybeSampler of
-                        Just sampler ->
-                            -- flipY: https://github.com/KhronosGroup/glTF-Sample-Viewer/issues/16
-                            { defaultOptions
-                                | flipY = False
-                                , magnify =
-                                    sampler.magFilter
-                                        |> Maybe.map Internal.Sampler.magFilterToTextureOption
-                                        |> Maybe.withDefault defaultOptions.magnify
-                                , minify =
-                                    sampler.minFilter
-                                        |> Maybe.map Internal.Sampler.minFilterToTextureOption
-                                        |> Maybe.withDefault defaultOptions.minify
-                                , horizontalWrap = Internal.Sampler.wrapToTextureOption sampler.wrapS
-                                , verticalWrap = Internal.Sampler.wrapToTextureOption sampler.wrapT
-                            }
-
-                        Nothing ->
-                            -- flipY: https://github.com/KhronosGroup/glTF-Sample-Viewer/issues/16
-                            { defaultOptions | flipY = False }
-            in
-            Just (WebGL.Texture.loadWith options dataUri)
-
-        Just (Uri _) ->
-            Nothing
+        Just (Uri uri) ->
+            Just <| loadTexture maybeSampler (gltf.path ++ uri)
 
         Nothing ->
             Nothing
+
+
+loadTexture : Maybe Sampler -> String -> Task WebGL.Texture.Error WebGL.Texture.Texture
+loadTexture maybeSampler url =
+    let
+        defaultOptions : WebGL.Texture.Options
+        defaultOptions =
+            WebGL.Texture.defaultOptions
+
+        options : WebGL.Texture.Options
+        options =
+            case maybeSampler of
+                Just sampler ->
+                    -- flipY: https://github.com/KhronosGroup/glTF-Sample-Viewer/issues/16
+                    { defaultOptions
+                        | flipY = False
+                        , magnify =
+                            sampler.magFilter
+                                |> Maybe.map Internal.Sampler.magFilterToTextureOption
+                                |> Maybe.withDefault defaultOptions.magnify
+                        , minify =
+                            sampler.minFilter
+                                |> Maybe.map Internal.Sampler.minFilterToTextureOption
+                                |> Maybe.withDefault defaultOptions.minify
+                        , horizontalWrap = Internal.Sampler.wrapToTextureOption sampler.wrapS
+                        , verticalWrap = Internal.Sampler.wrapToTextureOption sampler.wrapT
+                    }
+
+                Nothing ->
+                    -- flipY: https://github.com/KhronosGroup/glTF-Sample-Viewer/issues/16
+                    { defaultOptions | flipY = False }
+    in
+    WebGL.Texture.loadWith options url
 
 
 type LoadableImage
@@ -59,8 +65,8 @@ type LoadableImage
     | Uri String
 
 
-toLoadableImage : Gltf -> Image -> Maybe LoadableImage
-toLoadableImage gltf image =
+toLoadableImage : Gltf -> BufferStore -> Image -> Maybe LoadableImage
+toLoadableImage gltf bufferStore image =
     case image.uri of
         Just uri ->
             if String.startsWith "data:image" uri then
@@ -81,7 +87,7 @@ toLoadableImage gltf image =
                         buffer_ : Maybe Buffer
                         buffer_ =
                             bufferView_
-                                |> Maybe.andThen (\{ buffer } -> Common.bufferAtIndex gltf buffer)
+                                |> Maybe.andThen (\{ buffer } -> BufferStore.get buffer bufferStore)
 
                         bytes : Maybe Bytes
                         bytes =

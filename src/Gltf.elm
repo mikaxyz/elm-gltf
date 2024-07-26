@@ -36,6 +36,8 @@ module Gltf exposing
 -}
 
 import Array
+import Bytes exposing (Bytes)
+import Bytes.Decode
 import Common
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera exposing (Camera)
@@ -44,6 +46,7 @@ import Gltf.Mesh exposing (Mesh)
 import Gltf.Node exposing (Node)
 import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.AnimationHelper as AnimationHelper
+import Gltf.Query.BufferStore as BufferStore exposing (BufferStore)
 import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
@@ -87,13 +90,14 @@ type Error
 {-| Type returned by [queries](Gltf#queries).
 -}
 type Query
-    = Query (Internal.Gltf.Gltf -> Result Error QueryResult)
+    = DefaultSceneQuery
+    | SceneQuery Int
 
 
 {-| Results from a [query](Gltf#queries) which can be used to retrieve [content](Gltf#content).
 -}
 type QueryResult
-    = QueryResult Internal.Gltf.Gltf TextureStore (List (Tree Node))
+    = QueryResult Query Internal.Gltf.Gltf BufferStore TextureStore (List (Tree Node))
 
 
 
@@ -107,9 +111,21 @@ type QueryResult
 
 -}
 type Msg
-    = GltfLoaded (Result Error QueryResult)
-    | ApplyQueryResultEffect QueryResultEffect
+    = GltfLoaded Query (Result Error Internal.Gltf.Gltf)
+    | GltfProgressMsg ProgressMsg
+
+
+type ProgressMsg
+    = BufferLoaded (Result Error ( Int, Bytes ))
     | TextureLoaded Gltf.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | LoadTexture LoadTextureInfo
+
+
+type alias LoadTextureInfo =
+    { textureIndex : Gltf.Material.TextureIndex
+    , image : Internal.Image.Image
+    , maybeSampler : Maybe Internal.Sampler.Sampler
+    }
 
 
 {-| Internal state. Your application model should contain one:
@@ -120,8 +136,16 @@ type Msg
 
 -}
 type Gltf
-    = Init
-    | Loaded (Result Error QueryResult)
+    = Initializing
+    | Progress Model
+
+
+type alias Model =
+    { gltf : Internal.Gltf.Gltf
+    , query : Query
+    , bufferStore : BufferStore
+    , textureStore : TextureStore
+    }
 
 
 {-| Initialize a [Gltf](Gltf#Gltf) and store it in your model:
@@ -134,7 +158,7 @@ type Gltf
 -}
 init : Gltf
 init =
-    Init
+    Initializing
 
 
 {-| Internal update function. Call it in your update something like this:
@@ -157,105 +181,196 @@ update :
     -> Gltf
     -> ( Gltf, Cmd msg )
 update { toMsg, onComplete } msg model =
-    case model of
-        Init ->
-            case msg of
-                GltfLoaded (Ok queryResult) ->
-                    ( Loaded (Ok queryResult)
-                    , case loadTextures queryResult of
-                        Just cmd ->
-                            cmd |> Cmd.map toMsg
+    case msg of
+        GltfLoaded query (Ok gltf) ->
+            let
+                bufferStore : BufferStore
+                bufferStore =
+                    BufferStore.init gltf
+            in
+            if BufferStore.isComplete bufferStore then
+                let
+                    queryResult : Result Error QueryResult
+                    queryResult =
+                        runQuery gltf TextureStore.init bufferStore query
+                in
+                ( Progress
+                    { gltf = gltf
+                    , query = query
+                    , bufferStore = bufferStore
+                    , textureStore = TextureStore.init
+                    }
+                , case queryResult of
+                    Ok queryResult_ ->
+                        case loadTextures queryResult_ of
+                            Just cmd ->
+                                cmd |> Cmd.map (GltfProgressMsg >> toMsg)
 
-                        Nothing ->
-                            Ok queryResult |> Task.succeed |> Task.perform onComplete
-                    )
+                            Nothing ->
+                                Ok queryResult_ |> Task.succeed |> Task.perform onComplete
 
-                GltfLoaded (Err error) ->
-                    ( model
-                    , Err error |> Task.succeed |> Task.perform onComplete
-                    )
+                    Err error ->
+                        Err error |> Task.succeed |> Task.perform onComplete
+                )
 
-                _ ->
-                    ( model, Cmd.none )
+            else
+                ( Progress
+                    { gltf = gltf
+                    , query = query
+                    , bufferStore = bufferStore
+                    , textureStore = TextureStore.init
+                    }
+                , loadBuffers gltf bufferStore |> Cmd.map (GltfProgressMsg >> toMsg)
+                )
 
-        Loaded (Ok queryResult) ->
-            updateLoaded toMsg onComplete msg queryResult
-                |> Tuple.mapFirst (Ok >> Loaded)
-
-        Loaded (Err error) ->
+        GltfLoaded _ (Err error) ->
             ( model
             , Err error |> Task.succeed |> Task.perform onComplete
             )
 
+        GltfProgressMsg progressMsg ->
+            case model of
+                Initializing ->
+                    ( model
+                    , Cmd.none
+                    )
 
-updateLoaded :
-    (Msg -> msg)
+                Progress model_ ->
+                    updateProgress (GltfProgressMsg >> toMsg) onComplete progressMsg model_
+                        |> Tuple.mapFirst Progress
+
+
+updateProgress :
+    (ProgressMsg -> msg)
     -> (Result Error QueryResult -> msg)
-    -> Msg
-    -> QueryResult
-    -> ( QueryResult, Cmd msg )
-updateLoaded toMsg onComplete msg (QueryResult gltf textureStore nodes) =
+    -> ProgressMsg
+    -> Model
+    -> ( Model, Cmd msg )
+updateProgress toMsg onComplete msg model =
     case msg of
+        BufferLoaded (Ok ( index, bytes )) ->
+            let
+                bufferStore_ : BufferStore
+                bufferStore_ =
+                    BufferStore.insert index bytes model.bufferStore
+            in
+            if BufferStore.isComplete bufferStore_ then
+                let
+                    queryResult : Result Error QueryResult
+                    queryResult =
+                        runQuery model.gltf model.textureStore bufferStore_ model.query
+                in
+                ( { model | bufferStore = bufferStore_ }
+                , case queryResult of
+                    Ok queryResult_ ->
+                        case loadTextures queryResult_ of
+                            Just cmd ->
+                                cmd |> Cmd.map toMsg
+
+                            Nothing ->
+                                Ok queryResult_ |> Task.succeed |> Task.perform onComplete
+
+                    Err error ->
+                        Err error |> Task.succeed |> Task.perform onComplete
+                )
+
+            else
+                ( { model | bufferStore = bufferStore_ }
+                , Cmd.none
+                )
+
+        BufferLoaded (Err error) ->
+            ( model
+            , Err error |> Task.succeed |> Task.perform onComplete
+            )
+
         TextureLoaded textureIndex result ->
             case result of
                 Ok texture ->
                     let
                         textureStore_ : TextureStore
                         textureStore_ =
-                            TextureStore.insert textureIndex texture textureStore
-
-                        queryResult : QueryResult
-                        queryResult =
-                            QueryResult gltf textureStore_ nodes
+                            TextureStore.insert textureIndex texture model.textureStore
                     in
-                    ( queryResult
+                    ( { model | textureStore = textureStore_ }
                     , if TextureStore.isComplete textureStore_ then
-                        Ok queryResult |> Task.succeed |> Task.perform onComplete
+                        let
+                            queryResult : Result Error QueryResult
+                            queryResult =
+                                runQuery model.gltf textureStore_ model.bufferStore model.query
+                        in
+                        queryResult |> Task.succeed |> Task.perform onComplete
 
                       else
                         Cmd.none
                     )
 
                 Err error ->
-                    ( QueryResult gltf textureStore nodes
+                    ( model
                     , error |> TextureError |> Err |> Task.succeed |> Task.perform onComplete
                     )
 
-        ApplyQueryResultEffect effect ->
-            case effect of
-                QueryResultLoadTextureEffect textureIndex image maybeSampler ->
-                    case TextureStore.get textureIndex textureStore of
-                        Just _ ->
-                            ( QueryResult gltf textureStore nodes, Cmd.none )
+        LoadTexture { textureIndex, image, maybeSampler } ->
+            case TextureStore.get textureIndex model.textureStore of
+                Just _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    case Gltf.Query.Task.loadTextureTask model.gltf model.bufferStore image maybeSampler of
+                        Just task ->
+                            ( { model | textureStore = TextureStore.insertLoading textureIndex model.textureStore }
+                            , Task.attempt (TextureLoaded textureIndex) task |> Cmd.map toMsg
+                            )
 
                         Nothing ->
-                            case Gltf.Query.Task.loadTextureTask gltf image maybeSampler of
-                                Just task ->
-                                    ( QueryResult gltf (TextureStore.insertLoading textureIndex textureStore) nodes
-                                    , Task.attempt (TextureLoaded textureIndex) task |> Cmd.map toMsg
-                                    )
-
-                                Nothing ->
-                                    ( QueryResult gltf textureStore nodes, Cmd.none )
-
-        _ ->
-            ( QueryResult gltf textureStore nodes, Cmd.none )
+                            ( model
+                            , Cmd.none
+                            )
 
 
-loadTextures : QueryResult -> Maybe (Cmd Msg)
-loadTextures (QueryResult gltf textureStore trees) =
+loadBuffers : Internal.Gltf.Gltf -> BufferStore -> Cmd ProgressMsg
+loadBuffers gltf bufferStore =
     let
-        imageEffect : Gltf.Material.TextureIndex -> Maybe Internal.Sampler.Sampler -> Internal.Image.Image -> QueryResultEffect
-        imageEffect id maybeSampler image =
-            QueryResultLoadTextureEffect id image maybeSampler
+        bufferUrls : List ( Int, { byteLength : Int, uri : String } )
+        bufferUrls =
+            BufferStore.getItemsToLoad gltf bufferStore
 
-        textureSourceCmd : Mesh -> List (Cmd Msg)
+        loadBufferCmds : List (Cmd ProgressMsg)
+        loadBufferCmds =
+            bufferUrls
+                |> List.map
+                    (\( index, { byteLength, uri } ) ->
+                        Http.get
+                            { url = uri
+                            , expect =
+                                Http.expectBytes
+                                    (\result ->
+                                        case result of
+                                            Ok bytes ->
+                                                BufferLoaded (Ok ( index, bytes ))
+
+                                            Err error ->
+                                                BufferLoaded (Err (HttpError error))
+                                    )
+                                    (Bytes.Decode.bytes byteLength)
+                            }
+                    )
+    in
+    Cmd.batch loadBufferCmds
+
+
+loadTextures : QueryResult -> Maybe (Cmd ProgressMsg)
+loadTextures (QueryResult _ gltf _ textureStore trees) =
+    let
+        textureSourceCmd : Mesh -> List (Cmd ProgressMsg)
         textureSourceCmd mesh =
             case MeshHelper.toMaterial mesh of
                 Just (Gltf.Material.Material m) ->
                     let
-                        maybeEffect : Maybe Gltf.Material.TextureIndex -> Maybe QueryResultEffect
-                        maybeEffect maybeTextureIndex =
+                        maybeLoadTextureInfo : Maybe Gltf.Material.TextureIndex -> Maybe LoadTextureInfo
+                        maybeLoadTextureInfo maybeTextureIndex =
                             maybeTextureIndex
                                 |> Maybe.andThen (\textureIndex -> TextureStore.get textureIndex textureStore)
                                 |> (\texture ->
@@ -269,31 +384,34 @@ loadTextures (QueryResult gltf textureStore trees) =
                                                         (\textureIndex ->
                                                             (textureIndex |> TextureIndex.toImageIndex |> Common.imageAtIndex gltf)
                                                                 |> Maybe.map
-                                                                    (imageEffect textureIndex
-                                                                        (textureIndex
-                                                                            |> TextureIndex.toSamplerIndex
-                                                                            |> Maybe.andThen (Common.samplerAtIndex gltf)
-                                                                        )
+                                                                    (\image ->
+                                                                        { textureIndex = textureIndex
+                                                                        , image = image
+                                                                        , maybeSampler =
+                                                                            textureIndex
+                                                                                |> TextureIndex.toSamplerIndex
+                                                                                |> Maybe.andThen (Common.samplerAtIndex gltf)
+                                                                        }
                                                                     )
                                                         )
                                    )
 
-                        perform : QueryResultEffect -> Cmd Msg
-                        perform effect =
-                            Task.perform ApplyQueryResultEffect (Task.succeed effect)
+                        loadTexture : LoadTextureInfo -> Cmd ProgressMsg
+                        loadTexture effect =
+                            Task.perform LoadTexture (Task.succeed effect)
                     in
-                    [ maybeEffect m.pbrMetallicRoughness.baseColorTexture |> Maybe.map perform
-                    , maybeEffect m.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.map perform
-                    , maybeEffect m.normalTexture |> Maybe.map perform
-                    , maybeEffect m.occlusionTexture |> Maybe.map perform
-                    , maybeEffect m.emissiveTexture |> Maybe.map perform
+                    [ maybeLoadTextureInfo m.pbrMetallicRoughness.baseColorTexture |> Maybe.map loadTexture
+                    , maybeLoadTextureInfo m.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.map loadTexture
+                    , maybeLoadTextureInfo m.normalTexture |> Maybe.map loadTexture
+                    , maybeLoadTextureInfo m.occlusionTexture |> Maybe.map loadTexture
+                    , maybeLoadTextureInfo m.emissiveTexture |> Maybe.map loadTexture
                     ]
                         |> List.filterMap identity
 
                 Nothing ->
                     []
 
-        doTree : Tree Node -> List (Cmd Msg)
+        doTree : Tree Node -> List (Cmd ProgressMsg)
         doTree tree =
             tree
                 |> Tree.flatten
@@ -308,10 +426,6 @@ loadTextures (QueryResult gltf textureStore trees) =
             cmds_ |> Cmd.batch |> Just
 
 
-type QueryResultEffect
-    = QueryResultLoadTextureEffect Gltf.Material.TextureIndex Internal.Image.Image (Maybe Internal.Sampler.Sampler)
-
-
 
 --------------------------------------------------- Load content
 
@@ -323,7 +437,7 @@ type QueryResultEffect
 -}
 getBinary : String -> (Msg -> msg) -> Cmd msg
 getBinary url msg =
-    getBinaryWithQuery url defaultSceneQuery msg
+    getBinaryWithQuery url DefaultSceneQuery msg
 
 
 {-| Get default scene from a file of type **.gltf**
@@ -333,7 +447,7 @@ getBinary url msg =
 -}
 getEmbedded : String -> (Msg -> msg) -> Cmd msg
 getEmbedded url msg =
-    getEmbeddedWithQuery url defaultSceneQuery msg
+    getEmbeddedWithQuery url DefaultSceneQuery msg
 
 
 {-| Get content from a file of type **.glb** by supplying one of following queries:
@@ -347,7 +461,7 @@ getBinaryWithQuery :
     -> Query
     -> (Msg -> msg)
     -> Cmd msg
-getBinaryWithQuery url (Query query) toMsg =
+getBinaryWithQuery url query toMsg =
     Http.get
         { url = url
         , expect =
@@ -355,11 +469,10 @@ getBinaryWithQuery url (Query query) toMsg =
                 (\result ->
                     result
                         |> Result.mapError HttpError
-                        |> Result.andThen query
-                        |> GltfLoaded
+                        |> GltfLoaded query
                         |> toMsg
                 )
-                Internal.Gltf.bytesDecoder
+                (Internal.Gltf.bytesDecoder url)
         }
 
 
@@ -374,7 +487,7 @@ getEmbeddedWithQuery :
     -> Query
     -> (Msg -> msg)
     -> Cmd msg
-getEmbeddedWithQuery url (Query query) toMsg =
+getEmbeddedWithQuery url query toMsg =
     Http.get
         { url = url
         , expect =
@@ -382,11 +495,10 @@ getEmbeddedWithQuery url (Query query) toMsg =
                 (\result ->
                     result
                         |> Result.mapError HttpError
-                        |> Result.andThen query
-                        |> GltfLoaded
+                        |> GltfLoaded query
                         |> toMsg
                 )
-                Internal.Gltf.decoder
+                (Internal.Gltf.decoder url)
         }
 
 
@@ -398,26 +510,36 @@ getEmbeddedWithQuery url (Query query) toMsg =
 -}
 defaultSceneQuery : Query
 defaultSceneQuery =
-    Query (\gltf -> sceneAtIndex gltf.scene gltf)
+    DefaultSceneQuery
 
 
 {-| TODO: Docs
 -}
 sceneQuery : Int -> Query
 sceneQuery index =
-    Query (sceneAtIndex (Scene.Index index))
+    SceneQuery index
 
 
-sceneAtIndex : Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
-sceneAtIndex index gltf =
+runQuery : Internal.Gltf.Gltf -> TextureStore -> BufferStore -> Query -> Result Error QueryResult
+runQuery gltf textureStore bufferStore query =
+    case query of
+        DefaultSceneQuery ->
+            sceneAtIndex2 textureStore bufferStore DefaultSceneQuery gltf.scene gltf
+
+        SceneQuery index ->
+            sceneAtIndex2 textureStore bufferStore (SceneQuery index) (Scene.Index index) gltf
+
+
+sceneAtIndex2 : TextureStore -> BufferStore -> Query -> Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
+sceneAtIndex2 textureStore bufferStore query index gltf =
     Common.sceneAtIndex gltf index
         |> Maybe.map
             (\(Scene scene) ->
                 scene.nodes
                     |> List.filterMap
                         (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
-                    |> List.map (Tree.map (nodeFromNode gltf))
-                    |> QueryResult gltf TextureStore.init
+                    |> List.map (Tree.map (nodeFromNode gltf bufferStore))
+                    |> QueryResult query gltf bufferStore textureStore
             )
         |> Result.fromMaybe SceneNotFound
 
@@ -429,45 +551,45 @@ sceneAtIndex index gltf =
 {-| TODO: Docs
 -}
 animations : QueryResult -> List Animation
-animations (QueryResult gltf _ _) =
-    AnimationHelper.extractAnimations gltf
+animations (QueryResult _ gltf bufferStore _ _) =
+    AnimationHelper.extractAnimations gltf bufferStore
 
 
 {-| TODO: Docs
 -}
 cameras : QueryResult -> List Camera
-cameras (QueryResult gltf _ _) =
+cameras (QueryResult _ gltf _ _ _) =
     gltf.cameras |> Array.toList
 
 
 {-| TODO: Docs
 -}
 skins : QueryResult -> List Skin
-skins (QueryResult gltf _ _) =
+skins (QueryResult _ gltf bufferStore _ _) =
     gltf.skins
         |> Array.toIndexedList
         |> List.map (Tuple.first >> Gltf.Skin.Index)
-        |> List.filterMap (SkinHelper.skinAtIndex gltf)
+        |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
 
 
 {-| TODO: Docs
 -}
 nodeTrees : QueryResult -> List (Tree Node)
-nodeTrees (QueryResult _ _ nodes) =
+nodeTrees (QueryResult _ _ _ _ nodes) =
     nodes
 
 
 {-| TODO: Docs
 -}
 cameraByIndex : Gltf.Camera.Index -> QueryResult -> Maybe Camera
-cameraByIndex (Gltf.Camera.Index index) (QueryResult gltf _ _) =
+cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _) =
     Array.get index gltf.cameras
 
 
 {-| TODO: Docs
 -}
 textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
-textureWithIndex (QueryResult _ textureStore _) textureIndex =
+textureWithIndex (QueryResult _ _ _ textureStore _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 
 
@@ -496,13 +618,13 @@ meshesFromNode node =
             triangularMeshes
 
 
-nodeFromNode : Internal.Gltf.Gltf -> Internal.Node.Node -> Node
-nodeFromNode gltf node =
+nodeFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Node
+nodeFromNode gltf bufferStore node =
     case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
@@ -512,7 +634,7 @@ nodeFromNode gltf node =
                         |> Gltf.Node.CameraNode cameraIndex
 
                 Nothing ->
-                    case triangularMeshesFromNode gltf node of
+                    case triangularMeshesFromNode gltf bufferStore node of
                         Just meshes ->
                             node
                                 |> propertiesFromNode
@@ -538,11 +660,11 @@ nodeTree index gltf =
     Common.maybeNodeTree gltf (Internal.Node.Index index) |> Result.fromMaybe NodeNotFound
 
 
-triangularMeshesFromNode : Internal.Gltf.Gltf -> Internal.Node.Node -> Maybe (List Mesh)
-triangularMeshesFromNode gltf (Internal.Node.Node node) =
+triangularMeshesFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Maybe (List Mesh)
+triangularMeshesFromNode gltf bufferStore (Internal.Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (MeshHelper.fromPrimitive gltf)
+                primitives |> List.map (MeshHelper.fromPrimitive gltf bufferStore)
             )

@@ -7,6 +7,7 @@ import Common
 import Gltf.Material exposing (Material)
 import Gltf.Mesh exposing (Mesh(..), Vertex)
 import Gltf.Query.Attribute as Attribute exposing (Attribute)
+import Gltf.Query.BufferStore exposing (BufferStore)
 import Gltf.Query.MaterialHelper
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
 import Internal.Accessor as Accessor
@@ -37,12 +38,12 @@ toMaterial mesh =
             material
 
 
-fromPrimitive : Gltf -> Primitive -> Mesh
-fromPrimitive gltf primitive =
+fromPrimitive : Gltf -> BufferStore -> Primitive -> Mesh
+fromPrimitive gltf bufferStore primitive =
     let
         vertexBuffers : VertexBuffers
         vertexBuffers =
-            VertexBuffers.fromPrimitive gltf primitive
+            VertexBuffers.fromPrimitive gltf bufferStore primitive
 
         vertexAttributes : VertexAttributes
         vertexAttributes =
@@ -185,7 +186,7 @@ fromPrimitive gltf primitive =
         Just indices ->
             IndexedTriangularMesh material
                 ( vertexAttributesToVertices2 vertexAttributes
-                , readTriangleIndices gltf indices
+                , readTriangleIndices gltf bufferStore indices
                 )
 
         Nothing ->
@@ -206,10 +207,10 @@ fromPrimitive gltf primitive =
                 |> TriangularMesh material
 
 
-readTriangleIndices : Gltf -> Accessor.Index -> List ( Int, Int, Int )
-readTriangleIndices gltf indices =
+readTriangleIndices : Gltf -> BufferStore -> Accessor.Index -> List ( Int, Int, Int )
+readTriangleIndices gltf bufferStore indices =
     Common.accessorAtIndex gltf indices
-        |> Maybe.andThen (Common.bufferInfo gltf)
+        |> Maybe.andThen (Common.bufferInfo gltf bufferStore)
         |> Maybe.map Attribute.parseBuffer
         |> Maybe.withDefault []
         |> List.filterMap

@@ -12,8 +12,8 @@ import Bytes
 import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
+import Gltf.Query.Buffer exposing (Buffer(..))
 import Internal.Accessor as Accessor exposing (Accessor)
-import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)

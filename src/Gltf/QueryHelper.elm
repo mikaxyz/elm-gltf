@@ -12,6 +12,7 @@ import Gltf
 import Gltf.Mesh exposing (Mesh)
 import Gltf.Node
 import Gltf.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.BufferStore as BufferStore
 import Gltf.Query.MeshHelper as MeshHelper
 import Gltf.Skin
 import Internal.Gltf as Gltf exposing (Gltf)
@@ -30,7 +31,7 @@ type Error
 fromJson : String -> (Gltf -> Result Gltf.Error b) -> Result Error b
 fromJson json f =
     json
-        |> JD.decodeString Gltf.decoder
+        |> JD.decodeString (Gltf.decoder "")
         |> Result.mapError DecodeError
         |> Result.andThen (\gltf -> f gltf |> Result.mapError GltfError)
 
@@ -138,5 +139,5 @@ triangularMeshesFromNode gltf (Node.Node node) =
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (MeshHelper.fromPrimitive gltf)
+                primitives |> List.map (MeshHelper.fromPrimitive gltf (BufferStore.init gltf))
             )

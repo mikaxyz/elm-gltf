@@ -9,6 +9,7 @@ import Gltf.Animation
         , Sampler(..)
         )
 import Gltf.Query.AnimationHelper as AnimationHelper
+import Gltf.Query.BufferStore as BufferStore
 import Internal.Accessor as Accessor
 import Internal.Animation
 import Internal.Animation.Channel
@@ -28,7 +29,7 @@ suite =
                     let
                         parsed : Result JD.Error Gltf
                         parsed =
-                            JD.decodeString Internal.Gltf.decoder json
+                            JD.decodeString (Internal.Gltf.decoder "test") json
                     in
                     Expect.ok parsed
             , test "decodes animations" <|
@@ -36,7 +37,7 @@ suite =
                     let
                         parsed : Result JD.Error (Array.Array Internal.Animation.Animation)
                         parsed =
-                            JD.decodeString Internal.Gltf.decoder json
+                            JD.decodeString (Internal.Gltf.decoder "test") json
                                 |> Result.map (\{ animations } -> animations)
 
                         expected : Array.Array Internal.Animation.Animation
@@ -73,8 +74,8 @@ suite =
                     let
                         extracted : Result JD.Error (List Animation)
                         extracted =
-                            JD.decodeString Internal.Gltf.decoder json
-                                |> Result.map AnimationHelper.extractAnimations
+                            JD.decodeString (Internal.Gltf.decoder "test") json
+                                |> Result.map (\x -> AnimationHelper.extractAnimations x (BufferStore.init x))
 
                         expectSampler : Sampler -> Expectation
                         expectSampler extractedSampler =

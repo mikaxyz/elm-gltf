@@ -4,6 +4,7 @@ import Expect
 import Gltf.Mesh exposing (Mesh(..), Vertex)
 import Gltf.Node
 import Gltf.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.BufferStore as BufferStore
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.QueryHelper as QueryHelper
@@ -332,8 +333,8 @@ suite =
                 let
                     maybeSkin : Maybe Skin
                     maybeSkin =
-                        JD.decodeString Internal.Gltf.decoder simpleSkin
-                            |> Result.map (\x -> SkinHelper.skinAtIndex x (Gltf.Skin.Index 0))
+                        JD.decodeString (Internal.Gltf.decoder "") simpleSkin
+                            |> Result.map (\x -> SkinHelper.skinAtIndex x (BufferStore.init x) (Gltf.Skin.Index 0))
                             |> Result.withDefault Nothing
                 in
                 case maybeSkin of

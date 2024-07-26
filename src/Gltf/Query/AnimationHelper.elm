@@ -15,6 +15,7 @@ import Gltf.Animation
         )
 import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Attribute as Attribute
+import Gltf.Query.BufferStore exposing (BufferStore)
 import Internal.Accessor as Accessor
 import Internal.Animation as Internal
 import Internal.Animation.Channel
@@ -54,19 +55,19 @@ interpolationFromSampler interpolation =
             CubicSpline
 
 
-extractAnimations : Gltf -> List Animation
-extractAnimations gltf =
+extractAnimations : Gltf -> BufferStore -> List Animation
+extractAnimations gltf bufferStore =
     gltf.animations
         |> Array.toList
-        |> List.map (extractAnimation gltf)
+        |> List.map (extractAnimation gltf bufferStore)
 
 
-extractAnimationWithName : String -> Gltf -> List Animation
-extractAnimationWithName name gltf =
+extractAnimationWithName : String -> Gltf -> BufferStore -> List Animation
+extractAnimationWithName name gltf bufferStore =
     gltf.animations
         |> Array.filter (\(Internal.Animation animation) -> animation.name == Just name)
         |> Array.toList
-        |> List.map (extractAnimation gltf)
+        |> List.map (extractAnimation gltf bufferStore)
 
 
 extractChannel : Array Sampler -> Internal.Animation.Channel.Channel -> Maybe Channel
@@ -87,8 +88,8 @@ extractChannel samplers (Internal.Animation.Channel.Channel channel) =
             )
 
 
-extractSampler : Gltf -> Internal.Animation.Sampler.Sampler -> Maybe Sampler
-extractSampler gltf (Internal.Animation.Sampler.Sampler sampler) =
+extractSampler : Gltf -> BufferStore -> Internal.Animation.Sampler.Sampler -> Maybe Sampler
+extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
     Maybe.map2
         (\input output ->
             Sampler
@@ -101,38 +102,28 @@ extractSampler gltf (Internal.Animation.Sampler.Sampler sampler) =
             |> Common.accessorAtIndex gltf
             |> Maybe.andThen
                 (\accessor ->
-                    Common.bufferViewAtIndex gltf accessor.bufferView
-                        |> Maybe.map (Tuple.pair accessor)
-                )
-            |> Maybe.andThen
-                (\( accessor, bufferView ) ->
-                    Common.bufferAtIndex gltf bufferView.buffer
-                        |> Maybe.map (\buffer -> Attribute.parseBuffer ( accessor, bufferView, buffer ))
+                    Common.bufferInfo gltf bufferStore accessor
+                        |> Maybe.map Attribute.parseBuffer
                 )
         )
         (sampler.output
             |> Common.accessorAtIndex gltf
             |> Maybe.andThen
                 (\accessor ->
-                    Common.bufferViewAtIndex gltf accessor.bufferView
-                        |> Maybe.map (Tuple.pair accessor)
-                )
-            |> Maybe.andThen
-                (\( accessor, bufferView ) ->
-                    Common.bufferAtIndex gltf bufferView.buffer
-                        |> Maybe.map (\buffer -> Attribute.parseBuffer ( accessor, bufferView, buffer ))
+                    Common.bufferInfo gltf bufferStore accessor
+                        |> Maybe.map Attribute.parseBuffer
                 )
         )
 
 
-extractAnimation : Gltf -> Internal.Animation -> Animation
-extractAnimation gltf (Internal.Animation x) =
+extractAnimation : Gltf -> BufferStore -> Internal.Animation -> Animation
+extractAnimation gltf bufferStore (Internal.Animation x) =
     let
         samplers : Array Sampler
         samplers =
             x.samplers
                 |> Array.toList
-                |> List.filterMap (extractSampler gltf)
+                |> List.filterMap (extractSampler gltf bufferStore)
                 |> Array.fromList
     in
     Animation

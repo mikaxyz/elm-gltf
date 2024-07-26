@@ -10,12 +10,59 @@ suite : Test
 suite =
     describe "Gltf Package"
         [ describe "Gltf Decoder"
-            [ test "decodes SimpleTriangle" <|
+            [ describe "stores path to files"
+                [ test "decodes with relative root path" <|
+                    \_ ->
+                        let
+                            path : Result JD.Error String
+                            path =
+                                JD.decodeString (Internal.Gltf.decoder "test.json") json
+                                    |> Result.map .path
+                        in
+                        Expect.equal path (Ok "")
+                , test "decodes with relative  path" <|
+                    \_ ->
+                        let
+                            path : Result JD.Error String
+                            path =
+                                JD.decodeString (Internal.Gltf.decoder "a/b/test.json") json
+                                    |> Result.map .path
+                        in
+                        Expect.equal path (Ok "a/b/")
+                , test "decodes with absolute root path" <|
+                    \_ ->
+                        let
+                            path : Result JD.Error String
+                            path =
+                                JD.decodeString (Internal.Gltf.decoder "/test.json") json
+                                    |> Result.map .path
+                        in
+                        Expect.equal path (Ok "/")
+                , test "decodes with absolute path" <|
+                    \_ ->
+                        let
+                            path : Result JD.Error String
+                            path =
+                                JD.decodeString (Internal.Gltf.decoder "/a/b/test.json") json
+                                    |> Result.map .path
+                        in
+                        Expect.equal path (Ok "/a/b/")
+                , test "decodes with url" <|
+                    \_ ->
+                        let
+                            path : Result JD.Error String
+                            path =
+                                JD.decodeString (Internal.Gltf.decoder "https://test.test/test.json") json
+                                    |> Result.map .path
+                        in
+                        Expect.equal path (Ok "https://test.test/")
+                ]
+            , test "decodes SimpleTriangle" <|
                 \_ ->
                     let
                         parsed : Result JD.Error Gltf
                         parsed =
-                            JD.decodeString Internal.Gltf.decoder json
+                            JD.decodeString (Internal.Gltf.decoder "") json
                     in
                     Expect.ok parsed
             , test "decodes asset" <|
@@ -23,7 +70,7 @@ suite =
                     let
                         parsed : Result JD.Error String
                         parsed =
-                            JD.decodeString Internal.Gltf.decoder json
+                            JD.decodeString (Internal.Gltf.decoder "") json
                                 |> Result.map (\{ asset } -> asset.version)
                     in
                     Expect.equal (Ok "2.0") parsed

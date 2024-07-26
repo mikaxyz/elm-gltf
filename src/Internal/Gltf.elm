@@ -28,7 +28,8 @@ import Json.Decode.Pipeline as JDP
 
 
 type alias Gltf =
-    { asset : Asset
+    { path : String
+    , asset : Asset
     , scenes : Array Scene
     , scene : Scene.Index
     , nodes : Array Node
@@ -53,9 +54,19 @@ type alias Asset =
     }
 
 
-decoder : JD.Decoder Gltf
-decoder =
-    JD.succeed Gltf
+pathFromUrl : String -> String
+pathFromUrl url =
+    case String.split "/" url |> List.reverse |> List.drop 1 of
+        [] ->
+            ""
+
+        rest ->
+            (rest |> List.reverse |> String.join "/") ++ "/"
+
+
+decoder : String -> JD.Decoder Gltf
+decoder url =
+    JD.succeed (Gltf (pathFromUrl url))
         |> JDP.required "asset" assetDecoder
         |> JDP.required "scenes" (JD.array Scene.decoder)
         |> JDP.optional "scene" (JD.int |> JD.map Scene.Index) (Scene.Index 0)
@@ -73,12 +84,12 @@ decoder =
         |> JDP.optional "cameras" (Util.arrayWithIndexedItems Camera.decoder) Array.empty
 
 
-bytesDecoder : Bytes.Decode.Decoder Gltf
-bytesDecoder =
+bytesDecoder : String -> Bytes.Decode.Decoder Gltf
+bytesDecoder url =
     Glb.decoder
         |> Bytes.Decode.andThen
             (\{ jsonString, buffers } ->
-                case JD.decodeString (decoderWithSingleBuffer buffers) jsonString of
+                case JD.decodeString (decoderWithSingleBuffer url buffers) jsonString of
                     Ok gltf ->
                         Bytes.Decode.succeed gltf
 
@@ -87,9 +98,9 @@ bytesDecoder =
             )
 
 
-decoderWithSingleBuffer : Buffer -> JD.Decoder Gltf
-decoderWithSingleBuffer buffer =
-    JD.succeed Gltf
+decoderWithSingleBuffer : String -> Buffer -> JD.Decoder Gltf
+decoderWithSingleBuffer url buffer =
+    JD.succeed (Gltf url)
         |> JDP.required "asset" assetDecoder
         |> JDP.required "scenes" (JD.array Scene.decoder)
         |> JDP.optional "scene" (JD.int |> JD.map Scene.Index) (Scene.Index 0)

@@ -7,10 +7,11 @@ import Bytes.Decode.Extra
 import Bytes.Extra
 import Common
 import Gltf.NodeIndex exposing (NodeIndex(..))
+import Gltf.Query.Buffer exposing (Buffer(..))
+import Gltf.Query.BufferStore exposing (BufferStore)
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
 import Internal.Accessor as Accessor exposing (Accessor)
-import Internal.Buffer exposing (Buffer(..))
 import Internal.BufferView exposing (BufferView)
 import Internal.Gltf exposing (Gltf)
 import Internal.Node as Node
@@ -21,8 +22,8 @@ import Tree
 
 {-| TODO: Docs
 -}
-skinAtIndex : Gltf -> Gltf.Skin.Index -> Maybe Skin
-skinAtIndex gltf (Gltf.Skin.Index index) =
+skinAtIndex : Gltf -> BufferStore -> Gltf.Skin.Index -> Maybe Skin
+skinAtIndex gltf bufferStore (Gltf.Skin.Index index) =
     gltf.skins
         |> Array.get index
         |> Maybe.andThen
@@ -47,7 +48,7 @@ skinAtIndex gltf (Gltf.Skin.Index index) =
                             |> Maybe.andThen
                                 (\x ->
                                     Common.accessorAtIndex gltf x
-                                        |> Maybe.andThen (Common.bufferInfo gltf)
+                                        |> Maybe.andThen (Common.bufferInfo gltf bufferStore)
                                         |> Maybe.map inverseBindMatricesFromBuffer
                                 )
                 in

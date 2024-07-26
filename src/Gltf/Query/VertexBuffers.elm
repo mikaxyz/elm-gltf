@@ -4,8 +4,9 @@ module Gltf.Query.VertexBuffers exposing
     )
 
 import Common
+import Gltf.Query.Buffer exposing (Buffer)
+import Gltf.Query.BufferStore exposing (BufferStore)
 import Internal.Accessor exposing (Accessor)
-import Internal.Buffer exposing (Buffer)
 import Internal.BufferView exposing (BufferView)
 import Internal.Gltf exposing (Gltf)
 import Internal.Mesh as Mesh exposing (Primitive)
@@ -22,12 +23,12 @@ type alias VertexBuffers =
     }
 
 
-fromPrimitive : Gltf -> Primitive -> VertexBuffers
-fromPrimitive gltf { attributes } =
+fromPrimitive : Gltf -> BufferStore -> Primitive -> VertexBuffers
+fromPrimitive gltf bufferStore { attributes } =
     let
         bufferInfo : Accessor -> Maybe ( Accessor, BufferView, Buffer )
-        bufferInfo =
-            Common.bufferInfo gltf
+        bufferInfo accessor =
+            Common.bufferInfo gltf bufferStore accessor
     in
     attributes
         |> List.foldl

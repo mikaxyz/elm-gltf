@@ -1,6 +1,5 @@
 module Common exposing
     ( accessorAtIndex
-    , bufferAtIndex
     , bufferInfo
     , bufferViewAtIndex
     , imageAtIndex
@@ -14,8 +13,9 @@ module Common exposing
     )
 
 import Array
+import Gltf.Query.Buffer exposing (Buffer)
+import Gltf.Query.BufferStore as BufferStore exposing (BufferStore)
 import Internal.Accessor as Accessor exposing (Accessor)
-import Internal.Buffer as Buffer exposing (Buffer)
 import Internal.BufferView as BufferView exposing (BufferView)
 import Internal.Gltf exposing (Gltf)
 import Internal.Image as Image exposing (Image)
@@ -41,11 +41,6 @@ nodeAtIndex gltf (Node.Index index) =
 accessorAtIndex : Gltf -> Accessor.Index -> Maybe Accessor
 accessorAtIndex gltf (Accessor.Index index) =
     gltf.accessors |> Array.get index
-
-
-bufferAtIndex : Gltf -> Buffer.Index -> Maybe Buffer
-bufferAtIndex gltf (Buffer.Index index) =
-    gltf.buffers |> Array.get index
 
 
 bufferViewAtIndex : Gltf -> BufferView.Index -> Maybe BufferView
@@ -78,27 +73,15 @@ samplerAtIndex gltf (Internal.Sampler.Index index) =
     gltf.samplers |> Array.get index
 
 
-bufferInfo : Gltf -> Accessor -> Maybe ( Accessor, BufferView, Buffer )
-bufferInfo gltf accessor =
-    Maybe.map2 (\bufferView buffer -> ( accessor, bufferView, buffer ))
-        (bufferViewAtIndex gltf accessor.bufferView)
-        (readBuffer gltf accessor)
-
-
-readBuffer : Gltf -> Accessor -> Maybe Buffer
-readBuffer gltf accessor =
-    let
-        maybeBufferView : BufferView.Index -> Maybe BufferView
-        maybeBufferView x =
-            bufferViewAtIndex gltf x
-
-        maybeBuffer : BufferView -> Maybe Buffer
-        maybeBuffer { buffer } =
-            bufferAtIndex gltf buffer
-    in
-    accessor.bufferView
-        |> maybeBufferView
-        |> Maybe.andThen maybeBuffer
+bufferInfo : Gltf -> BufferStore -> Accessor -> Maybe ( Accessor, BufferView, Buffer )
+bufferInfo gltf bufferStore accessor =
+    bufferViewAtIndex gltf accessor.bufferView
+        |> Maybe.andThen
+            (\bufferView ->
+                bufferStore
+                    |> BufferStore.get bufferView.buffer
+                    |> Maybe.map (\buffer -> ( accessor, bufferView, buffer ))
+            )
 
 
 maybeNodeTree : Gltf -> Node.Index -> Maybe (Tree Node)

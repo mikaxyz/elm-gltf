@@ -57,8 +57,8 @@ view model =
         RemoteData.Loading ->
             progressIndicatorView "Loading"
 
-        RemoteData.Failure _ ->
-            h1 [] [ text <| "Error" ]
+        RemoteData.Failure error ->
+            h1 [] [ text <| Debug.toString error ]
 
         RemoteData.Success { gltfQueryResult, scene, fallbackTexture, config } ->
             div [ style "display" "contents" ]
