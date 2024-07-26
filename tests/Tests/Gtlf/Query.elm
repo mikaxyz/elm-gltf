@@ -7,7 +7,6 @@ import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.BufferStore as BufferStore
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Query.SkinHelper as SkinHelper
-import Gltf.QueryHelper as QueryHelper
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform
 import Internal.Gltf
@@ -19,6 +18,7 @@ import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (vec3)
 import Math.Vector4 as Vec4
 import Test exposing (Test, describe, test)
+import Tests.Gtlf.QueryHelper as QueryHelper
 import Tree exposing (Tree)
 
 

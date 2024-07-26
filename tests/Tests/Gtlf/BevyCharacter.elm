@@ -1,12 +1,12 @@
 module Tests.Gtlf.BevyCharacter exposing (suite)
 
 import Expect
-import Gltf.QueryHelper as QueryHelper
 import Gltf.Transform as Transform
 import Internal.Mesh as Mesh
 import Internal.Node as Node exposing (Node(..))
 import Internal.Skin as Skin
 import Test exposing (Test, describe, test)
+import Tests.Gtlf.QueryHelper as QueryHelper
 import Tree exposing (Tree)
 
 

@@ -1,4 +1,4 @@
-module Gltf.QueryHelper exposing
+module Tests.Gtlf.QueryHelper exposing
     ( Error(..)
     , fromJson
     , meshesFromNode
