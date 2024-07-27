@@ -87,13 +87,13 @@ initWithSampleAsset assetType asset =
                 (\url ->
                     case assetType of
                         SampleAssets.Default ->
-                            Gltf.getEmbedded url GltfMsg
+                            Gltf.getGltf url GltfMsg
 
                         SampleAssets.Binary ->
                             Gltf.getBinary url GltfMsg
 
                         SampleAssets.Embedded ->
-                            Gltf.getEmbedded url GltfMsg
+                            Gltf.getGltf url GltfMsg
                 )
             |> Maybe.withDefault Cmd.none
         , loadFallbackTexture FallbackTextureReceived
@@ -108,7 +108,7 @@ initWithLocalAsset : String -> ( Model, Cmd Msg )
 initWithLocalAsset path =
     ( Model.init (Model.Local path)
     , Cmd.batch
-        [ Gltf.getEmbedded path GltfMsg
+        [ Gltf.getGltf path GltfMsg
         , loadFallbackTexture FallbackTextureReceived
         , loadEnvironmentTexture EnvironmentTextureReceived
         , loadSpecularEnvironmentTexture SpecularEnvironmentTextureReceived

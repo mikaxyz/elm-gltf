@@ -1,7 +1,7 @@
 module Gltf exposing
     ( Asset, Error(..), Query, QueryResult
     , Msg, Gltf, init, update
-    , getBinary, getEmbedded, getBinaryWithQuery, getEmbeddedWithQuery
+    , getBinary, getGltf, getBinaryWithQuery, getGltfWithQuery
     , defaultSceneQuery, sceneQuery
     , animations, cameras, nodeTrees, skins, cameraByIndex, textureWithIndex
     )
@@ -21,7 +21,7 @@ module Gltf exposing
 
 # Load content
 
-@docs getBinary, getEmbedded, getBinaryWithQuery, getEmbeddedWithQuery
+@docs getBinary, getGltf, getBinaryWithQuery, getGltfWithQuery
 
 
 # Queries
@@ -453,9 +453,9 @@ getBinary url msg =
 **Note:** If file does not specify a default scene this returns the first in list
 
 -}
-getEmbedded : String -> (Msg -> msg) -> Cmd msg
-getEmbedded url msg =
-    getEmbeddedWithQuery url DefaultSceneQuery msg
+getGltf : String -> (Msg -> msg) -> Cmd msg
+getGltf url msg =
+    getGltfWithQuery url DefaultSceneQuery msg
 
 
 {-| Get content from a file of type **.glb** by supplying one of following queries:
@@ -486,16 +486,16 @@ getBinaryWithQuery url query toMsg =
 
 {-| Get content from a file of type **.gltf** by supplying one of following queries:
 
-  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery) (same as using [getEmbedded](Gltf#getEmbedded))
+  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery) (same as using [getGltf](Gltf#getGltf))
   - [Gltf.sceneQuery](Gltf#sceneQuery)
 
 -}
-getEmbeddedWithQuery :
+getGltfWithQuery :
     String
     -> Query
     -> (Msg -> msg)
     -> Cmd msg
-getEmbeddedWithQuery url query toMsg =
+getGltfWithQuery url query toMsg =
     Http.get
         { url = url
         , expect =
