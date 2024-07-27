@@ -36,8 +36,6 @@ fromJson json f =
         |> Result.andThen (\gltf -> f gltf |> Result.mapError GltfError)
 
 
-{-| TODO: DUPE exists in Query also, Use queries in tests?
--}
 meshesFromNode : Gltf.Node.Node -> List Mesh
 meshesFromNode node =
     case node of
@@ -54,15 +52,11 @@ meshesFromNode node =
             triangularMeshes
 
 
-{-| TODO: DUPE exists in Query also, Use queries in tests?
--}
 nodeTree : Int -> Gltf -> Result Gltf.Error (Tree Node)
 nodeTree index gltf =
     Common.maybeNodeTree gltf (Node.Index index) |> Result.fromMaybe Gltf.NodeNotFound
 
 
-{-| TODO: Use queries in tests?
--}
 sceneNodeTrees : Int -> Gltf -> Result Gltf.Error (List (Tree Node))
 sceneNodeTrees index gltf =
     Common.sceneAtIndex gltf (Scene.Index index)
@@ -78,8 +72,6 @@ sceneNodeTrees index gltf =
         |> Result.fromMaybe Gltf.SceneNotFound
 
 
-{-| TODO: Use queries in tests?
--}
 treeFromNode : Node.Index -> Gltf -> Result Gltf.Error (Tree Gltf.Node.Node)
 treeFromNode index gltf =
     Common.maybeNodeTree gltf index
@@ -87,8 +79,6 @@ treeFromNode index gltf =
         |> Result.fromMaybe Gltf.NodeNotFound
 
 
-{-| TODO: Docs
--}
 nodeFromNode : Gltf -> Node -> Gltf.Node.Node
 nodeFromNode gltf node =
     case node |> (\(Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
@@ -131,8 +121,6 @@ nodeIndexFromNode (Node.Index index) =
     NodeIndex index
 
 
-{-| TODO: Needed?
--}
 triangularMeshesFromNode : Gltf -> Node -> Maybe (List Mesh)
 triangularMeshesFromNode gltf (Node.Node node) =
     node.meshIndex

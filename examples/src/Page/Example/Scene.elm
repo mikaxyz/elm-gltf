@@ -435,7 +435,6 @@ toVertex v =
                     )
                 |> Maybe.withDefault identity
            )
-        -- TODO: Time to remove concrete Vertex type?
         |> (v.weights
                 |> Maybe.map Vertex.withWeights
                 |> Maybe.withDefault identity

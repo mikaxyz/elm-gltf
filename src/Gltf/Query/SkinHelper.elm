@@ -20,8 +20,6 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Tree
 
 
-{-| TODO: Docs
--}
 skinAtIndex : Gltf -> BufferStore -> Gltf.Skin.Index -> Maybe Skin
 skinAtIndex gltf bufferStore (Gltf.Skin.Index index) =
     gltf.skins

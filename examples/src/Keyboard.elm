@@ -189,5 +189,4 @@ toKey { key, code, keyChar, target } =
                     |> Maybe.withDefault (Character char)
 
         ( _, Nothing ) ->
-            -- TODO: Fix impossible state
             Character ' '
