@@ -14,7 +14,7 @@ module Gltf exposing
 @docs Asset, Error, Query, QueryResult
 
 
-# TEA
+# Wiring
 
 @docs Msg, Gltf, init, update
 
@@ -101,7 +101,7 @@ type QueryResult
 
 
 
---------------------------------------------------- TEA
+--------------------------------------------------- Wiring
 
 
 {-| Internal Msg type. Handle these in your [update](Gltf#update) function. Your application Msg type should contain:
