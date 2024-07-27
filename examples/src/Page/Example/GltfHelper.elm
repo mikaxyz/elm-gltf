@@ -3,7 +3,7 @@ module Page.Example.GltfHelper exposing
     , modifiersFromAnimations
     )
 
-import Gltf.Animation exposing (Animation(..))
+import Gltf.Animation exposing (Animation)
 import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Skin exposing (Skin(..))
 import Page.Example.Material as Material

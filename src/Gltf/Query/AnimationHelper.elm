@@ -5,14 +5,9 @@ module Gltf.Query.AnimationHelper exposing
 
 import Array exposing (Array)
 import Common
-import Gltf.Animation
-    exposing
-        ( Animation(..)
-        , Channel(..)
-        , Interpolation(..)
-        , Path(..)
-        , Sampler(..)
-        )
+import Gltf.Animation.Animation exposing (Animation(..))
+import Gltf.Animation.Channel as Channel exposing (Channel(..))
+import Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
 import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.BufferStore exposing (BufferStore)
@@ -26,33 +21,33 @@ import Internal.Node exposing (Node(..))
 import Tree exposing (Tree)
 
 
-pathFromChannel : Internal.Animation.Channel.Path -> Path
+pathFromChannel : Internal.Animation.Channel.Path -> Channel.Path
 pathFromChannel channelPath =
     case channelPath of
         Internal.Animation.Channel.Translation ->
-            Translation
+            Channel.Translation
 
         Internal.Animation.Channel.Rotation ->
-            Rotation
+            Channel.Rotation
 
         Internal.Animation.Channel.Scale ->
-            Scale
+            Channel.Scale
 
         Internal.Animation.Channel.Weights ->
-            Weights
+            Channel.Weights
 
 
-interpolationFromSampler : Internal.Animation.Sampler.Interpolation -> Interpolation
+interpolationFromSampler : Internal.Animation.Sampler.Interpolation -> Sampler.Interpolation
 interpolationFromSampler interpolation =
     case interpolation of
         Internal.Animation.Sampler.Linear ->
-            Linear
+            Sampler.Linear
 
         Internal.Animation.Sampler.Step ->
-            Step
+            Sampler.Step
 
         Internal.Animation.Sampler.Cubicspline ->
-            CubicSpline
+            Sampler.CubicSpline
 
 
 extractAnimations : Gltf -> BufferStore -> List Animation

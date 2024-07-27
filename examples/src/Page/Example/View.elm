@@ -1,7 +1,7 @@
 module Page.Example.View exposing (view)
 
 import Gltf
-import Gltf.Animation exposing (Animation(..))
+import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
@@ -119,10 +119,10 @@ sceneOptionsView model gltfQueryResult =
                     , { name = Just "Disabled", index = Nothing, selected = model.activeAnimation == Nothing }
                         :: (animations
                                 |> List.indexedMap
-                                    (\index (Animation animation) ->
-                                        { name = animation.name
+                                    (\index animation ->
+                                        { name = Gltf.Animation.name animation
                                         , index = Just index
-                                        , selected = model.activeAnimation == Just (Animation animation)
+                                        , selected = model.activeAnimation == Just animation
                                         }
                                     )
                            )

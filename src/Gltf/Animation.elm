@@ -1,7 +1,7 @@
 module Gltf.Animation exposing
-    ( Animation(..), AnimatedBone(..), AnimatedProperty(..)
+    ( Animation, AnimatedBone(..), AnimatedProperty(..)
     , animatedProperties, animatedBoneTransforms
-    , Channel(..), Sampler(..), Interpolation(..), Path(..), Attribute
+    , name
     )
 
 {-| glTF supports articulated and skinned animation via key frame [animations](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#animations) of [nodes'](Gltf-Node#Node) transforms.
@@ -17,14 +17,16 @@ module Gltf.Animation exposing
 @docs animatedProperties, animatedBoneTransforms
 
 
-# TODO: Internal, move out
+# Get name
 
-@docs Channel, Sampler, Interpolation, Path, Attribute
+@docs name
 
 -}
 
-import Array exposing (Array)
 import Dict exposing (Dict)
+import Gltf.Animation.Animation exposing (Animation(..))
+import Gltf.Animation.Channel as Channel exposing (Channel(..))
+import Gltf.Animation.Sampler exposing (Sampler(..))
 import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skeleton as Skeleton exposing (Skeleton(..))
@@ -36,57 +38,37 @@ import Quaternion exposing (Quaternion)
 import Tree exposing (Tree)
 
 
-{-| TODO: Docs
+{-| A keyframe animation
 -}
-type Path
-    = Translation
-    | Rotation
-    | Scale
-    | Weights
+type alias Animation =
+    Gltf.Animation.Animation.Animation
 
 
-{-| TODO: Docs
+{-| An animated bone used for skeletal/skinned animation
 -}
-type Interpolation
-    = Linear
-    | Step
-    | CubicSpline
-
-
-{-| TODO: Docs
--}
-type Animation
-    = Animation
-        { name : Maybe String
-        , samplers : Array Sampler
-        , channels : List Channel
+type AnimatedBone
+    = AnimatedBone
+        { skinIndex : Int
+        , inverseBindMatrix : Mat4
+        , joint : Mat4
         }
 
 
-{-| TODO: Docs
+{-| The animated [Transforms](Gltf-Transform#Transform) of a [Node](Gltf-Node#Node) separated into TRS properties.
+
+**NOTE:** Scale and weights are not supported at this point.
+
 -}
-type Channel
-    = Channel
-        { sampler : Sampler
-        , nodeIndex : NodeIndex
-        , path : Path
-        }
+type AnimatedProperty
+    = AnimatedPositionProperty NodeIndex Vec3
+    | AnimatedRotationProperty NodeIndex Quaternion
 
 
-{-| TODO: Docs
+{-| The user-defined name of the animation
 -}
-type alias Attribute =
-    Attribute.Attribute
-
-
-{-| TODO: Docs
--}
-type Sampler
-    = Sampler
-        { input : List Attribute
-        , output : List Attribute
-        , interpolation : Interpolation
-        }
+name : Animation -> Maybe String
+name (Animation animation) =
+    animation.name
 
 
 type Animated
@@ -107,14 +89,7 @@ type alias TRS =
     }
 
 
-{-| TODO: Docs
--}
-type AnimatedProperty
-    = AnimatedPositionProperty NodeIndex Vec3
-    | AnimatedRotationProperty NodeIndex Quaternion
-
-
-{-| TODO: Docs
+{-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) this will give you [AnimatedProperties](Gltf-Animation#AnimatedProperty) to transform your nodes at a point in time.
 -}
 animatedProperties : Float -> List Animation -> List AnimatedProperty
 animatedProperties theta animations =
@@ -151,18 +126,18 @@ animatedProperties theta animations =
                     inputMax * duration
             in
             case channel.path of
-                Translation ->
+                Channel.Translation ->
                     animatedProperty (Channel channel) animationTime
                         |> Maybe.map (\(Animated x) -> AnimatedPositionProperty channel.nodeIndex x.position)
 
-                Rotation ->
+                Channel.Rotation ->
                     animatedRotation (Channel channel) animationTime
                         |> Maybe.map (\(AnimatedRotation x) -> AnimatedRotationProperty channel.nodeIndex x.current)
 
-                Scale ->
+                Channel.Scale ->
                     Nothing
 
-                Weights ->
+                Channel.Weights ->
                     Nothing
     in
     channels |> List.filterMap applyChannel
@@ -356,34 +331,24 @@ animatedRotation (Channel channel) time =
         |> Maybe.map AnimatedRotation
 
 
-{-| TODO: Docs
--}
-type AnimatedBone
-    = AnimatedBone
-        { skinIndex : Int
-        , inverseBindMatrix : Mat4
-        , joint : Mat4
-        }
-
-
-{-| TODO: Docs
+{-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) and a [Skin](Gltf-Skin#Skin) this will give you [AnimatedBones](Gltf-Animation#AnimatedBone) that can be used to deform a mesh at a point in time.
 -}
 animatedBoneTransforms : Float -> List Animation -> Skin -> List AnimatedBone
 animatedBoneTransforms theta animations (Skin skin) =
     let
-        pathToString : Path -> String
+        pathToString : Channel.Path -> String
         pathToString path =
             case path of
-                Translation ->
+                Channel.Translation ->
                     "Translation"
 
-                Rotation ->
+                Channel.Rotation ->
                     "Rotation"
 
-                Scale ->
+                Channel.Scale ->
                     "Scale"
 
-                Weights ->
+                Channel.Weights ->
                     "Weights"
 
         channels : Dict ( Int, String ) Channel
@@ -506,7 +471,7 @@ animatedBoneTransforms theta animations (Skin skin) =
 channelMatrix : Float -> Channel -> Mat4
 channelMatrix theta (Channel channel) =
     case channel.path of
-        Translation ->
+        Channel.Translation ->
             let
                 (Sampler sampler) =
                     channel.sampler
@@ -538,7 +503,7 @@ channelMatrix theta (Channel channel) =
                 |> Maybe.withDefault (Vec3.vec3 0 0 0)
                 |> Mat4.makeTranslate
 
-        Rotation ->
+        Channel.Rotation ->
             let
                 (Sampler sampler) =
                     channel.sampler
@@ -567,8 +532,8 @@ channelMatrix theta (Channel channel) =
                 |> Maybe.map (\(AnimatedRotation x) -> Quaternion.toMat4 x.current)
                 |> Maybe.withDefault Mat4.identity
 
-        Scale ->
+        Channel.Scale ->
             Mat4.identity
 
-        Weights ->
+        Channel.Weights ->
             Mat4.identity
