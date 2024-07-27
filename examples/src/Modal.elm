@@ -13,8 +13,6 @@ view content =
     Html.node "dialog"
         [ id "modal"
         , class "modal"
-
-        --, HA.attribute "open" "open"
         ]
         [ Html.form [ class "modal__close", HA.method "dialog" ] [ button [] [ Icon.x ] ]
         , section [ class "modal__content" ] [ content ]
@@ -23,13 +21,13 @@ view content =
 
 helpPage : List (Html msg)
 helpPage =
-    renderMarkdown """
-This is the examples from [Gltf Elm package](https://github.com/mikaxyz/elm-gltf) for importing 3D scenes into Elm.
+    renderMarkdown """This is the examples for [Elm glTF package](https://package.elm-lang.org/packages/mikaxyz/elm-gltf/latest/) for importing 3D scenes into Elm.
 
-The goal is to match what is in the [The official glTF sample viewer](https://github.khronos.org/glTF-Sample-Viewer-Release/). Currently this package only supports "Embedded" gltf files meaning no references to external files/assets. (That is the reason some of the links are inactive in the navigation)
+The goal is to match what the the official [glTF sample viewer](https://github.khronos.org/glTF-Sample-Viewer-Release/) does. Currently the package is missing a lot of functionality but since it does a lot of things already that other packages does not provide I decided to release it as is.
 
+Please open an [issue on GitHub](https://github.com/mikaxyz/elm-gltf/issues) if you have suggestions or found a bug.
 
-The Gltf package is meant to be general and usable in for example [elm-3d-scene](https://package.elm-lang.org/packages/ianmackenzie/elm-3d-scene/latest/) but I created these examples using my unfinished "game engine" called [elm-xyz](https://github.com/mikaxyz/elm-xyz) mostly because I knew I could make the changes needed to support as many things in Gltf format as possible. If you use this in **elm-3d-scene** or other "environments" I am open to add documentation/examples showing that.
+The glTF package is meant to be general and usable in for example [elm-3d-scene](https://package.elm-lang.org/packages/ianmackenzie/elm-3d-scene/latest/) but I created these examples using my unfinished "game engine" called [elm-xyz](https://github.com/mikaxyz/elm-xyz) mostly because I knew I could make the changes needed to support as many things in glTF format as possible. If you use this in **elm-3d-scene** or other "environments" I am open to add documentation/examples showing that.
 """
 
 
