@@ -1,6 +1,6 @@
 module Gltf.Skin exposing (Index(..), Skin(..), Skeleton)
 
-{-| TODO: Docs
+{-| The [Meshes](Gltf-Mesh#Mesh) of a _SkinnedMeshNode_ can be deformed/animated using a Skin.
 
 @docs Index, Skin, Skeleton
 
@@ -11,13 +11,13 @@ import Gltf.Query.Skeleton
 import Math.Matrix4 exposing (Mat4)
 
 
-{-| TODO: Docs
+{-| The identifier for a Skin
 -}
 type Index
     = Index Int
 
 
-{-| TODO: Docs
+{-| Joints and matrices defining a skin.
 -}
 type Skin
     = Skin
@@ -28,7 +28,7 @@ type Skin
         }
 
 
-{-| TODO: Docs
+{-| Internal
 -}
 type alias Skeleton =
     Gltf.Query.Skeleton.Skeleton

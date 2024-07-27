@@ -1,6 +1,6 @@
 module Gltf.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
 
-{-| TODO: Docs
+{-| A material as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material).
 
 @docs Material, Index, TextureIndex, AlphaMode, BbrMetallicRoughness
 
@@ -11,19 +11,19 @@ import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
 
 
-{-| TODO: Docs
+{-| Use this to get a [textureWithIndex](Gltf#textureWithIndex)
 -}
 type alias TextureIndex =
     TextureIndex.TextureIndex
 
 
-{-| TODO: Docs
+{-| The index of the material.
 -}
 type Index
     = Index Int
 
 
-{-| TODO: Docs
+{-| A material assigned to a [Mesh](Gltf-Mesh#Mesh) contained in a [Node](Gltf-Node#Node). Use the properties/textures in the material to render it.
 -}
 type Material
     = Material
@@ -41,7 +41,7 @@ type Material
         }
 
 
-{-| TODO: Docs
+{-| AlphaMode of the material to convert to a [WebGL.Settings.Setting](https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL-Settings))
 -}
 type AlphaMode
     = Opaque
@@ -49,7 +49,7 @@ type AlphaMode
     | Blend
 
 
-{-| TODO: Docs
+{-| The [Material PBR Metallic Roughness](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness) of the material.
 -}
 type alias BbrMetallicRoughness =
     { baseColorFactor : Vec4

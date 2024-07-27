@@ -172,6 +172,14 @@ init =
             model.gltf
             |> Tuple.mapFirst (\gltf -> { model | gltf = gltf })
 
+The onComplete function will be called when the [query](Gltf#queries) is ready. Your application Msg type should handle these:
+
+    type Msg
+        = GltfMsg Gltf.Msg
+        | GltfOnComplete (Result Gltf.Error Gltf.QueryResult)
+
+In the _onComplete_ handler you can use the [content](Gltf#content) functions to get a tree of nodes, animations, cameras etc.
+
 -}
 update :
     { toMsg : Msg -> msg
@@ -452,7 +460,7 @@ getEmbedded url msg =
 
 {-| Get content from a file of type **.glb** by supplying one of following queries:
 
-  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery)
+  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery) (same as using [getBinary](Gltf#getBinary))
   - [Gltf.sceneQuery](Gltf#sceneQuery)
 
 -}
@@ -478,7 +486,7 @@ getBinaryWithQuery url query toMsg =
 
 {-| Get content from a file of type **.gltf** by supplying one of following queries:
 
-  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery)
+  - [Gltf.defaultSceneQuery](Gltf#defaultSceneQuery) (same as using [getEmbedded](Gltf#getEmbedded))
   - [Gltf.sceneQuery](Gltf#sceneQuery)
 
 -}
@@ -506,14 +514,14 @@ getEmbeddedWithQuery url query toMsg =
 --------------------------------------------------- Queries
 
 
-{-| TODO: Docs
+{-| Queries the glTF file for the default scene. If no default scene is defined this will query the first scene.
 -}
 defaultSceneQuery : Query
 defaultSceneQuery =
     DefaultSceneQuery
 
 
-{-| TODO: Docs
+{-| Queries the glTF file for scene by index.
 -}
 sceneQuery : Int -> Query
 sceneQuery index =
@@ -548,21 +556,21 @@ sceneAtIndex2 textureStore bufferStore query index gltf =
 --------------------------------------------------- Content
 
 
-{-| TODO: Docs
+{-| Get all animations
 -}
 animations : QueryResult -> List Animation
 animations (QueryResult _ gltf bufferStore _ _) =
     AnimationHelper.extractAnimations gltf bufferStore
 
 
-{-| TODO: Docs
+{-| Get all cameras
 -}
 cameras : QueryResult -> List Camera
 cameras (QueryResult _ gltf _ _ _) =
     gltf.cameras |> Array.toList
 
 
-{-| TODO: Docs
+{-| Get all skins
 -}
 skins : QueryResult -> List Skin
 skins (QueryResult _ gltf bufferStore _ _) =
@@ -572,21 +580,21 @@ skins (QueryResult _ gltf bufferStore _ _) =
         |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
 
 
-{-| TODO: Docs
+{-| Get node trees returned by [query](Gltf#queries)
 -}
 nodeTrees : QueryResult -> List (Tree Node)
 nodeTrees (QueryResult _ _ _ _ nodes) =
     nodes
 
 
-{-| TODO: Docs
+{-| Get camera by index
 -}
 cameraByIndex : Gltf.Camera.Index -> QueryResult -> Maybe Camera
 cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _) =
     Array.get index gltf.cameras
 
 
-{-| TODO: Docs
+{-| Get texture by index.
 -}
 textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
 textureWithIndex (QueryResult _ _ _ textureStore _) textureIndex =

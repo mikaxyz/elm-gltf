@@ -4,7 +4,7 @@ module Gltf.Animation exposing
     , Channel(..), Sampler(..), Interpolation(..), Path(..), Attribute
     )
 
-{-| TODO: Docs
+{-| glTF supports articulated and skinned animation via key frame [animations](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#animations) of [nodes'](Gltf-Node#Node) transforms.
 
 
 # Types

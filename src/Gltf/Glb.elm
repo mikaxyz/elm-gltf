@@ -1,11 +1,5 @@
 module Gltf.Glb exposing (decoder)
 
-{-| Decoder for binary (.glb) files
-
-@docs decoder
-
--}
-
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Bytes.Parser as Parser
@@ -35,8 +29,6 @@ type alias Glb =
     }
 
 
-{-| Bytes Decoder
--}
 decoder : Decode.Decoder Glb
 decoder =
     Decode.map3 Glb

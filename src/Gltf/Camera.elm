@@ -1,19 +1,19 @@
 module Gltf.Camera exposing (Camera, Index(..), Projection(..), OrthographicCamera, PerspectiveCamera)
 
-{-| TODO: Docs
+{-| A camera’s projection as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera).
 
 @docs Camera, Index, Projection, OrthographicCamera, PerspectiveCamera
 
 -}
 
 
-{-| TODO: Docs
+{-| Use this to get a [cameraByIndex](Gltf#cameraByIndex)
 -}
 type Index
     = Index Int
 
 
-{-| TODO: Docs
+{-| A camera’s with a [Perspective or Orthographic projection](Gltf-Camera#Projection)
 -}
 type alias Camera =
     { name : Maybe String
@@ -22,14 +22,14 @@ type alias Camera =
     }
 
 
-{-| TODO: Docs
+{-| Specifies if the camera uses a perspective or orthographic projection.
 -}
 type Projection
     = Perspective PerspectiveCamera
     | Orthographic OrthographicCamera
 
 
-{-| TODO: Docs
+{-| A perspective camera containing properties to create a perspective projection matrix.
 -}
 type alias PerspectiveCamera =
     { yFov : Float
@@ -39,7 +39,7 @@ type alias PerspectiveCamera =
     }
 
 
-{-| TODO: Docs
+{-| An orthographic camera containing properties to create an orthographic projection matrix.
 -}
 type alias OrthographicCamera =
     { xMag : Float
