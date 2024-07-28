@@ -2,6 +2,8 @@
 
 Import 3d assets from [glTF](https://www.khronos.org/gltf/) (Graphics Library Transmission Format) file format for use in your [Elm WebGL](https://package.elm-lang.org/packages/elm-explorations/webgl/latest) programs.
 
+The aim is to support most of [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) but there is still a lot of work to do. See [the example app](https://elm-gltf.mika.xyz/) rendering all [official glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets) for an indication what it can/can not do.
+
 ## Wiring
 
 This library is designed to load a glTF file (.gltf or .glb) and query its contents. A query may result in multiple Http calls or other effectful things before completing. The package manages these effects and state internally which means you need to do some wiring for it in your application. See the [wiring part in the Gltf module documentation](https://package.elm-lang.org/packages/mikaxyz/elm-gltf/1.0.0/Gltf#wiring) for instructions.
