@@ -28,7 +28,7 @@ import XYZMika.XYZ.Scene.Options as SceneOptions
 
 maxResolution : number
 maxResolution =
-    3200
+    1600
 
 
 type Msg
