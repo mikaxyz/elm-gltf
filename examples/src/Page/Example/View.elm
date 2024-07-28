@@ -3,6 +3,7 @@ module Page.Example.View exposing (view)
 import Gltf
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
+import Gltf.Scene
 import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
 import Html.Attributes as HA exposing (class, style, value)
 import Html.Events
@@ -141,6 +142,39 @@ sceneOptionsView model gltfQueryResult =
                         |> select
                             [ class "options__animation-select"
                             , onChange (String.toInt >> UserSelectedAnimation)
+                            ]
+                    ]
+        , case Gltf.scenes gltfQueryResult of
+            _ :: [] ->
+                text ""
+
+            scenes ->
+                fieldset [ class "options__title" ]
+                    [ legend [ class "options__title" ] [ text "Animation" ]
+                    , (scenes
+                        |> List.map
+                            (\scene ->
+                                { name = scene.name
+                                , index = scene.index |> (\(Gltf.Scene.Index index) -> Just index)
+                                , selected =
+                                    model.activeScene
+                                        |> Maybe.map (\index -> index == scene.index)
+                                        |> Maybe.withDefault scene.default
+                                }
+                            )
+                      )
+                        |> List.map
+                            (\{ name, index, selected } ->
+                                option
+                                    [ index |> Maybe.map String.fromInt |> Maybe.withDefault "default" |> value
+                                    , HA.selected selected
+                                    ]
+                                    [ text (name |> Maybe.withDefault ("Scene " ++ (index |> Maybe.map String.fromInt |> Maybe.withDefault "-1")))
+                                    ]
+                            )
+                        |> select
+                            [ class "options__scene-select"
+                            , onChange (String.toInt >> Maybe.withDefault 0 >> Gltf.Scene.Index >> UserSelectedScene)
                             ]
                     ]
         ]

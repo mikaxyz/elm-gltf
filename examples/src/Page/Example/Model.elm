@@ -14,6 +14,7 @@ import Browser.Dom
 import Gltf exposing (Gltf)
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
+import Gltf.Scene
 import Keyboard
 import Page.Example.Material as Material
 import Page.Example.Scene as Scene
@@ -54,6 +55,7 @@ type Msg
       --
     | UserSelectedCamera (Maybe Gltf.Camera.Index)
     | UserSelectedAnimation (Maybe Int)
+    | UserSelectedScene Gltf.Scene.Index
 
 
 type Asset
@@ -85,6 +87,7 @@ type alias Model =
     , queryResult : RemoteData Error Gltf.QueryResult
     , animations : List Animation
     , activeAnimation : Maybe Animation
+    , activeScene : Maybe Gltf.Scene.Index
     , activeCamera : Maybe Gltf.Camera.Index
     , gltf : Gltf
     }
@@ -110,6 +113,7 @@ init asset =
     , queryResult = RemoteData.Loading
     , animations = []
     , activeAnimation = Nothing
+    , activeScene = Nothing
     , activeCamera = Nothing
     , gltf = Gltf.init
     }

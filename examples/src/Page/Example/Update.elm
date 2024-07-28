@@ -6,6 +6,7 @@ import Gltf
 import Gltf.Camera
 import Gltf.Node
 import Gltf.NodeIndex exposing (NodeIndex)
+import Gltf.Scene
 import Keyboard
 import Math.Vector2 as Vec2 exposing (vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -443,6 +444,14 @@ update msg model =
         GltfOnComplete (Err error) ->
             ( { model | queryResult = RemoteData.Failure (Model.GltfError error) }
             , Cmd.none
+            )
+
+        UserSelectedScene (Gltf.Scene.Index index) ->
+            ( { model | activeScene = Just (Gltf.Scene.Index index) }
+            , model.queryResult
+                |> RemoteData.toMaybe
+                |> Maybe.map (\queryResult -> Gltf.query (Gltf.sceneQuery index) GltfMsg queryResult)
+                |> Maybe.withDefault Cmd.none
             )
 
         UserSelectedCamera Nothing ->
