@@ -19,8 +19,8 @@ import Page.Example.View as View
 import SampleAssets
 import Task exposing (Task)
 import WebGL.Texture
-import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.Scene.Options as SceneOptions
+import Xyz.Mika.Dragon as Dragon
 
 
 type alias Msg =

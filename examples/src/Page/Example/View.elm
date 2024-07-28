@@ -16,7 +16,6 @@ import RemoteData exposing (RemoteData)
 import Tree
 import WebGL
 import WebGL.Texture
-import XYZMika.Dragon as Dragon
 import XYZMika.XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
@@ -24,6 +23,7 @@ import XYZMika.XYZ.Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
+import Xyz.Mika.Dragon as Dragon
 
 
 view : Model -> Html Msg
@@ -192,7 +192,7 @@ sceneView model gltfQueryResult animation scene fallbackTexture config =
                     Nothing
             )
         |> XYZMika.XYZ.toHtml
-            [ HA.id "viewport"
-            , Dragon.dragEvents DragonMsg
-            ]
+            (HA.id "viewport"
+                :: Dragon.dragEvents DragonMsg
+            )
             scene

@@ -15,13 +15,13 @@ import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import Task
 import Tree
-import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.Scene as XYZScene
 import XYZMika.XYZ.Scene.Camera as XYZCamera
 import XYZMika.XYZ.Scene.Light as XYZLight
 import XYZMika.XYZ.Scene.Object as XYZObject
 import XYZMika.XYZ.Scene.Options as XYZSceneOptions
 import XYZMika.XYZ.Scene.Util as XYZUtil
+import Xyz.Mika.Dragon as Dragon
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -71,26 +71,8 @@ update msg model =
             in
             ( { model
                 | scene =
-                    case Model.dragTarget model of
-                        Model.CameraOrbit ->
-                            model.scene
-                                |> RemoteData.map
-                                    (XYZScene.withCameraMap
-                                        (\camera ->
-                                            camera
-                                                --|> XYZCamera.withOrbitY -(drag.x / 40 * sensitivity)
-                                                |> XYZCamera.withOrbitY -(drag.x / 100)
-                                                |> XYZCamera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (drag.y / 80 * sensitivity)) position)
-                                        )
-                                    )
-
-                        Model.CameraPan ->
-                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withPan (Vec2.scale (sensitivity / 100) (vec2 drag.x drag.y))))
-
-                        Model.CameraZoom ->
-                            model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withZoom (drag.y / 20 * sensitivity)))
-
-                        Model.Default ->
+                    case model.selectedTreeIndex of
+                        Just selectedTreeIndex ->
                             let
                                 move : Vec3
                                 move =
@@ -104,7 +86,7 @@ update msg model =
                                     (XYZScene.map
                                         (Tree.indexedMap
                                             (\index object ->
-                                                if model.selectedTreeIndex == Just index then
+                                                if selectedTreeIndex == index then
                                                     XYZObject.map
                                                         (\data -> { data | position = Vec3.add move data.position })
                                                         object
@@ -114,6 +96,26 @@ update msg model =
                                             )
                                         )
                                     )
+
+                        Nothing ->
+                            case Model.dragTarget model of
+                                Model.CameraOrbit ->
+                                    model.scene
+                                        |> RemoteData.map
+                                            (XYZScene.withCameraMap
+                                                (\camera ->
+                                                    camera
+                                                        --|> XYZCamera.withOrbitY -(drag.x / 40 * sensitivity)
+                                                        |> XYZCamera.withOrbitY -(drag.x / 100)
+                                                        |> XYZCamera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (drag.y / 80 * sensitivity)) position)
+                                                )
+                                            )
+
+                                Model.CameraPan ->
+                                    model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withPan (Vec2.scale (sensitivity / 100) (vec2 drag.x drag.y))))
+
+                                Model.CameraZoom ->
+                                    model.scene |> RemoteData.map (XYZScene.withCameraMap (XYZCamera.withZoom (drag.y / 20 * sensitivity)))
               }
                 |> setSceneSize
             , Cmd.none
@@ -146,15 +148,15 @@ update msg model =
             in
             ( { model
                 | selectedTreeIndex =
-                    if Model.dragTarget model == Model.Default then
-                        Maybe.map2 Tuple.pair (RemoteData.toMaybe model.scene) model.viewPortElement
-                            |> Maybe.andThen
-                                (\( scene, viewPortElement ) ->
-                                    selectedTreeIndexAtClickPosition scene viewPortElement
-                                )
+                    --if Model.dragTarget model == Model.Default then
+                    Maybe.map2 Tuple.pair (RemoteData.toMaybe model.scene) model.viewPortElement
+                        |> Maybe.andThen
+                            (\( scene, viewPortElement ) ->
+                                selectedTreeIndexAtClickPosition scene viewPortElement
+                            )
 
-                    else
-                        model.selectedTreeIndex
+                --else
+                --    model.selectedTreeIndex
               }
             , Cmd.none
             )

@@ -20,10 +20,10 @@ import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
 import SampleAssets
 import WebGL.Texture
-import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Options as SceneOptions
+import Xyz.Mika.Dragon as Dragon exposing (Dragon)
 
 
 maxResolution : number
@@ -138,8 +138,7 @@ viewportFromDomElement { element, viewport } =
 
 
 type DragTarget
-    = Default
-    | CameraOrbit
+    = CameraOrbit
     | CameraPan
     | CameraZoom
 
@@ -159,4 +158,4 @@ dragTarget model =
         |> List.filter Tuple.first
         |> List.map Tuple.second
         |> List.head
-        |> Maybe.withDefault Default
+        |> Maybe.withDefault CameraOrbit
