@@ -12,6 +12,7 @@
         "Gltf.Material",
         "Gltf.Node",
         "Gltf.NodeIndex",
+        "Gltf.Scene",
         "Gltf.Skin",
         "Gltf.Transform"
     ],

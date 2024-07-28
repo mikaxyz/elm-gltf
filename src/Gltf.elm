@@ -2,8 +2,8 @@ module Gltf exposing
     ( Asset, Error(..), Query, QueryResult
     , Msg, Gltf, init, update
     , getBinary, getGltf, getBinaryWithQuery, getGltfWithQuery
-    , defaultSceneQuery, sceneQuery
-    , animations, cameras, nodeTrees, skins, cameraByIndex, textureWithIndex
+    , defaultSceneQuery, sceneQuery, query
+    , animations, cameras, nodeTrees, scenes, skins, cameraByIndex, textureWithIndex
     )
 
 {-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
@@ -26,12 +26,12 @@ module Gltf exposing
 
 # Queries
 
-@docs defaultSceneQuery, sceneQuery
+@docs defaultSceneQuery, sceneQuery, query
 
 
 # Content
 
-@docs animations, cameras, nodeTrees, skins, cameraByIndex, textureWithIndex
+@docs animations, cameras, nodeTrees, scenes, skins, cameraByIndex, textureWithIndex
 
 -}
 
@@ -52,13 +52,14 @@ import Gltf.Query.SkinHelper as SkinHelper
 import Gltf.Query.Task
 import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
+import Gltf.Scene exposing (Scene)
 import Gltf.Skin exposing (Skin)
 import Http
 import Internal.Gltf
 import Internal.Image
 import Internal.Node
 import Internal.Sampler
-import Internal.Scene as Scene exposing (Scene(..))
+import Internal.Scene
 import Internal.Skin
 import Task
 import Tree exposing (Tree)
@@ -190,7 +191,7 @@ update :
     -> ( Gltf, Cmd msg )
 update { toMsg, onComplete } msg model =
     case msg of
-        GltfLoaded query (Ok gltf) ->
+        GltfLoaded query_ (Ok gltf) ->
             let
                 bufferStore : BufferStore
                 bufferStore =
@@ -200,11 +201,11 @@ update { toMsg, onComplete } msg model =
                 let
                     queryResult : Result Error QueryResult
                     queryResult =
-                        runQuery gltf TextureStore.init bufferStore query
+                        runQuery gltf TextureStore.init bufferStore query_
                 in
                 ( Progress
                     { gltf = gltf
-                    , query = query
+                    , query = query_
                     , bufferStore = bufferStore
                     , textureStore = TextureStore.init
                     }
@@ -224,7 +225,7 @@ update { toMsg, onComplete } msg model =
             else
                 ( Progress
                     { gltf = gltf
-                    , query = query
+                    , query = query_
                     , bufferStore = bufferStore
                     , textureStore = TextureStore.init
                     }
@@ -469,7 +470,7 @@ getBinaryWithQuery :
     -> Query
     -> (Msg -> msg)
     -> Cmd msg
-getBinaryWithQuery url query toMsg =
+getBinaryWithQuery url query_ toMsg =
     Http.get
         { url = url
         , expect =
@@ -477,7 +478,7 @@ getBinaryWithQuery url query toMsg =
                 (\result ->
                     result
                         |> Result.mapError HttpError
-                        |> GltfLoaded query
+                        |> GltfLoaded query_
                         |> toMsg
                 )
                 (Internal.Gltf.bytesDecoder url)
@@ -495,7 +496,7 @@ getGltfWithQuery :
     -> Query
     -> (Msg -> msg)
     -> Cmd msg
-getGltfWithQuery url query toMsg =
+getGltfWithQuery url query_ toMsg =
     Http.get
         { url = url
         , expect =
@@ -503,7 +504,7 @@ getGltfWithQuery url query toMsg =
                 (\result ->
                     result
                         |> Result.mapError HttpError
-                        |> GltfLoaded query
+                        |> GltfLoaded query_
                         |> toMsg
                 )
                 (Internal.Gltf.decoder url)
@@ -528,26 +529,33 @@ sceneQuery index =
     SceneQuery index
 
 
+{-| Query an already loaded file
+-}
+query : Query -> (Msg -> msg) -> QueryResult -> Cmd msg
+query query_ toMsg (QueryResult _ gltf _ _ _) =
+    Task.succeed (Ok gltf) |> Task.perform (GltfLoaded query_ >> toMsg)
+
+
 runQuery : Internal.Gltf.Gltf -> TextureStore -> BufferStore -> Query -> Result Error QueryResult
-runQuery gltf textureStore bufferStore query =
-    case query of
+runQuery gltf textureStore bufferStore query_ =
+    case query_ of
         DefaultSceneQuery ->
             sceneAtIndex2 textureStore bufferStore DefaultSceneQuery gltf.scene gltf
 
         SceneQuery index ->
-            sceneAtIndex2 textureStore bufferStore (SceneQuery index) (Scene.Index index) gltf
+            sceneAtIndex2 textureStore bufferStore (SceneQuery index) (Internal.Scene.Index index) gltf
 
 
-sceneAtIndex2 : TextureStore -> BufferStore -> Query -> Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
-sceneAtIndex2 textureStore bufferStore query index gltf =
+sceneAtIndex2 : TextureStore -> BufferStore -> Query -> Internal.Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
+sceneAtIndex2 textureStore bufferStore query_ index gltf =
     Common.sceneAtIndex gltf index
         |> Maybe.map
-            (\(Scene scene) ->
+            (\(Internal.Scene.Scene scene) ->
                 scene.nodes
                     |> List.filterMap
                         (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
                     |> List.map (Tree.map (nodeFromNode gltf bufferStore))
-                    |> QueryResult query gltf bufferStore textureStore
+                    |> QueryResult query_ gltf bufferStore textureStore
             )
         |> Result.fromMaybe SceneNotFound
 
@@ -578,6 +586,21 @@ skins (QueryResult _ gltf bufferStore _ _) =
         |> Array.toIndexedList
         |> List.map (Tuple.first >> Gltf.Skin.Index)
         |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
+
+
+{-| Get information of all scenes
+-}
+scenes : QueryResult -> List Scene
+scenes (QueryResult _ gltf _ _ _) =
+    gltf.scenes
+        |> Array.toIndexedList
+        |> List.map
+            (\( i, Internal.Scene.Scene scene ) ->
+                { name = scene.name
+                , index = Gltf.Scene.Index i
+                , default = gltf.scene == Internal.Scene.Index i
+                }
+            )
 
 
 {-| Get node trees returned by [query](Gltf#queries)

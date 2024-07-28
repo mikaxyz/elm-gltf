@@ -5,6 +5,7 @@ module Internal.Scene exposing
     )
 
 import Internal.Node as Node
+import Internal.Util as Util
 import Json.Decode as JD
 
 
@@ -17,12 +18,14 @@ type Scene
 
 
 type alias Data =
-    { nodes : List Node.Index
+    { name : Maybe String
+    , nodes : List Node.Index
     }
 
 
 decoder : JD.Decoder Scene
 decoder =
-    JD.map Data
+    JD.map2 Data
+        (Util.optionalField "name" (JD.maybe JD.string) Nothing)
         (JD.field "nodes" (JD.list Node.indexDecoder))
         |> JD.map Scene
