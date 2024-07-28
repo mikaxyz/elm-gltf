@@ -2,21 +2,17 @@ module Page.Example.Material exposing (Name(..), renderer)
 
 import Gltf
 import Gltf.Material
+import Page.Example.DefaultMaterial
 import Page.Example.PbrMaterial
 import WebGL exposing (Entity)
 import WebGL.Texture
 import XYZMika.XYZ.Material as Material
-import XYZMika.XYZ.Material.Advanced
-import XYZMika.XYZ.Material.Color
-import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
 type Name
-    = Simple
-    | Color
-    | Advanced
+    = Default
     | PbrMaterial Gltf.Material.Material
 
 
@@ -31,14 +27,8 @@ renderer :
     -> Entity
 renderer fallbackTexture config gltfQueryResult name =
     case name of
-        Simple ->
-            XYZMika.XYZ.Material.Simple.renderer
-
-        Color ->
-            XYZMika.XYZ.Material.Color.renderer
-
-        Advanced ->
-            XYZMika.XYZ.Material.Advanced.renderer
+        Default ->
+            Page.Example.DefaultMaterial.renderer config
 
         PbrMaterial (Gltf.Material.Material pbr) ->
             Page.Example.PbrMaterial.renderer config

@@ -359,7 +359,7 @@ objectFromMesh objectId triangularMesh =
                     Object.withMaterialName (Material.PbrMaterial material)
 
                 Nothing ->
-                    identity
+                    Object.withMaterialName Material.Default
     in
     case triangularMesh of
         TriangularMesh material vertices ->
