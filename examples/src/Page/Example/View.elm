@@ -98,7 +98,7 @@ sceneOptionsView model gltfQueryResult =
             cameras ->
                 fieldset [ class "options__title" ]
                     [ legend [ class "options__title" ] [ text "Camera" ]
-                    , { name = Just "Select", index = Nothing }
+                    , { name = Just "Interactive", index = Nothing }
                         :: cameras
                         |> List.map
                             (\camera ->
@@ -107,7 +107,10 @@ sceneOptionsView model gltfQueryResult =
                                     [ text (camera.name |> Maybe.withDefault ("Camera " ++ String.fromInt (Maybe.withDefault -1 camera.index)))
                                     ]
                             )
-                        |> select [ onChange (String.toInt >> Maybe.map Gltf.Camera.Index >> UserSelectedCamera) ]
+                        |> select
+                            [ class "options__camera-select"
+                            , onChange (String.toInt >> Maybe.map Gltf.Camera.Index >> UserSelectedCamera)
+                            ]
                     ]
         , case model.animations of
             [] ->
@@ -135,7 +138,10 @@ sceneOptionsView model gltfQueryResult =
                                     [ text (name |> Maybe.withDefault ("Animation " ++ (index |> Maybe.map String.fromInt |> Maybe.withDefault "-1")))
                                     ]
                             )
-                        |> select [ onChange (String.toInt >> UserSelectedAnimation) ]
+                        |> select
+                            [ class "options__animation-select"
+                            , onChange (String.toInt >> UserSelectedAnimation)
+                            ]
                     ]
         ]
 

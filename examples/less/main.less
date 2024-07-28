@@ -79,12 +79,6 @@ html {
     }
 }
 
-.options {
-    position: fixed;
-    bottom: 1em;
-    left: 1em;
-}
-
 .progress-bar {
     display: flex;
     flex-direction: column;
@@ -348,4 +342,53 @@ html {
             }
         }
     }
+}
+
+
+.options {
+    position: fixed;
+    bottom: 1em;
+    left: 1em;
+    right: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+
+    fieldset {
+        display: contents;
+    }
+
+    legend {
+        display: none;
+    }
+
+    select {
+        appearance: none;
+        border: none;
+        padding: 0 1em 0 0;
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        cursor: inherit;
+        line-height: inherit;
+
+        background-color: whitesmoke;
+        mask-size: contain;
+        height: 48px;
+        width: 48px;
+        text-indent: -100px;
+
+        &:focus {
+            background-color: var(--color-accent);
+        }
+    }
+
+    &__camera-select {
+        mask-image: url("/dist/icons/bx-camera-movie.svg");
+    }
+    &__animation-select {
+        mask-image: url("/dist/icons/bx-run.svg");
+    }
+
 }
