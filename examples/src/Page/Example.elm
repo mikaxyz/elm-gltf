@@ -20,6 +20,7 @@ import SampleAssets
 import Task exposing (Task)
 import WebGL.Texture
 import XYZMika.Dragon as Dragon
+import XYZMika.XYZ.Scene.Options as SceneOptions
 
 
 type alias Msg =
@@ -107,6 +108,13 @@ initWithSampleAsset assetType asset =
 initWithLocalAsset : String -> ( Model, Cmd Msg )
 initWithLocalAsset path =
     ( Model.init (Model.Local path)
+        |> (\model ->
+                { model
+                    | sceneOptions =
+                        model.sceneOptions
+                            |> SceneOptions.toggle SceneOptions.showGridYOption
+                }
+           )
     , Cmd.batch
         [ Gltf.getGltf path GltfMsg
         , loadFallbackTexture FallbackTextureReceived

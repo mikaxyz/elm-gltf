@@ -100,9 +100,7 @@ init asset =
     , dragon = Dragon.init
     , asset = asset
     , selectedTreeIndex = Nothing
-    , sceneOptions =
-        SceneOptions.create
-            |> SceneOptions.toggle SceneOptions.showGridYOption
+    , sceneOptions = SceneOptions.create
     , sceneSize = 999999999
     , fallbackTexture = RemoteData.Loading
     , environmentTexture = RemoteData.Loading
