@@ -43,5 +43,5 @@ init spa =
     , page = Nothing
     , modal = Nothing
     , sampleAssets = RemoteData.Loading
-    , sampleType = SampleAssets.Binary
+    , sampleType = SampleAssets.Default
     }

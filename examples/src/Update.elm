@@ -31,7 +31,7 @@ updateWithRoute maybeRoute model =
                     sampleAssets
 
                 _ ->
-                    SampleAssets.Binary
+                    SampleAssets.Default
     in
     model.sampleAssets
         |> RemoteData.map
