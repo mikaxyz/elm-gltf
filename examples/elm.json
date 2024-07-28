@@ -1,8 +1,8 @@
 {
     "type": "application",
     "source-directories": [
-        "../../elm-xyz/generated",
-        "../../elm-xyz/src",
+        "node_modules/mikaxyz-xyz/src",
+        "gen",
         "../src",
         "src"
     ],
