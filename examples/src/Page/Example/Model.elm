@@ -123,12 +123,12 @@ mapSceneOptions f model =
 
 
 viewportFromDomElement : Browser.Dom.Element -> XYZMika.XYZ.Viewport
-viewportFromDomElement { element } =
+viewportFromDomElement { element, viewport } =
     let
         aspect =
-            element.height / element.width
+            viewport.height / viewport.width
     in
-    if element.width >= element.height then
+    if viewport.width >= viewport.height then
         { width = maxResolution |> round
         , height = maxResolution * aspect |> round
         }
