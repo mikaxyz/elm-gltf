@@ -52,6 +52,7 @@ update msg model =
     case msg of
         OnRouteChange maybeRoute ->
             updateWithRoute maybeRoute model
+                |> Tuple.mapFirst (\model_ -> { model_ | sampleAssetsVisible = False })
 
         OnHistoryChange route ->
             updateWithRoute (Just route) model
@@ -80,6 +81,9 @@ update msg model =
                     ( { model | sampleAssets = RemoteData.Failure error }
                     , Cmd.none
                     )
+
+        ToggleSampleAssets ->
+            ( { model | sampleAssetsVisible = not model.sampleAssetsVisible }, Cmd.none )
 
         UserClickedSampleType sampleType ->
             ( { model | sampleType = sampleType }, Cmd.none )

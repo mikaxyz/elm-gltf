@@ -22,6 +22,7 @@ type Msg
     | SampleAssetsReceived (Result Http.Error SampleAssets)
     | ShowModal (Maybe Modal)
     | ShowShareSheet
+    | ToggleSampleAssets
 
 
 type alias Model =
@@ -30,6 +31,7 @@ type alias Model =
     , modal : Maybe Modal
     , sampleAssets : RemoteData Http.Error SampleAssets
     , sampleType : SampleType
+    , sampleAssetsVisible : Bool
     }
 
 
@@ -44,4 +46,5 @@ init spa =
     , modal = Nothing
     , sampleAssets = RemoteData.Loading
     , sampleType = SampleAssets.Default
+    , sampleAssetsVisible = False
     }

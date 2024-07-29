@@ -56,7 +56,7 @@ appView model sampleAssets =
         [ div [ class "app__viewport" ]
             [ model.page |> Maybe.map pageView |> Maybe.withDefault (text "")
             ]
-        , sampleAssetNavigationView currentAsset model.sampleType sampleAssets
+        , sampleAssetNavigationView model.sampleAssetsVisible currentAsset model.sampleType sampleAssets
         , navigationView
         ]
 
@@ -84,6 +84,7 @@ navigationView =
     in
     nav [ class "app__navigation" ]
         [ [ link { url = "/", icon = Icon.home, label = "Home" }
+          , action { msg = ToggleSampleAssets, icon = Icon.collection, label = "Sample Assets" }
           , action { msg = ShowModal (Just Model.Help), icon = Icon.help, label = "About" }
           , action { msg = ShowShareSheet, icon = Icon.share, label = "Share" }
           ]
@@ -103,11 +104,12 @@ pageView page =
                 |> Html.map (Page.ExampleMsg >> PageMsg)
 
 
-sampleAssetNavigationView : Maybe SampleAssets.Asset -> SampleAssets.SampleType -> SampleAssets -> Html Msg
-sampleAssetNavigationView currentAsset sampleType sampleAssets =
-    section [ class "panel" ]
+sampleAssetNavigationView : Bool -> Maybe SampleAssets.Asset -> SampleAssets.SampleType -> SampleAssets -> Html Msg
+sampleAssetNavigationView isOpen currentAsset sampleType sampleAssets =
+    section [ class "panel", classList [ ( "panel--open", isOpen ) ] ]
         [ header [ class "panel__header" ]
             [ h1 [] [ text "Sample Assets" ]
+            , button [ class "panel__close", onClick ToggleSampleAssets ] [ Icon.x ]
             , sampleTypeSelector sampleType
             ]
         , section [ class "panel__content" ]

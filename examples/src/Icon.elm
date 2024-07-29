@@ -19,6 +19,11 @@ help =
     i [ class "bx bxs-bot" ] []
 
 
+collection : Html msg
+collection =
+    i [ class "bx bxs-collection" ] []
+
+
 x : Html msg
 x =
     i [ class "bx bx-x" ] []
