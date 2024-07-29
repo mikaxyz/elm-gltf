@@ -1,0 +1,28 @@
+{
+    "name": "mikaxyz/elm-gltf-examples",
+    "version": "1.0.0",
+    "description": "Examples for mikaxyz/elm-gltf Elm package",
+    "author": "me@mika.xyz",
+    "license": "BSD-3-Clause",
+    "main": "index.html",
+    "scripts": {
+        "postinstall": "mkdir -p gen/XYZMika && cp -f node_modules/mikaxyz-xyz/codegen/webgl-fork/XYZMika.WebGLForked.elm gen/XYZMika/WebGL.elm && mkdir -p .ELM_HOME/0.19.1/packages/elm-explorations/webgl && ln -s ../../../../../node_modules/mikaxyz-elm-webgl .ELM_HOME/0.19.1/packages/elm-explorations/webgl/1.1.3",
+        "run": "http-server-spa . index.html 8080",
+        "fonts": "cp -r node_modules/boxicons/fonts dist/fonts",
+        "icons": "mkdir -p dist/icons && cp node_modules/boxicons/svg/regular/{bx-camera-movie.svg,bx-run.svg,bx-directions.svg} dist/icons",
+        "less": "lessc less/main.less dist/css/main.css",
+        "build": "ELM_HOME=.ELM_HOME elm make src/Main.elm --output dist/main.js && npm run fonts && npm run icons && npm run less"
+    },
+    "devDependencies": {
+        "boxicons": "^2.1.4",
+        "elm": "^0.19.1-6",
+        "elm-format": "^0.8.7",
+        "elm-review": "^2.11.2",
+        "elm-test": "^0.19.1-revision12",
+        "http-server-spa": "^1.3.0",
+        "lessc": "^1.0.2",
+        "mikaxyz-elm-webgl": "github:mikaxyz/webgl#cube-maps",
+        "mikaxyz-xyz": "github:mikaxyz/elm-xyz#elm-gltf",
+        "normalize.css": "^8.0.1"
+    }
+}

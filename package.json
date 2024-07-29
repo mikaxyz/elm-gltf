@@ -1,0 +1,20 @@
+{
+    "name": "mikaxyz/elm-gltf",
+    "version": "1.0.0",
+    "description": "Tools for building mikaxyz/elm-gltf Elm package",
+    "author": "me@mika.xyz",
+    "license": "BSD-3-Clause",
+    "main": "index.html",
+    "scripts": {
+        "test": "elm-review && elm-test",
+        "elm-review": "elm-review --compiler ./node_modules/.bin/elm"
+    },
+    "devDependencies": {
+        "elm": "^0.19.1-6",
+        "elm-doc-preview": "^5.0.5",
+        "elm-format": "^0.8.7",
+        "elm-review": "^2.11.2",
+        "elm-test": "^0.19.1-revision12",
+        "elm-verify-examples": "^6.0.3"
+    }
+}

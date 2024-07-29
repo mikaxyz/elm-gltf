@@ -1,0 +1,426 @@
+@import (inline) "../node_modules/normalize.css/normalize.css";
+@import (inline) "../node_modules/boxicons/css/boxicons.min.css";
+
+:root {
+    --color-accent: rgba(255,255,0,0.5);
+    --color-accent-muted-1: rgba(100, 100, 57, 0.5);
+    --color-accent-muted-2: rgba(82, 82, 57, 0.3);
+}
+
+html {
+	background-color: black;
+    color: antiquewhite;
+    overscroll-behavior: none;
+    touch-action: none;
+    user-select: none;
+}
+
+body {
+    touch-action: none;
+    height: 100vh;
+    height: -webkit-fill-available;
+	margin: 0;
+    font-size: 16px;
+}
+
+html {
+	box-sizing: border-box;
+	font-family: sans-serif;
+	font-size: 62.5%;
+}
+
+*,
+*:before,
+*:after {
+	box-sizing: inherit;
+}
+
+::backdrop {
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.modal {
+    padding: 0;
+    border: 0;
+    border-radius: 0.3em;
+    box-shadow: 0 0 2em 0.5em #e4e4e442;
+
+    a {
+        color: #2eb944;
+    }
+
+    &__close {
+        position: sticky;
+        overflow-anchor: none;
+        top: 0;
+        display: flex;
+        justify-content: flex-end;
+        background: #2eb944;
+
+        button {
+            all: unset;
+            display: flex;
+            font-size: 2em;
+            padding: 0.2em;
+            cursor: pointer;
+            color: #16161D;
+
+            &:hover,
+            &:focus {
+                color: white;
+            }
+        }
+    }
+    &__content {
+        padding: 1em 2em;
+        max-width: 52ch;;
+        max-height: 50vh;
+    }
+}
+
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+
+    &__message {
+        font-family: "Source Code Pro", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 0.7em;
+        color: dimgray;
+    }
+    &__indicator {}
+}
+
+.app {
+	background-color: black;
+    width: 100vw;
+    height: 100vh;
+    height: -webkit-fill-available;
+
+    &__viewport {
+        width: 100vw;
+        height: 100vh;
+        height: -webkit-fill-available;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        canvas {
+            background-color: #16161D;
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: -webkit-fill-available;
+        }
+    }
+
+    &__navigation {
+        position: fixed;
+        z-index: 1;
+        top: 1.5em;
+        left: 2em;
+        width: 4em;
+        text-align: center;
+
+        &--right {
+            left: auto;
+            right: 2em
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1em;
+        }
+        li {
+            padding: 0;
+            margin: 0;
+        }
+
+        a, button {
+            all: unset;
+            cursor: pointer;
+            color: whitesmoke;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4em;
+            text-decoration: none;
+            text-transform: uppercase;
+            //font-size: 0.6em;
+            font-weight: lighter;
+            letter-spacing: 0.12em;
+
+            &:focus {
+                color: var(--color-accent);
+            }
+
+            &:hover {
+                color: var(--color-accent);
+            }
+
+            i {
+                font-size: 2.4em;
+            }
+
+            span {
+                font-size: 0.6em;
+            }
+        }
+    }
+
+    &__sidebar {
+    }
+}
+
+
+.panel {
+    z-index: 2;
+    --color-background: rgba(12, 12, 14, 0.96);
+
+    color: #515451;
+    cursor: default;
+    scrollbar-width: thin;
+    scrollbar-color: #3c423c transparent;
+
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 2em;
+    max-height: calc(100vh - 4em - env(safe-area-inset-bottom));
+    overflow: hidden;
+    outline: none;
+
+    transition: transform 100ms ease-out, box-shadow 400ms ease-out;
+    transform: translate3d(calc(100% + 2em), 0, 0);
+
+    &--open {
+        transform: translate3d(0, 0, 0);
+        background-color: var(--color-background);
+        border-radius: 3px;
+        box-shadow: 0 0 0 5px var(--color-accent-muted-2);
+
+        .panel__header,
+        .panel__content {
+            display: block;
+        }
+    }
+
+    &__close {
+        all: unset;
+
+        position: absolute;
+        top: 0;
+        right: 0;
+
+        display: flex;
+        font-size: 2em;
+        padding: 0.1em 0.2em;
+        cursor: pointer;
+        color: var(--color-accent);
+
+        &:hover,
+        &:focus {
+            color: var(--color-accent-muted-1);
+        }
+    }
+
+    .selector {
+        opacity: 0.3;
+        transition: opacity 800ms ease-out;
+    }
+
+    &--open {
+        overflow-y: auto;
+        box-shadow: 0 0 0 4px var(--color-accent-muted-1);
+
+        .panel__content {
+            max-height: calc(100vh - env(safe-area-inset-bottom));
+        }
+
+        .selector {
+            opacity: 1;
+        }
+    }
+
+    &__content {
+        transition: max-height 200ms ease-out;
+        max-height: 0;
+    }
+
+    &__header {
+        transition: color 400ms ease-out;
+        position: sticky;
+        top: 0;
+        padding: 1em 2em;
+        background-color: var(--color-background);
+        color: var(--color-accent-muted-1);
+
+        .panel--open & {
+            h1 {
+                color: var(--color-accent);
+            }
+        }
+
+        h1 {
+            margin: 0 0 0.8em 0;
+            font-size: 0.8em;
+            font-weight: normal;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+        p {
+            margin: 0.2em 0;
+            font-size: 0.8em;
+        }
+        &:after {
+            content: "";
+            display: block;
+            position: absolute;
+            bottom: -2px;
+            left: 2em;
+            right: 2em;
+            border-bottom: 2px solid var(--color-accent-muted-1);
+        }
+    }
+
+    ul {
+        padding: 0.5em 1em 1em 1em;
+        margin: 0;
+        list-style: none;
+    }
+
+    li {
+        padding: 0.5em 1em;
+
+
+        &.panel__current {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        button {
+            all: unset;
+        }
+        span {
+            color: #515451;
+        }
+
+        a,
+        button {
+            color: #979b97;
+            cursor: pointer;
+
+            &:hover,
+            &:focus {
+                color: var(--color-accent);
+            }
+        }
+    }
+}
+
+.selector {
+    @radius: 0.4em;
+    background-color: black;
+    box-shadow: 0 0 0 1px var(--color-accent);
+    border-radius: @radius + 0.1em;
+    padding: 2px;
+    display: flex;
+    overflow: hidden;
+
+    &__button {
+        all: unset;
+        flex: 1 1 0;
+        text-align: center;
+        color: var(--color-accent);
+        padding: 0.4em 0.2em;
+        display: flex;
+        justify-content: center;
+
+        &--active {
+            color: black;
+            background-color: var(--color-accent);
+            border-radius: @radius;
+        }
+    }
+
+    &__label {
+        font-size: 0.7em;
+        line-height: 1;
+    }
+}
+
+@media (pointer: coarse) {
+    .panel {
+        max-height: calc(100vh - 9em - env(safe-area-inset-bottom));
+    }
+}
+
+@media (max-width: 460px) or (pointer: coarse) {
+    .app__navigation {
+        top: 0.5em;
+        left: 0.5em;
+
+        a, button {
+            font-size: 0.8em;
+        }
+    }
+}
+
+
+.options {
+    position: fixed;
+    bottom: 1em;
+    left: 1em;
+    right: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+
+    fieldset {
+        display: contents;
+    }
+
+    legend {
+        display: none;
+    }
+
+    select {
+        appearance: none;
+        border: none;
+        padding: 0 1em 0 0;
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        cursor: inherit;
+        line-height: inherit;
+
+        background-color: whitesmoke;
+        mask-size: contain;
+        height: 48px;
+        width: 48px;
+        text-indent: -100px;
+
+        &:focus {
+            background-color: var(--color-accent);
+        }
+    }
+
+    &__camera-select {
+        mask-image: url("/dist/icons/bx-camera-movie.svg");
+    }
+    &__animation-select {
+        mask-image: url("/dist/icons/bx-run.svg");
+    }
+    &__scene-select {
+        mask-image: url("/dist/icons/bx-directions.svg");
+    }
+
+
+}

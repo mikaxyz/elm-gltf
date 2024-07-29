@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elm glTF Examples</title>
+    <link rel="stylesheet" href="/dist/css/main.css">
+</head>
+<body>
+<script src="/dist/main.js"></script>
+<script>
+    var app = Elm.Main.init();
+
+    app.ports.share.subscribe(function({title}) {
+        try {
+            navigator.share({ title: title, url: window.location.href });
+        } catch (err) {
+            console.error("Share failed:", err.message);
+        }
+    });
+
+    app.ports.openDialog.subscribe(function(id) {
+        try {
+            const dialog = document.querySelector("#" + id);
+            dialog.showModal();
+        } catch (err) {
+            console.error("openDialog failed:", err.message);
+        }
+    });
+</script>
+</body>
+</html>
