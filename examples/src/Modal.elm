@@ -28,6 +28,8 @@ The goal is to match what the the official [glTF sample viewer](https://github.k
 Please open an [issue on GitHub](https://github.com/mikaxyz/elm-gltf/issues) if you have suggestions or found a bug.
 
 The glTF package is meant to be general and usable in for example [elm-3d-scene](https://package.elm-lang.org/packages/ianmackenzie/elm-3d-scene/latest/) but I created these examples using my unfinished "game engine" called [elm-xyz](https://github.com/mikaxyz/elm-xyz) mostly because I knew I could make the changes needed to support as many things in glTF format as possible. If you use this in **elm-3d-scene** or other "environments" I am open to add documentation/examples showing that.
+
+**NOTE:** The PBR shaders used are based on/copied from [this repository](https://github.com/bghgary/glTF-WebGL-PBR).
 """
 
 

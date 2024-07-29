@@ -343,6 +343,7 @@ material uniforms =
 vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
+        // Based on https://github.com/bghgary/glTF-WebGL-PBR/tree/master/shaders
         precision highp float;
 
         attribute vec3 position;
@@ -512,6 +513,7 @@ vertexShader =
 fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
+        // Based on https://github.com/bghgary/glTF-WebGL-PBR/tree/master/shaders
         precision highp float;
 
         uniform vec3 u_LightDirection;
