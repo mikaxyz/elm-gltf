@@ -32,6 +32,7 @@ type alias Uniforms =
     , u_Camera : Vec3
     , u_LightDirection : Vec3
     , u_LightColor : Vec3
+    , u_AlphaCutoff : Float
 
     --
     , u_hasMetallicRoughnessSampler : Int
@@ -197,13 +198,25 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
                 Gltf.Material.Opaque ->
                     x
 
-                Gltf.Material.Mask cutoff ->
-                    WebGL.Settings.sampleCoverage cutoff True
+                Gltf.Material.Mask _ ->
+                    x
+
+                Gltf.Material.Blend ->
+                    WebGL.Settings.sampleCoverage 1.0 True
                         :: WebGL.Settings.sampleAlphaToCoverage
                         :: x
 
+        alphaCutoff : Float
+        alphaCutoff =
+            case pbr.alphaMode of
+                Gltf.Material.Opaque ->
+                    -2.0
+
+                Gltf.Material.Mask cutoff ->
+                    cutoff
+
                 Gltf.Material.Blend ->
-                    x
+                    -1.0
 
         settings : List WebGL.Settings.Setting
         settings =
@@ -231,6 +244,7 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         --
         , u_LightDirection = directionalLight3
         , u_LightColor = vec3 1 1 1
+        , u_AlphaCutoff = alphaCutoff
 
         --
         , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
@@ -518,6 +532,7 @@ fragmentShader =
 
         uniform vec3 u_LightDirection;
         uniform vec3 u_LightColor;
+        uniform float u_AlphaCutoff;
 
         uniform sampler2D u_brdfLUT;
         uniform samplerCube u_DiffuseEnvSampler;
@@ -793,6 +808,17 @@ fragmentShader =
             if (u_hasEmissiveSampler == 1) {
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
                 color += emissive;
+            }
+
+            if (u_AlphaCutoff >= 0.0) {
+                if (baseColor.a <= u_AlphaCutoff)
+                {
+                    discard;
+                }
+                baseColor.a = 1.0;
+            }
+            if (u_AlphaCutoff == -2.0) {
+                baseColor.a = 1.0;
             }
 
             gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
