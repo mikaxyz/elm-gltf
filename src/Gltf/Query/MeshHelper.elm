@@ -88,8 +88,8 @@ fromPrimitive gltf bufferStore primitive =
                 _ ->
                     Nothing
 
-        vertexAttributesToVertices2 : VertexAttributes -> List Vertex
-        vertexAttributesToVertices2 a =
+        vertexAttributesToVertices : VertexAttributes -> List Vertex
+        vertexAttributesToVertices a =
             let
                 positions : List Vertex
                 positions =
@@ -221,124 +221,48 @@ fromPrimitive gltf bufferStore primitive =
 
                 Nothing ->
                     Nothing
+
+        verticesInlined : () -> List Vertex
+        verticesInlined _ =
+            case maybeIndices of
+                Just indices ->
+                    let
+                        vertexMap : Array Vertex
+                        vertexMap =
+                            vertexAttributes
+                                |> vertexAttributesToVertices
+                                |> Array.fromList
+                    in
+                    indices |> List.filterMap (\i -> Array.get i vertexMap)
+
+                Nothing ->
+                    vertexAttributesToVertices vertexAttributes
     in
     case primitive.mode of
         Internal.Mesh.Points ->
-            case maybeIndices of
-                Just indices ->
-                    let
-                        vertices : Array Vertex
-                        vertices =
-                            vertexAttributes
-                                |> vertexAttributesToVertices2
-                                |> Array.fromList
-                    in
-                    indices
-                        |> List.filterMap
-                            (\index ->
-                                Array.get index vertices
-                            )
-                        |> Points material
-
-                Nothing ->
-                    vertexAttributes
-                        |> vertexAttributesToVertices2
-                        |> Points material
+            verticesInlined () |> Points material
 
         Internal.Mesh.Lines ->
-            let
-                toLines : List a -> List ( a, a )
-                toLines vertices =
-                    vertices
-                        |> List.foldl
-                            (\vertex ( c, a ) ->
-                                case c of
-                                    Just last ->
-                                        ( Nothing, ( last, vertex ) :: a )
+            verticesInlined ()
+                |> List.foldl
+                    (\vertex ( c, a ) ->
+                        case c of
+                            Just last ->
+                                ( Nothing, ( last, vertex ) :: a )
 
-                                    Nothing ->
-                                        ( Just vertex, a )
-                            )
-                            ( Nothing, [] )
-                        |> Tuple.second
-                        |> List.reverse
-            in
-            case maybeIndices of
-                Just indices ->
-                    let
-                        vertices : Array Vertex
-                        vertices =
-                            vertexAttributes
-                                |> vertexAttributesToVertices2
-                                |> Array.fromList
-                    in
-                    indices
-                        |> List.filterMap
-                            (\index ->
-                                Array.get index vertices
-                            )
-                        |> toLines
-                        |> Lines material
-
-                Nothing ->
-                    vertexAttributes
-                        |> vertexAttributesToVertices2
-                        |> toLines
-                        |> Lines material
+                            Nothing ->
+                                ( Just vertex, a )
+                    )
+                    ( Nothing, [] )
+                |> Tuple.second
+                |> List.reverse
+                |> Lines material
 
         Internal.Mesh.LineLoop ->
-            vertexAttributes
-                |> vertexAttributesToVertices2
-                |> LineLoop material
+            LineLoop material (verticesInlined ())
 
         Internal.Mesh.LineStrip ->
-            vertexAttributes
-                |> vertexAttributesToVertices2
-                |> LineStrip material
-
-        Internal.Mesh.TriangleStrip ->
-            case maybeIndices of
-                Just indices ->
-                    let
-                        vertices : Array Vertex
-                        vertices =
-                            vertexAttributes
-                                |> vertexAttributesToVertices2
-                                |> Array.fromList
-                    in
-                    indices
-                        |> List.filterMap
-                            (\index ->
-                                Array.get index vertices
-                            )
-                        |> TriangleStrip material
-
-                Nothing ->
-                    vertexAttributes
-                        |> vertexAttributesToVertices2
-                        |> TriangleStrip material
-
-        Internal.Mesh.TriangleFan ->
-            case maybeIndices of
-                Just indices ->
-                    let
-                        vertices : Array Vertex
-                        vertices =
-                            vertexAttributes
-                                |> vertexAttributesToVertices2
-                                |> Array.fromList
-                    in
-                    indices
-                        |> List.filterMap
-                            (\index ->
-                                Array.get index vertices
-                            )
-                        |> TriangleFan material
-
-                Nothing ->
-                    vertexAttributes
-                        |> vertexAttributesToVertices2
-                        |> TriangleFan material
+            LineStrip material (verticesInlined ())
 
         Internal.Mesh.Triangles ->
             let
@@ -361,12 +285,15 @@ fromPrimitive gltf bufferStore primitive =
             case maybeIndices of
                 Just indices ->
                     IndexedTriangularMesh material
-                        ( vertexAttributesToVertices2 vertexAttributes
+                        ( vertexAttributesToVertices vertexAttributes
                         , indices |> toTriangles
                         )
 
                 Nothing ->
-                    vertexAttributes
-                        |> vertexAttributesToVertices2
-                        |> toTriangles
-                        |> TriangularMesh material
+                    verticesInlined () |> toTriangles |> TriangularMesh material
+
+        Internal.Mesh.TriangleStrip ->
+            TriangleStrip material (verticesInlined ())
+
+        Internal.Mesh.TriangleFan ->
+            TriangleFan material (verticesInlined ())
