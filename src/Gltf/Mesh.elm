@@ -14,10 +14,7 @@ import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
 
 
-{-| The types of meshes as you will find in [elm-explorations/webgl](https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL#Meshes)
-
-**NOTE:** only meshes with triangles are supported currently. Other ["modes"](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode) will come later.
-
+{-| The types of meshes as you will find in [elm-explorations/webgl](https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL#meshes)
 -}
 type Mesh
     = Points (Maybe Material) (List Vertex)
