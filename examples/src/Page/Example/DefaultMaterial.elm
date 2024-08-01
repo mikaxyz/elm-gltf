@@ -413,6 +413,7 @@ vertexShader =
             v_UV = uv;
             v_fragPos = vec3(u_ModelMatrix * vec4(position, 1.0));
 
+            gl_PointSize = 5.0;
             gl_Position = u_MVPMatrix * skinDeform * vec4(position, 1.0); // needs w for proper perspective correction
         }
     |]

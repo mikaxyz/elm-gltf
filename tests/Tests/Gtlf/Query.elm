@@ -294,7 +294,7 @@ suite =
                                 , normal = Nothing
                                 , tangent = Nothing
                                 , color = Nothing
-                                , position = vec3 0 1 0
+                                , position = vec3 0 0 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
@@ -310,7 +310,7 @@ suite =
                                 , normal = Nothing
                                 , tangent = Nothing
                                 , color = Nothing
-                                , position = vec3 0 0 0
+                                , position = vec3 0 1 0
                                 , weights = Nothing
                                 , texCoords = Nothing
                                 }
@@ -319,12 +319,8 @@ suite =
                         ]
                 in
                 case queryResult of
-                    Ok thing ->
-                        Expect.all
-                            [ \x ->
-                                Expect.equal expected (QueryHelper.meshesFromNode x)
-                            ]
-                            thing
+                    Ok node ->
+                        Expect.equal expected (QueryHelper.meshesFromNode node)
 
                     Err _ ->
                         Expect.fail "Extract failed"

@@ -3,6 +3,7 @@ module Gltf.Query.MeshHelper exposing
     , toMaterial
     )
 
+import Array exposing (Array)
 import Common
 import Gltf.Material exposing (Material)
 import Gltf.Mesh exposing (Mesh(..), Vertex)
@@ -10,7 +11,6 @@ import Gltf.Query.Attribute as Attribute exposing (Attribute)
 import Gltf.Query.BufferStore exposing (BufferStore)
 import Gltf.Query.MaterialHelper
 import Gltf.Query.VertexBuffers as VertexBuffers exposing (VertexBuffers)
-import Internal.Accessor as Accessor
 import Internal.Gltf exposing (Gltf)
 import Internal.Mesh exposing (Primitive)
 import Math.Vector3 as Vec3
@@ -35,6 +35,24 @@ toMaterial mesh =
             material
 
         IndexedTriangularMesh material _ ->
+            material
+
+        Points material _ ->
+            material
+
+        Lines material _ ->
+            material
+
+        LineLoop material _ ->
+            material
+
+        LineStrip material _ ->
+            material
+
+        TriangleStrip material _ ->
+            material
+
+        TriangleFan material _ ->
             material
 
 
@@ -70,8 +88,8 @@ fromPrimitive gltf bufferStore primitive =
                 _ ->
                     Nothing
 
-        vertexAttributesToVertices2 : VertexAttributes -> List Vertex
-        vertexAttributesToVertices2 a =
+        vertexAttributesToVertices : VertexAttributes -> List Vertex
+        vertexAttributesToVertices a =
             let
                 positions : List Vertex
                 positions =
@@ -181,56 +199,101 @@ fromPrimitive gltf bufferStore primitive =
         material : Maybe Material
         material =
             Gltf.Query.MaterialHelper.fromPrimitive gltf primitive
-    in
-    case primitive.indices of
-        Just indices ->
-            IndexedTriangularMesh material
-                ( vertexAttributesToVertices2 vertexAttributes
-                , readTriangleIndices gltf bufferStore indices
-                )
 
-        Nothing ->
-            vertexAttributes
-                |> vertexAttributesToVertices2
-                |> List.reverse
+        maybeIndices : Maybe (List Int)
+        maybeIndices =
+            case primitive.indices of
+                Just indices ->
+                    Common.accessorAtIndex gltf indices
+                        |> Maybe.andThen (Common.bufferInfo gltf bufferStore)
+                        |> Maybe.map Attribute.parseBuffer
+                        |> Maybe.withDefault []
+                        |> List.filterMap
+                            (\a ->
+                                case a of
+                                    Attribute.ScalarIntAttribute v ->
+                                        Just v
+
+                                    _ ->
+                                        Nothing
+                            )
+                        |> Just
+
+                Nothing ->
+                    Nothing
+
+        verticesInlined : () -> List Vertex
+        verticesInlined _ =
+            case maybeIndices of
+                Just indices ->
+                    let
+                        vertexMap : Array Vertex
+                        vertexMap =
+                            vertexAttributes
+                                |> vertexAttributesToVertices
+                                |> Array.fromList
+                    in
+                    indices |> List.filterMap (\i -> Array.get i vertexMap)
+
+                Nothing ->
+                    vertexAttributesToVertices vertexAttributes
+    in
+    case primitive.mode of
+        Internal.Mesh.Points ->
+            verticesInlined () |> Points material
+
+        Internal.Mesh.Lines ->
+            verticesInlined ()
                 |> List.foldl
                     (\vertex ( c, a ) ->
                         case c of
-                            [ v2, v1 ] ->
-                                ( [], ( v1, v2, vertex ) :: a )
+                            Just last ->
+                                ( Nothing, ( last, vertex ) :: a )
 
-                            _ ->
-                                ( vertex :: c, a )
+                            Nothing ->
+                                ( Just vertex, a )
                     )
-                    ( [], [] )
+                    ( Nothing, [] )
                 |> Tuple.second
-                |> TriangularMesh material
+                |> List.reverse
+                |> Lines material
 
+        Internal.Mesh.LineLoop ->
+            LineLoop material (verticesInlined ())
 
-readTriangleIndices : Gltf -> BufferStore -> Accessor.Index -> List ( Int, Int, Int )
-readTriangleIndices gltf bufferStore indices =
-    Common.accessorAtIndex gltf indices
-        |> Maybe.andThen (Common.bufferInfo gltf bufferStore)
-        |> Maybe.map Attribute.parseBuffer
-        |> Maybe.withDefault []
-        |> List.filterMap
-            (\a ->
-                case a of
-                    Attribute.ScalarIntAttribute v ->
-                        Just v
+        Internal.Mesh.LineStrip ->
+            LineStrip material (verticesInlined ())
 
-                    _ ->
-                        Nothing
-            )
-        |> List.foldl
-            (\val ( curr, acc ) ->
-                case curr of
-                    [ y, x ] ->
-                        ( [], ( x, y, val ) :: acc )
+        Internal.Mesh.Triangles ->
+            let
+                toTriangles : List a -> List ( a, a, a )
+                toTriangles vertices =
+                    vertices
+                        |> List.foldl
+                            (\vertex ( c, a ) ->
+                                case c of
+                                    [ v2, v1 ] ->
+                                        ( [], ( v1, v2, vertex ) :: a )
 
-                    _ ->
-                        ( val :: curr, acc )
-            )
-            ( [], [] )
-        |> Tuple.second
-        |> List.reverse
+                                    _ ->
+                                        ( vertex :: c, a )
+                            )
+                            ( [], [] )
+                        |> Tuple.second
+                        |> List.reverse
+            in
+            case maybeIndices of
+                Just indices ->
+                    IndexedTriangularMesh material
+                        ( vertexAttributesToVertices vertexAttributes
+                        , indices |> toTriangles
+                        )
+
+                Nothing ->
+                    verticesInlined () |> toTriangles |> TriangularMesh material
+
+        Internal.Mesh.TriangleStrip ->
+            TriangleStrip material (verticesInlined ())
+
+        Internal.Mesh.TriangleFan ->
+            TriangleFan material (verticesInlined ())

@@ -2,6 +2,7 @@ module Internal.Mesh exposing
     ( Attribute(..)
     , Index(..)
     , Mesh
+    , Mode(..)
     , Primitive
     , decoder
     , indexDecoder
@@ -27,7 +28,50 @@ type alias Primitive =
     { attributes : List Attribute
     , indices : Maybe Accessor.Index
     , material : Maybe Material.Index
+    , mode : Mode
     }
+
+
+type Mode
+    = Points
+    | Lines
+    | LineLoop
+    | LineStrip
+    | Triangles
+    | TriangleStrip
+    | TriangleFan
+
+
+modeDecoder : JD.Decoder Mode
+modeDecoder =
+    JD.int
+        |> JD.andThen
+            (\mode ->
+                case mode of
+                    0 ->
+                        JD.succeed Points
+
+                    1 ->
+                        JD.succeed Lines
+
+                    2 ->
+                        JD.succeed LineLoop
+
+                    3 ->
+                        JD.succeed LineStrip
+
+                    4 ->
+                        JD.succeed Triangles
+
+                    5 ->
+                        JD.succeed TriangleStrip
+
+                    6 ->
+                        JD.succeed TriangleFan
+
+                    m ->
+                        JD.fail <| "Unknown mesh.primitive.mode " ++ String.fromInt m
+            )
 
 
 type Attribute
@@ -58,6 +102,7 @@ primitiveDecoder =
         |> JDP.required "attributes" attributesDecoder
         |> JDP.optional "indices" (JD.maybe Accessor.indexDecoder) Nothing
         |> JDP.optional "material" (JD.maybe Material.indexDecoder) Nothing
+        |> JDP.optional "mode" modeDecoder Triangles
 
 
 attributesDecoder : JD.Decoder (List Attribute)

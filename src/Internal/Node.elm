@@ -34,7 +34,7 @@ decoder i =
         (JD.field "skin" Skin.indexDecoder |> JD.maybe)
         (JD.field "camera" Camera.indexDecoder |> JD.maybe)
         (Util.optionalField "children" (JD.list indexDecoder) [])
-        (JDP.custom transformDecoder (JD.succeed identity))
+        transformDecoder
         |> JD.map Node
 
 

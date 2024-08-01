@@ -123,6 +123,21 @@ parseBuffer ( accessor, bufferView, Buffer buffer ) =
                                 (Bytes.Decode.float32 Bytes.LE)
                                 (Bytes.Decode.bytes (stride 1))
 
+                        Accessor.BYTE ->
+                            Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
+                                Bytes.Decode.signedInt8
+                                (Bytes.Decode.bytes (stride 1))
+
+                        Accessor.UNSIGNED_BYTE ->
+                            Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
+                                Bytes.Decode.unsignedInt8
+                                (Bytes.Decode.bytes (stride 1))
+
+                        Accessor.SHORT ->
+                            Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
+                                (Bytes.Decode.signedInt16 Bytes.LE)
+                                (Bytes.Decode.bytes (stride 1))
+
                         Accessor.UNSIGNED_SHORT ->
                             Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
                                 (Bytes.Decode.unsignedInt16 Bytes.LE)
@@ -132,9 +147,6 @@ parseBuffer ( accessor, bufferView, Buffer buffer ) =
                             Bytes.Decode.map2 (\x _ -> ScalarIntAttribute x)
                                 (Bytes.Decode.unsignedInt32 Bytes.LE)
                                 (Bytes.Decode.bytes (stride 1))
-
-                        _ ->
-                            Bytes.Decode.fail
 
                 Accessor.VEC2 ->
                     case accessor.componentType of

@@ -20,7 +20,13 @@ import Math.Vector4 exposing (Vec4)
 
 -}
 type Mesh
-    = TriangularMesh (Maybe Material) (List ( Vertex, Vertex, Vertex ))
+    = Points (Maybe Material) (List Vertex)
+    | Lines (Maybe Material) (List ( Vertex, Vertex ))
+    | LineLoop (Maybe Material) (List Vertex)
+    | LineStrip (Maybe Material) (List Vertex)
+    | TriangleStrip (Maybe Material) (List Vertex)
+    | TriangleFan (Maybe Material) (List Vertex)
+    | TriangularMesh (Maybe Material) (List ( Vertex, Vertex, Vertex ))
     | IndexedTriangularMesh (Maybe Material) ( List Vertex, List ( Int, Int, Int ) )
 
 

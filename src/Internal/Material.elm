@@ -85,7 +85,7 @@ decoder =
         |> JDP.optional "occlusionTexture" (JD.maybe occlusionTextureInfoDecoder) Nothing
         |> JDP.optional "emissiveTexture" (JD.maybe TextureInfo.decoder) Nothing
         |> JDP.optional "emissiveFactor" vec3Decoder (vec3 0 0 0)
-        |> JDP.optional "alphaMode" alphaModeDecoder Opaque
+        |> JDP.custom alphaModeDecoder
         |> JDP.optional "doubleSided" JD.bool False
 
 
@@ -107,23 +107,20 @@ occlusionTextureInfoDecoder =
 
 alphaModeDecoder : JD.Decoder AlphaMode
 alphaModeDecoder =
-    JD.string
-        |> JD.andThen
-            (\id ->
-                case id of
-                    "OPAQUE" ->
-                        JD.succeed Opaque
+    JD.succeed
+        (\alphaMode alphaCutoff ->
+            case alphaMode of
+                "MASK" ->
+                    Mask alphaCutoff
 
-                    "MASK" ->
-                        JD.succeed Mask
-                            |> JDP.optional "alphaCutoff" JD.float 1.0
+                "BLEND" ->
+                    Blend
 
-                    "BLEND" ->
-                        JD.succeed Blend
-
-                    _ ->
-                        JD.fail ("unknown value for AlphaMode: " ++ id)
-            )
+                _ ->
+                    Opaque
+        )
+        |> JDP.optional "alphaMode" JD.string ""
+        |> JDP.optional "alphaCutoff" JD.float 0.5
 
 
 vec3Decoder : JD.Decoder Vec3
