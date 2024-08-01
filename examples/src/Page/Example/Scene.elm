@@ -126,6 +126,24 @@ frameScene config nodes =
         triangularMeshToBounds : Mesh -> ( Vec3, Vec3 )
         triangularMeshToBounds mesh =
             case mesh of
+                Points _ vertices ->
+                    vertices |> getBounds
+
+                Lines _ vertices ->
+                    vertices |> List.concatMap (\( v1, v2 ) -> [ v1, v2 ]) |> getBounds
+
+                LineLoop _ vertices ->
+                    vertices |> getBounds
+
+                LineStrip _ vertices ->
+                    vertices |> getBounds
+
+                TriangleStrip _ vertices ->
+                    vertices |> getBounds
+
+                TriangleFan _ vertices ->
+                    vertices |> getBounds
+
                 TriangularMesh _ vertices ->
                     vertices |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
 
@@ -350,7 +368,7 @@ objectsFromNode objectIdMap node =
 
 
 objectFromMesh : objectId -> Mesh -> Object objectId Material.Name
-objectFromMesh objectId triangularMesh =
+objectFromMesh objectId mesh =
     let
         withMaterial : Maybe Gltf.Material.Material -> Object id Material.Name -> Object id Material.Name
         withMaterial maybeMaterial =
@@ -361,15 +379,51 @@ objectFromMesh objectId triangularMesh =
                 Nothing ->
                     Object.withMaterialName Material.Default
     in
-    case triangularMesh of
+    case mesh of
+        Points material vertices ->
+            vertices
+                |> List.map toVertex
+                |> Object.initWithPoints
+                |> withMaterial material
+
+        Lines material vertices ->
+            vertices
+                |> List.map (Tuple.mapBoth toVertex toVertex)
+                |> Object.initWithLines
+                |> withMaterial material
+
+        LineLoop material vertices ->
+            vertices
+                |> List.map toVertex
+                |> Object.initWithLineLoop
+                |> withMaterial material
+
+        LineStrip material vertices ->
+            vertices
+                |> List.map toVertex
+                |> Object.initWithLineStrip
+                |> withMaterial material
+
+        TriangleStrip material vertices ->
+            vertices
+                |> List.map toVertex
+                |> Object.initWithTriangleStrip
+                |> withMaterial material
+
+        TriangleFan material vertices ->
+            vertices
+                |> List.map toVertex
+                |> Object.initWithTriangleFan
+                |> withMaterial material
+
         TriangularMesh material vertices ->
             vertices
                 |> List.map (\( v1, v2, v3 ) -> ( toVertex v1, toVertex v2, toVertex v3 ))
                 |> Object.objectWithTriangles objectId
                 |> withMaterial material
 
-        IndexedTriangularMesh material mesh ->
-            mesh
+        IndexedTriangularMesh material vertices ->
+            vertices
                 |> Tuple.mapFirst (List.map toVertex)
                 |> Object.objectObjectWithIndexedTriangles objectId
                 |> withMaterial material

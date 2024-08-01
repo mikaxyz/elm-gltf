@@ -146,7 +146,8 @@ primitiveTreeFromNodes gltf parentNode nodes =
             x.meshIndex
                 |> Maybe.andThen (Common.meshAtIndex gltf)
                 |> Maybe.andThen (.primitives >> List.head)
-                |> Maybe.withDefault (Primitive [] (Just (Accessor.Index -1)) Nothing)
+                -- TODO: Make this fail instead
+                |> Maybe.withDefault (Primitive [] (Just (Accessor.Index -1)) Nothing Internal.Mesh.Triangles)
     in
     nodes
         |> List.map (nodeToPrimitives gltf)
@@ -161,7 +162,8 @@ primitiveTreeFromNodes gltf parentNode nodes =
                             )
 
                     [] ->
-                        Tree.singleton ( node__, Primitive [] (Just (Accessor.Index -1)) Nothing )
+                        -- TODO: Make this fail instead
+                        Tree.singleton ( node__, Primitive [] (Just (Accessor.Index -1)) Nothing Internal.Mesh.Triangles )
             )
         |> Tree.tree ( parentNode, parentNodeFirstPrimitive parentNode )
 
