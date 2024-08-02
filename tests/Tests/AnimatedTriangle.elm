@@ -8,6 +8,8 @@ import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.BufferStore exposing (BufferStore)
 import Internal.Gltf exposing (Gltf)
 import Json.Decode as JD
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
 import Test exposing (Test, describe, test)
 
@@ -74,25 +76,6 @@ tests gltf bufferStore =
                             [ 0.0, 0.25, 0.5, 0.75, 1.0 ]
                                 |> List.concatMap (\t -> Gltf.Animation.animatedProperties t animations)
 
-                        roundWithPrecision : Int -> Float -> Float
-                        roundWithPrecision p v =
-                            let
-                                d : Float
-                                d =
-                                    toFloat (10 ^ p)
-                            in
-                            (round (v * d) |> toFloat) / d
-
-                        roundQuaternion : Quaternion -> Quaternion
-                        roundQuaternion q =
-                            { vector =
-                                { x = roundWithPrecision 15 q.vector.x
-                                , y = roundWithPrecision 15 q.vector.y
-                                , z = roundWithPrecision 15 q.vector.z
-                                }
-                            , scalar = roundWithPrecision 15 q.scalar
-                            }
-
                         expected : List Gltf.Animation.AnimatedProperty
                         expected =
                             [ Gltf.Animation.AnimatedRotationProperty (NodeIndex 0) Quaternion.identity
@@ -103,8 +86,83 @@ tests gltf bufferStore =
                             ]
                     in
                     Expect.equal expected animatedProperties
+            , test "animates shortest angle" <|
+                \_ ->
+                    let
+                        animations : List Animation
+                        animations =
+                            AnimationHelper.extractAnimations gltf bufferStore
+
+                        toRotation : Gltf.Animation.AnimatedProperty -> Maybe Quaternion
+                        toRotation p =
+                            case p of
+                                Gltf.Animation.AnimatedRotationProperty _ q ->
+                                    Just q
+
+                                Gltf.Animation.AnimatedPositionProperty _ _ ->
+                                    Nothing
+
+                        animatedProperties : List Quaternion
+                        animatedProperties =
+                            [ 3 / 8, 7 / 8 ]
+                                |> List.concatMap (\t -> Gltf.Animation.animatedProperties t animations)
+                                |> List.filterMap toRotation
+                    in
+                    case
+                        Maybe.map2 Tuple.pair
+                            (animatedProperties |> List.head)
+                            (animatedProperties |> List.drop 1 |> List.head)
+                    of
+                        Just ( q1, q2 ) ->
+                            let
+                                v1 : Vec3
+                                v1 =
+                                    Vec3.vec3 0 1 0
+                                        |> Mat4.transform (Quaternion.toMat4 q1)
+                                        |> roundVec3WithPrecision 3
+
+                                v2 : Vec3
+                                v2 =
+                                    Vec3.vec3 0 1 0
+                                        |> Mat4.transform (Quaternion.toMat4 q2)
+                                        |> roundVec3WithPrecision 3
+                            in
+                            Expect.notEqual v1 v2
+
+                        Nothing ->
+                            Expect.fail "animatedProperties missing"
             ]
         ]
+
+
+roundWithPrecision : Int -> Float -> Float
+roundWithPrecision p v =
+    let
+        d : Float
+        d =
+            toFloat (10 ^ p)
+    in
+    (round (v * d) |> toFloat) / d
+
+
+roundVec3WithPrecision : Int -> Vec3 -> Vec3
+roundVec3WithPrecision p v =
+    let
+        { x, y, z } =
+            Vec3.toRecord v
+    in
+    Vec3.vec3 (roundWithPrecision p x) (roundWithPrecision p y) (roundWithPrecision p z)
+
+
+roundQuaternion : Quaternion -> Quaternion
+roundQuaternion q =
+    { vector =
+        { x = roundWithPrecision 15 q.vector.x
+        , y = roundWithPrecision 15 q.vector.y
+        , z = roundWithPrecision 15 q.vector.z
+        }
+    , scalar = roundWithPrecision 15 q.scalar
+    }
 
 
 json : String
