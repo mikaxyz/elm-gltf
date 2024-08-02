@@ -161,7 +161,7 @@ animatedProperty (Channel channel) time =
             data
                 |> List.foldl
                     (\( input, output ) acc ->
-                        if input < time then
+                        if input <= time then
                             { acc | startTime = Just input, from = Just output }
 
                         else if acc.endTime == Nothing then
@@ -230,7 +230,7 @@ animatedRotation (Channel channel) time =
             data
                 |> List.foldl
                     (\( input, output ) acc ->
-                        if input < time then
+                        if input <= time then
                             { acc | startTime = Just input, from = Just output }
 
                         else if acc.endTime == Nothing then
