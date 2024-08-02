@@ -161,7 +161,7 @@ animatedProperty (Channel channel) time =
             data
                 |> List.foldl
                     (\( input, output ) acc ->
-                        if input < time then
+                        if input <= time then
                             { acc | startTime = Just input, from = Just output }
 
                         else if acc.endTime == Nothing then
@@ -230,7 +230,7 @@ animatedRotation (Channel channel) time =
             data
                 |> List.foldl
                     (\( input, output ) acc ->
-                        if input < time then
+                        if input <= time then
                             { acc | startTime = Just input, from = Just output }
 
                         else if acc.endTime == Nothing then
@@ -249,69 +249,6 @@ animatedRotation (Channel channel) time =
                         rTime : Float
                         rTime =
                             (time - startTime) / (endTime - startTime)
-
-                        quaternionSlerp : Quaternion -> Quaternion -> Float -> Quaternion
-                        quaternionSlerp q1 q2 t =
-                            let
-                                -- http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-                                cosHalfTheta_ : Float
-                                cosHalfTheta_ =
-                                    q1.scalar * q2.scalar + q1.vector.x * q2.vector.x + q1.vector.y * q2.vector.y + q1.vector.z * q2.vector.z
-
-                                ( cosHalfTheta, q2n ) =
-                                    if cosHalfTheta_ < 0 then
-                                        ( -cosHalfTheta_, Quaternion.conjugate q2 )
-                                        -- According to link above...
-                                        --( -cosHalfTheta_
-                                        --, Quaternion.quaternion
-                                        --    -q2.scalar
-                                        --    -q2.vector.x
-                                        --    -q2.vector.y
-                                        --    q2.vector.z
-                                        --)
-
-                                    else
-                                        ( cosHalfTheta_, q2 )
-                            in
-                            if abs cosHalfTheta >= 1.0 then
-                                q1
-
-                            else
-                                let
-                                    sinHalfTheta : Float
-                                    sinHalfTheta =
-                                        sqrt (1.0 - cosHalfTheta * cosHalfTheta)
-                                in
-                                if abs sinHalfTheta < 0.001 then
-                                    { scalar = q1.scalar * 0.5 + q2n.scalar * 0.5
-                                    , vector =
-                                        { x = q1.vector.x * 0.5 + q2n.vector.x * 0.5
-                                        , y = q1.vector.y * 0.5 + q2n.vector.y * 0.5
-                                        , z = q1.vector.z * 0.5 + q2n.vector.z * 0.5
-                                        }
-                                    }
-
-                                else
-                                    let
-                                        halfTheta : Float
-                                        halfTheta =
-                                            acos cosHalfTheta
-
-                                        ratioA : Float
-                                        ratioA =
-                                            sin ((1 - t) * halfTheta) / sinHalfTheta
-
-                                        ratioB : Float
-                                        ratioB =
-                                            sin (t * halfTheta) / sinHalfTheta
-                                    in
-                                    { scalar = q1.scalar * ratioA + q2n.scalar * ratioB
-                                    , vector =
-                                        { x = q1.vector.x * ratioA + q2n.vector.x * ratioB
-                                        , y = q1.vector.y * ratioA + q2n.vector.y * ratioB
-                                        , z = q1.vector.z * ratioA + q2n.vector.z * ratioB
-                                        }
-                                    }
                     in
                     { w = rTime
                     , from = from
@@ -537,3 +474,75 @@ channelMatrix theta (Channel channel) =
 
         Channel.Weights ->
             Mat4.identity
+
+
+{-| Spherically interpolates between two quaternions, providing an interpolation between rotations with constant angle change rate.
+
+Credit: <https://github.com/away3d/away3d-core-fp11/blob/008b1d83d3330281034b90ca7072722a9f486958/src/away3d/core/math/Quaternion.as#L112>
+
+-}
+quaternionSlerp : Quaternion -> Quaternion -> Float -> Quaternion
+quaternionSlerp qa qb t =
+    let
+        { w1, w2_, x1, x2_, y1, y2_, z1, z2_ } =
+            { w1 = qa.scalar
+            , x1 = qa.vector.x
+            , y1 = qa.vector.y
+            , z1 = qa.vector.z
+            , w2_ = qb.scalar
+            , x2_ = qb.vector.x
+            , y2_ = qb.vector.y
+            , z2_ = qb.vector.z
+            }
+
+        dot_ : Float
+        dot_ =
+            w1 * w2_ + x1 * x2_ + y1 * y2_ + z1 * z2_
+
+        { dot, w2, x2, y2, z2 } =
+            if dot_ < 0 then
+                { dot = -dot_, w2 = -w2_, x2 = -x2_, y2 = -y2_, z2 = -z2_ }
+
+            else
+                { dot = dot_, w2 = w2_, x2 = x2_, y2 = y2_, z2 = z2_ }
+    in
+    if dot < 0.95 then
+        let
+            -- interpolate angle linearly
+            angle : Float
+            angle =
+                acos dot
+
+            s : Float
+            s =
+                1 / sin angle
+
+            { s1, s2 } =
+                { s1 = sin (angle * (1 - t)) * s
+                , s2 = sin (angle * t) * s
+                }
+
+            { w, x, y, z } =
+                { w = w1 * s1 + w2 * s2
+                , x = x1 * s1 + x2 * s2
+                , y = y1 * s1 + y2 * s2
+                , z = z1 * s1 + z2 * s2
+                }
+        in
+        Quaternion.quaternion w x y z
+
+    else
+        let
+            -- nearly identical angle, interpolate linearly
+            { w, x, y, z } =
+                { w = w1 + t * (w2 - w1)
+                , x = x1 + t * (x2 - x1)
+                , y = y1 + t * (y2 - y1)
+                , z = z1 + t * (z2 - z1)
+                }
+
+            len : Float
+            len =
+                1.0 / sqrt (w * w + x * x + y * y + z * z)
+        in
+        Quaternion.quaternion (w * len) (x * len) (y * len) (z * len)

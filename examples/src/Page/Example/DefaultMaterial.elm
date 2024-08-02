@@ -104,6 +104,7 @@ type alias Uniforms =
 
 type alias Varyings =
     { v_Position : Vec3
+    , v_Color : Vec3
     , v_UV : Vec2
     , v_Normal : Vec3
     , v_fragPos : Vec3
@@ -256,6 +257,7 @@ vertexShader =
         attribute vec3 normal;
         attribute vec3 tangent;
         attribute vec2 uv;
+        attribute vec3 color;
         attribute vec4 joints;
         attribute vec4 weights;
 
@@ -265,6 +267,7 @@ vertexShader =
 
         varying vec3 v_Position;
         varying vec2 v_UV;
+        varying vec3 v_Color;
         varying vec3 v_Normal;
         varying vec3 v_fragPos;
 
@@ -412,7 +415,7 @@ vertexShader =
             v_Normal = normalize(vec3(u_ModelMatrix * vec4(normal.xyz, 0.0)));
             v_UV = uv;
             v_fragPos = vec3(u_ModelMatrix * vec4(position, 1.0));
-
+            v_Color = color;
             gl_PointSize = 5.0;
             gl_Position = u_MVPMatrix * skinDeform * vec4(position, 1.0); // needs w for proper perspective correction
         }
@@ -448,6 +451,7 @@ fragmentShader =
 
         varying vec3 v_Position;
         varying vec2 v_UV;
+        varying vec3 v_Color;
         varying vec3 v_Normal;
         varying vec3 v_fragPos;
 
@@ -492,6 +496,6 @@ fragmentShader =
                 lighting += f_directionalLight(normal);
             }
 
-            gl_FragColor =  vec4(lighting, 1.0);
+            gl_FragColor =  vec4(v_Color * lighting, 1.0);
         }
     |]
