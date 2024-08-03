@@ -429,7 +429,6 @@ update msg model =
                 , scene =
                     Scene.initWithNodes
                         (Gltf.nodeTrees queryResult)
-                        identity
                         { camera = default.camera
                         , projection = default.projection
                         , sceneSize = model.sceneSize

@@ -45,32 +45,32 @@ type alias Config =
     }
 
 
-initWithNodes : List (Tree Gltf.Node.Node) -> (ObjectId -> objectId) -> Config -> Scene objectId Material.Name
-initWithNodes nodes objectIdMap config =
+initWithNodes : List (Tree Gltf.Node.Node) -> Config -> Scene ObjectId Material.Name
+initWithNodes nodes config =
     let
         { cameraTarget, cameraPosition, cameraProjection, bounds } =
             frameScene config nodes
     in
-    graphFromNodes nodes objectIdMap config
+    graphFromNodes nodes config
         |> Scene.init
         |> Scene.withCameraMap (always config.camera)
         |> Scene.withCameraMap (Camera.withTarget cameraTarget >> Camera.withPosition cameraPosition)
         |> Scene.withPerspectiveProjection cameraProjection
 
 
-graphFromNodes : List (Tree Gltf.Node.Node) -> (ObjectId -> objectId) -> Config -> Graph (Object objectId Material.Name)
-graphFromNodes nodeTrees objectIdMap config =
+graphFromNodes : List (Tree Gltf.Node.Node) -> Config -> Graph (Object ObjectId Material.Name)
+graphFromNodes nodeTrees config =
     let
-        nodesToObjects : Tree Gltf.Node.Node -> Tree (Object objectId Material.Name)
+        nodesToObjects : Tree Gltf.Node.Node -> Tree (Object ObjectId Material.Name)
         nodesToObjects nodes =
             nodes
-                |> Tree.map (objectsFromNode objectIdMap)
+                |> Tree.map objectsFromNode
                 |> Tree.restructure identity
                     (\( mesh, childMeshes ) c ->
                         Tree.tree mesh (childMeshes |> List.map Tree.singleton |> List.append c)
                     )
 
-        objects : List (Tree (Object objectId Material.Name))
+        objects : List (Tree (Object ObjectId Material.Name))
         objects =
             nodeTrees |> List.map nodesToObjects
     in
@@ -289,8 +289,8 @@ frameScene config nodes =
     }
 
 
-objectsFromNode : (ObjectId -> objectId) -> Gltf.Node.Node -> ( Object objectId Material.Name, List (Object objectId Material.Name) )
-objectsFromNode objectIdMap node =
+objectsFromNode : Gltf.Node.Node -> ( Object ObjectId Material.Name, List (Object ObjectId Material.Name) )
+objectsFromNode node =
     let
         applyTransform : Transform -> Object id materialId -> Object id materialId
         applyTransform transform object =
@@ -317,14 +317,14 @@ objectsFromNode objectIdMap node =
     in
     case node of
         Gltf.Node.EmptyNode (Gltf.Node.Properties properties) ->
-            ( Object.groupWithId (objectIdMap (Mesh properties.nodeIndex)) "EMPTY"
+            ( Object.groupWithId (Mesh properties.nodeIndex) "EMPTY"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , []
             )
 
         Gltf.Node.CameraNode cameraId (Gltf.Node.Properties properties) ->
-            ( Object.groupWithId (objectIdMap (Camera cameraId properties.nodeIndex)) "CAMERA"
+            ( Object.groupWithId (Camera cameraId properties.nodeIndex) "CAMERA"
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
             , []
@@ -332,18 +332,18 @@ objectsFromNode objectIdMap node =
 
         Gltf.Node.MeshNode (mesh :: rest) (Gltf.Node.Properties properties) ->
             ( mesh
-                |> objectFromMesh (objectIdMap (Mesh properties.nodeIndex))
+                |> objectFromMesh (Mesh properties.nodeIndex)
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-            , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
+            , rest |> List.map (objectFromMesh (Mesh properties.nodeIndex))
             )
 
         Gltf.Node.SkinnedMeshNode (mesh :: rest) skinIndex (Gltf.Node.Properties properties) ->
             ( mesh
-                |> objectFromMesh (objectIdMap (SkinnedMesh skinIndex))
+                |> objectFromMesh (SkinnedMesh skinIndex)
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-            , rest |> List.map (objectFromMesh (objectIdMap (SkinnedMesh skinIndex)))
+            , rest |> List.map (objectFromMesh (SkinnedMesh skinIndex))
             )
 
         Gltf.Node.MeshNode [] (Gltf.Node.Properties properties) ->
@@ -352,7 +352,7 @@ objectsFromNode objectIdMap node =
                     Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
             in
             ( Primitives.bone3 0.1
-                |> Object.objectWithTriangles (objectIdMap (Bone properties.nodeIndex))
+                |> Object.objectWithTriangles (Bone properties.nodeIndex)
                 |> Object.withName (name properties.nodeIndex)
                 |> applyTransform properties.transform
                 |> Object.withColor Color.gray
