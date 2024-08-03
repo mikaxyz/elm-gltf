@@ -341,10 +341,9 @@ objectsFromNode objectIdMap node =
         Gltf.Node.SkinnedMeshNode (mesh :: rest) skinIndex (Gltf.Node.Properties properties) ->
             ( mesh
                 |> objectFromMesh (objectIdMap (SkinnedMesh skinIndex))
-                --|> GltfHelper.objectWithSkin skin
                 |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
                 |> applyTransform properties.transform
-            , rest |> List.map (objectFromMesh (objectIdMap (Mesh properties.nodeIndex)))
+            , rest |> List.map (objectFromMesh (objectIdMap (SkinnedMesh skinIndex)))
             )
 
         Gltf.Node.MeshNode [] (Gltf.Node.Properties properties) ->
