@@ -54,6 +54,7 @@ import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Scene exposing (Scene)
 import Gltf.Skin exposing (Skin)
+import Gltf.Transform
 import Http
 import Internal.Gltf
 import Internal.Image
@@ -61,6 +62,8 @@ import Internal.Node
 import Internal.Sampler
 import Internal.Scene
 import Internal.Skin
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
@@ -648,9 +651,61 @@ meshesFromNode node =
         Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
 
+        Gltf.Node.BoneNode _ _ _ ->
+            []
+
 
 nodeFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Node
 nodeFromNode gltf bufferStore node =
+    let
+        jointNodeSkinId : Internal.Node.Node -> Maybe ( Gltf.Skin.Index, Maybe Float )
+        jointNodeSkinId (Internal.Node.Node node_) =
+            let
+                (Internal.Node.Index nodeIndex) =
+                    node_.index
+
+                id : Maybe Gltf.Skin.Index
+                id =
+                    gltf.skins
+                        |> Array.indexedMap
+                            (\index skin ->
+                                if List.member (Internal.Skin.JointNodeIndex nodeIndex) skin.joints then
+                                    Just (Gltf.Skin.Index index)
+
+                                else
+                                    Nothing
+                            )
+                        |> Array.toList
+                        |> List.filterMap identity
+                        |> List.head
+            in
+            case id of
+                Just skinId ->
+                    let
+                        length : Gltf.Transform.Transform -> Maybe Float
+                        length transform =
+                            case transform of
+                                Gltf.Transform.TRS { translation } ->
+                                    translation
+                                        |> Maybe.map Vec3.length
+
+                                Gltf.Transform.Matrix mat ->
+                                    Vec3.vec3 0 0 0
+                                        |> Mat4.transform mat
+                                        |> Vec3.length
+                                        |> Just
+                    in
+                    Just
+                        ( skinId
+                        , node_.children
+                            |> List.head
+                            |> Maybe.andThen (Common.nodeAtIndex gltf)
+                            |> Maybe.andThen (\(Internal.Node.Node childNode) -> length childNode.transform)
+                        )
+
+                Nothing ->
+                    Nothing
+    in
     case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
@@ -665,16 +720,23 @@ nodeFromNode gltf bufferStore node =
                         |> Gltf.Node.CameraNode cameraIndex
 
                 Nothing ->
-                    case triangularMeshesFromNode gltf bufferStore node of
-                        Just meshes ->
+                    case jointNodeSkinId node of
+                        Just ( skinIndex, length ) ->
                             node
                                 |> propertiesFromNode
-                                |> Gltf.Node.MeshNode meshes
+                                |> Gltf.Node.BoneNode skinIndex length
 
                         Nothing ->
-                            node
-                                |> propertiesFromNode
-                                |> Gltf.Node.EmptyNode
+                            case triangularMeshesFromNode gltf bufferStore node of
+                                Just meshes ->
+                                    node
+                                        |> propertiesFromNode
+                                        |> Gltf.Node.MeshNode meshes
+
+                                Nothing ->
+                                    node
+                                        |> propertiesFromNode
+                                        |> Gltf.Node.EmptyNode
 
 
 propertiesFromNode : Internal.Node.Node -> Gltf.Node.Properties

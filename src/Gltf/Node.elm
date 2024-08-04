@@ -23,6 +23,7 @@ type Node
     | CameraNode Gltf.Camera.Index Properties
     | MeshNode (List Mesh) Properties
     | SkinnedMeshNode (List Mesh) Gltf.Skin.Index Properties
+    | BoneNode Gltf.Skin.Index (Maybe Float) Properties
 
 
 {-| The [Transform](Gltf-Transform#Transform) of the Node along with name and index.

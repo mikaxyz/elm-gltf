@@ -51,6 +51,9 @@ meshesFromNode node =
         Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
             triangularMeshes
 
+        Gltf.Node.BoneNode _ _ _ ->
+            []
+
 
 nodeTree : Int -> Gltf -> Result Gltf.Error (Tree Node)
 nodeTree index gltf =
