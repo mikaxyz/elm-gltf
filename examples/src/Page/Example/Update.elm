@@ -356,12 +356,6 @@ update msg model =
                     , Cmd.none
                     )
 
-                Keyboard.Character ',' ->
-                    ( model, Cmd.none )
-
-                Keyboard.Character '.' ->
-                    ( model, Cmd.none )
-
                 _ ->
                     ( model, Cmd.none )
 
