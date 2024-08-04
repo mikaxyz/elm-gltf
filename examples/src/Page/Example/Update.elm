@@ -504,7 +504,7 @@ update msg model =
                                                         |> List.map
                                                             (\node ->
                                                                 case node of
-                                                                    Gltf.Node.CameraNode cameraIndex (Gltf.Node.Properties properties) ->
+                                                                    Gltf.Node.Camera cameraIndex (Gltf.Node.Properties properties) ->
                                                                         if cameraIndex == index then
                                                                             Just properties.nodeIndex
 

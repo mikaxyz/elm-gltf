@@ -10,7 +10,7 @@ module Gltf.Node exposing (Node(..), Properties(..))
 -}
 
 import Gltf.Camera
-import Gltf.Mesh exposing (Mesh)
+import Gltf.Mesh
 import Gltf.NodeIndex exposing (NodeIndex)
 import Gltf.Skin
 import Gltf.Transform exposing (Transform)
@@ -19,11 +19,11 @@ import Gltf.Transform exposing (Transform)
 {-| The types of [Nodes](Gltf#nodeTrees) returned as a [Tree](https://package.elm-lang.org/packages/zwilias/elm-rosetree/latest/Tree#Tree) by a [query](Gltf#queries)
 -}
 type Node
-    = EmptyNode Properties
-    | CameraNode Gltf.Camera.Index Properties
-    | MeshNode (List Mesh) Properties
-    | SkinnedMeshNode (List Mesh) Gltf.Skin.Index Properties
-    | BoneNode Gltf.Skin.Index (Maybe Float) Properties
+    = Empty Properties
+    | Camera Gltf.Camera.Index Properties
+    | Mesh (List Gltf.Mesh.Mesh) Properties
+    | SkinnedMesh (List Gltf.Mesh.Mesh) Gltf.Skin.Index Properties
+    | Bone Gltf.Skin.Index (Maybe Float) Properties
 
 
 {-| The [Transform](Gltf-Transform#Transform) of the Node along with name and index.

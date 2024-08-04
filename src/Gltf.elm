@@ -639,19 +639,19 @@ nodeIndexFromNode (Internal.Node.Index index) =
 meshesFromNode : Node -> List Mesh
 meshesFromNode node =
     case node of
-        Gltf.Node.EmptyNode _ ->
+        Gltf.Node.Empty _ ->
             []
 
-        Gltf.Node.CameraNode _ _ ->
+        Gltf.Node.Camera _ _ ->
             []
 
-        Gltf.Node.MeshNode triangularMeshes _ ->
+        Gltf.Node.Mesh triangularMeshes _ ->
             triangularMeshes
 
-        Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
+        Gltf.Node.SkinnedMesh triangularMeshes _ _ ->
             triangularMeshes
 
-        Gltf.Node.BoneNode _ _ _ ->
+        Gltf.Node.Bone _ _ _ ->
             []
 
 
@@ -710,33 +710,33 @@ nodeFromNode gltf bufferStore node =
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMesh (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> Gltf.Node.CameraNode cameraIndex
+                        |> Gltf.Node.Camera cameraIndex
 
                 Nothing ->
                     case jointNodeSkinId node of
                         Just ( skinIndex, length ) ->
                             node
                                 |> propertiesFromNode
-                                |> Gltf.Node.BoneNode skinIndex length
+                                |> Gltf.Node.Bone skinIndex length
 
                         Nothing ->
                             case triangularMeshesFromNode gltf bufferStore node of
                                 Just meshes ->
                                     node
                                         |> propertiesFromNode
-                                        |> Gltf.Node.MeshNode meshes
+                                        |> Gltf.Node.Mesh meshes
 
                                 Nothing ->
                                     node
                                         |> propertiesFromNode
-                                        |> Gltf.Node.EmptyNode
+                                        |> Gltf.Node.Empty
 
 
 propertiesFromNode : Internal.Node.Node -> Gltf.Node.Properties

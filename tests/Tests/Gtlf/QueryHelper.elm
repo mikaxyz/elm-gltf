@@ -39,19 +39,19 @@ fromJson json f =
 meshesFromNode : Gltf.Node.Node -> List Mesh
 meshesFromNode node =
     case node of
-        Gltf.Node.EmptyNode _ ->
+        Gltf.Node.Empty _ ->
             []
 
-        Gltf.Node.CameraNode _ _ ->
+        Gltf.Node.Camera _ _ ->
             []
 
-        Gltf.Node.MeshNode triangularMeshes _ ->
+        Gltf.Node.Mesh triangularMeshes _ ->
             triangularMeshes
 
-        Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
+        Gltf.Node.SkinnedMesh triangularMeshes _ _ ->
             triangularMeshes
 
-        Gltf.Node.BoneNode _ _ _ ->
+        Gltf.Node.Bone _ _ _ ->
             []
 
 
@@ -88,26 +88,26 @@ nodeFromNode gltf node =
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMesh (triangularMeshesFromNode gltf node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> Gltf.Node.CameraNode cameraIndex
+                        |> Gltf.Node.Camera cameraIndex
 
                 Nothing ->
                     case triangularMeshesFromNode gltf node of
                         Just meshes ->
                             node
                                 |> propertiesFromNode
-                                |> Gltf.Node.MeshNode meshes
+                                |> Gltf.Node.Mesh meshes
 
                         Nothing ->
                             node
                                 |> propertiesFromNode
-                                |> Gltf.Node.EmptyNode
+                                |> Gltf.Node.Empty
 
 
 propertiesFromNode : Node -> Gltf.Node.Properties
