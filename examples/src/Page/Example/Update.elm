@@ -341,6 +341,33 @@ update msg model =
                     , Cmd.none
                     )
 
+                Keyboard.Digit 5 ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> RemoteData.map
+                                    (XYZScene.map
+                                        (\tree ->
+                                            tree
+                                                |> Tree.map
+                                                    (\object ->
+                                                        case XYZObject.id object of
+                                                            Just (Scene.Bone _) ->
+                                                                if XYZObject.isDisabled object then
+                                                                    XYZObject.enable object
+
+                                                                else
+                                                                    XYZObject.disable object
+
+                                                            _ ->
+                                                                object
+                                                    )
+                                        )
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
                 Keyboard.Digit 7 ->
                     ( model |> Model.mapSceneOptions (XYZSceneOptions.toggle XYZSceneOptions.showGridXOption)
                     , Cmd.none
