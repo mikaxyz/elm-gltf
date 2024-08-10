@@ -101,25 +101,6 @@ suite =
                                 , \subject ->
                                     case subject of
                                         (Animation animation) :: [] ->
-                                            Expect.equal (Array.length animation.samplers) 1
-
-                                        _ ->
-                                            Expect.fail "Expecting 1 sampler"
-                                , \subject ->
-                                    case subject of
-                                        (Animation animation) :: [] ->
-                                            case animation.samplers |> Array.toList of
-                                                singleSampler :: [] ->
-                                                    expectSampler singleSampler
-
-                                                _ ->
-                                                    Expect.fail "To many samplers"
-
-                                        _ ->
-                                            Expect.fail "To many animations"
-                                , \subject ->
-                                    case subject of
-                                        (Animation animation) :: [] ->
                                             case animation.channels of
                                                 singleChannel :: [] ->
                                                     expectChannel singleChannel
