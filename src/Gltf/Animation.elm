@@ -71,12 +71,12 @@ name (Animation animation) =
     animation.name
 
 
-type Animated
-    = Animated { from : Vec3, to : Vec3, w : Float, position : Vec3 }
+type AnimatedPosition
+    = AnimatedPosition Vec3
 
 
 type AnimatedRotation
-    = AnimatedRotation { from : Quaternion, to : Quaternion, w : Float, current : Quaternion }
+    = AnimatedRotation Quaternion
 
 
 type alias TRS =
@@ -128,11 +128,11 @@ animatedProperties theta animations =
             case channel.path of
                 Channel.Translation ->
                     animatedProperty (Channel channel) animationTime
-                        |> Maybe.map (\(Animated x) -> AnimatedPositionProperty channel.nodeIndex x.position)
+                        |> Maybe.map (\(AnimatedPosition position) -> AnimatedPositionProperty channel.nodeIndex position)
 
                 Channel.Rotation ->
                     animatedRotation (Channel channel) animationTime
-                        |> Maybe.map (\(AnimatedRotation x) -> AnimatedRotationProperty channel.nodeIndex x.current)
+                        |> Maybe.map (\(AnimatedRotation rotation) -> AnimatedRotationProperty channel.nodeIndex rotation)
 
                 Channel.Scale ->
                     Nothing
@@ -143,7 +143,7 @@ animatedProperties theta animations =
     channels |> List.filterMap applyChannel
 
 
-animatedProperty : Channel -> Float -> Maybe Animated
+animatedProperty : Channel -> Float -> Maybe AnimatedPosition
 animatedProperty (Channel channel) time =
     let
         (Sampler sampler) =
@@ -207,9 +207,7 @@ animatedProperty (Channel channel) time =
                 asd.from
                 asd.to
     in
-    properties
-        |> Maybe.map (\x -> { from = x.from, to = x.to, w = x.w, position = x.position })
-        |> Maybe.map Animated
+    properties |> Maybe.map (\x -> AnimatedPosition x.position)
 
 
 animatedRotation : Channel -> Float -> Maybe AnimatedRotation
@@ -263,9 +261,7 @@ animatedRotation (Channel channel) time =
                 asd.from
                 asd.to
     in
-    properties
-        |> Maybe.map (\x -> { from = x.from, to = x.to, w = x.w, current = x.current })
-        |> Maybe.map AnimatedRotation
+    properties |> Maybe.map (\x -> AnimatedRotation x.current)
 
 
 {-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) and a [Skin](Gltf-Skin#Skin) this will give you [AnimatedBones](Gltf-Animation#AnimatedBone) that can be used to deform a mesh at a point in time.
@@ -438,7 +434,7 @@ channelMatrix theta (Channel channel) =
                     inputMax * duration
             in
             animatedProperty (Channel channel) animationTime
-                |> Maybe.map (\(Animated x) -> x.position)
+                |> Maybe.map (\(AnimatedPosition position) -> position)
                 |> Maybe.withDefault (Vec3.vec3 0 0 0)
                 |> Mat4.makeTranslate
 
@@ -468,7 +464,7 @@ channelMatrix theta (Channel channel) =
                     inputMax * duration
             in
             animatedRotation (Channel channel) animationTime
-                |> Maybe.map (\(AnimatedRotation x) -> Quaternion.toMat4 x.current)
+                |> Maybe.map (\(AnimatedRotation rotation) -> Quaternion.toMat4 rotation)
                 |> Maybe.withDefault Mat4.identity
 
         Channel.Scale ->
