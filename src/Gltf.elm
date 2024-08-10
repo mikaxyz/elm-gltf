@@ -101,7 +101,7 @@ type Query
 {-| Results from a [query](Gltf#queries) which can be used to retrieve [content](Gltf#content).
 -}
 type QueryResult
-    = QueryResult Query Internal.Gltf.Gltf BufferStore TextureStore (List (Tree Node))
+    = QueryResult Query Internal.Gltf.Gltf BufferStore TextureStore (List Skin) (List (Tree Node))
 
 
 
@@ -374,7 +374,7 @@ loadBuffers gltf bufferStore =
 
 
 loadTextures : QueryResult -> Maybe (Cmd ProgressMsg)
-loadTextures (QueryResult _ gltf _ textureStore trees) =
+loadTextures (QueryResult _ gltf _ textureStore _ trees) =
     let
         textureSourceCmd : Mesh -> List (Cmd ProgressMsg)
         textureSourceCmd mesh =
@@ -535,7 +535,7 @@ sceneQuery index =
 {-| Query an already loaded file
 -}
 query : Query -> (Msg -> msg) -> QueryResult -> Cmd msg
-query query_ toMsg (QueryResult _ gltf _ _ _) =
+query query_ toMsg (QueryResult _ gltf _ _ _ _) =
     Task.succeed (Ok gltf) |> Task.perform (GltfLoaded query_ >> toMsg)
 
 
@@ -554,11 +554,19 @@ sceneAtIndex2 textureStore bufferStore query_ index gltf =
     Common.sceneAtIndex gltf index
         |> Maybe.map
             (\(Internal.Scene.Scene scene) ->
+                let
+                    skins_ : List Skin
+                    skins_ =
+                        gltf.skins
+                            |> Array.toIndexedList
+                            |> List.map (Tuple.first >> Gltf.Skin.Index)
+                            |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
+                in
                 scene.nodes
                     |> List.filterMap
                         (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
                     |> List.map (Tree.map (nodeFromNode gltf bufferStore))
-                    |> QueryResult query_ gltf bufferStore textureStore
+                    |> QueryResult query_ gltf bufferStore textureStore skins_
             )
         |> Result.fromMaybe SceneNotFound
 
@@ -570,31 +578,28 @@ sceneAtIndex2 textureStore bufferStore query_ index gltf =
 {-| Get all animations
 -}
 animations : QueryResult -> List Animation
-animations (QueryResult _ gltf bufferStore _ _) =
+animations (QueryResult _ gltf bufferStore _ _ _) =
     AnimationHelper.extractAnimations gltf bufferStore
 
 
 {-| Get all cameras
 -}
 cameras : QueryResult -> List Camera
-cameras (QueryResult _ gltf _ _ _) =
+cameras (QueryResult _ gltf _ _ _ _) =
     gltf.cameras |> Array.toList
 
 
 {-| Get all skins
 -}
 skins : QueryResult -> List Skin
-skins (QueryResult _ gltf bufferStore _ _) =
-    gltf.skins
-        |> Array.toIndexedList
-        |> List.map (Tuple.first >> Gltf.Skin.Index)
-        |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
+skins (QueryResult _ _ _ _ skins_ _) =
+    skins_
 
 
 {-| Get information of all scenes
 -}
 scenes : QueryResult -> List Scene
-scenes (QueryResult _ gltf _ _ _) =
+scenes (QueryResult _ gltf _ _ _ _) =
     gltf.scenes
         |> Array.toIndexedList
         |> List.map
@@ -609,21 +614,21 @@ scenes (QueryResult _ gltf _ _ _) =
 {-| Get node trees returned by [query](Gltf#queries)
 -}
 nodeTrees : QueryResult -> List (Tree Node)
-nodeTrees (QueryResult _ _ _ _ nodes) =
+nodeTrees (QueryResult _ _ _ _ _ nodes) =
     nodes
 
 
 {-| Get camera by index
 -}
 cameraByIndex : Gltf.Camera.Index -> QueryResult -> Maybe Camera
-cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _) =
+cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _ _) =
     Array.get index gltf.cameras
 
 
 {-| Get texture by index.
 -}
 textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
-textureWithIndex (QueryResult _ _ _ textureStore _) textureIndex =
+textureWithIndex (QueryResult _ _ _ textureStore _ _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 
 
