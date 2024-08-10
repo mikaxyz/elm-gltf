@@ -11,12 +11,14 @@ import Gltf.Query.Buffer exposing (Buffer(..))
 import Gltf.Query.BufferStore exposing (BufferStore)
 import Gltf.Query.Skeleton exposing (Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
+import Gltf.Transform exposing (Transform)
 import Internal.Accessor as Accessor exposing (Accessor)
 import Internal.BufferView exposing (BufferView)
 import Internal.Gltf exposing (Gltf)
 import Internal.Node as Node
 import Internal.Skin as GltfSkin
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Quaternion
 import Tree
 
 
@@ -66,9 +68,60 @@ skinAtIndex gltf bufferStore (Gltf.Skin.Index index) =
 
 skeletonFromGltf : Int -> Gltf -> Maybe Skeleton
 skeletonFromGltf index gltf =
+    let
+        nodeParent : Node.Node -> Maybe Node.Node
+        nodeParent (Node.Node child) =
+            gltf.nodes
+                |> Array.toList
+                |> List.filter (\(Node.Node node) -> node.children |> List.member child.index)
+                |> List.head
+
+        transformToMat4 : Transform -> Mat4
+        transformToMat4 transform =
+            case transform of
+                Gltf.Transform.TRS { translation, rotation, scale } ->
+                    let
+                        t : Mat4
+                        t =
+                            translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
+
+                        r : Mat4
+                        r =
+                            rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
+
+                        s : Mat4
+                        s =
+                            scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
+                    in
+                    s
+                        |> Mat4.mul r
+                        |> Mat4.mul t
+
+                Gltf.Transform.Matrix _ ->
+                    -- TODO: Why do we need to ignore this? (Example: BrainStem)
+                    Mat4.identity
+
+        nodeParentTransforms : Node.Node -> List Mat4 -> Mat4
+        nodeParentTransforms child transforms =
+            case nodeParent child of
+                Just (Node.Node parent) ->
+                    nodeParentTransforms (Node.Node parent) (transformToMat4 parent.transform :: transforms)
+
+                Nothing ->
+                    transforms |> List.reverse |> List.foldl Mat4.mul Mat4.identity
+    in
     Common.maybeNodeTree gltf (Node.Index index)
         |> Maybe.map
             (\nodes ->
+                let
+                    skeletonRoot : Node.Node
+                    skeletonRoot =
+                        Tree.label nodes
+
+                    nodeParentTransform : Mat4
+                    nodeParentTransform =
+                        nodeParentTransforms skeletonRoot []
+                in
                 nodes
                     |> Tree.map
                         (\(Node.Node node) ->
@@ -76,7 +129,7 @@ skeletonFromGltf index gltf =
                             , transform = node.transform
                             }
                         )
-                    |> Skeleton
+                    |> Skeleton nodeParentTransform
             )
 
 

@@ -343,11 +343,13 @@ suite =
                             , joints = [ NodeIndex 1, NodeIndex 2 ]
                             , index = Gltf.Skin.Index 0
                             , numberOfBones = 2
+                            , baseTransform = Mat4.identity
                             }
                             { inverseBindMatrices = skin.inverseBindMatrices
                             , joints = skin.joints
                             , index = skin.index
-                            , numberOfBones = skin.skeleton |> (\(Skeleton bones) -> Tree.flatten bones) |> List.length
+                            , numberOfBones = skin.skeleton |> (\(Skeleton _ bones) -> Tree.flatten bones) |> List.length
+                            , baseTransform = skin.skeleton |> (\(Skeleton baseTransform _) -> baseTransform)
                             }
 
                     Nothing ->

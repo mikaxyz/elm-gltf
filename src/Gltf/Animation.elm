@@ -377,9 +377,9 @@ animatedBoneTransforms theta animations (Skin skin) =
 
                 mat_ : Mat4
                 mat_ =
-                    trs.rAnimated
+                    trs.sAnimated
+                        |> Mat4.mul trs.rAnimated
                         |> Mat4.mul trs.tAnimated
-                        |> Mat4.mul trs.sAnimated
                         |> Mat4.mul mat
             in
             tree
@@ -389,9 +389,11 @@ animatedBoneTransforms theta animations (Skin skin) =
         trsTree : Tree TRS
         trsTree =
             skin.skeleton
-                |> (\(Skeleton bones) -> bones)
-                |> Tree.map boneToTrs
-                |> trsTreeWithGlobalMatrix Mat4.identity
+                |> (\(Skeleton baseTransform bones) ->
+                        bones
+                            |> Tree.map boneToTrs
+                            |> trsTreeWithGlobalMatrix baseTransform
+                   )
     in
     trsTree
         |> Tree.flatten
