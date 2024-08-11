@@ -20,6 +20,8 @@ type alias Accessor =
     { componentType : ComponentType
     , type_ : Type
     , count : Int
+    , min : List Float
+    , max : List Float
     , bufferView : BufferView.Index
     , byteOffset : Int
     }
@@ -51,10 +53,12 @@ indexDecoder =
 
 decoder : JD.Decoder Accessor
 decoder =
-    JD.map5 Accessor
+    JD.map7 Accessor
         (JD.field "componentType" componentTypeDecoder)
         (JD.field "type" typeDecoder)
         (JD.field "count" JD.int)
+        (Util.optionalField "min" (JD.list JD.float) [])
+        (Util.optionalField "max" (JD.list JD.float) [])
         (JD.field "bufferView" BufferView.indexDecoder)
         (Util.optionalField "byteOffset" JD.int 0)
 

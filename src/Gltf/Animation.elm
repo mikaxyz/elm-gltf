@@ -99,22 +99,19 @@ animatedProperties theta animations =
             animations
                 |> List.concatMap (\(Animation x) -> x.channels)
 
+        totalDuration : Float
+        totalDuration =
+            animations
+                |> List.map (\(Animation animation) -> animation.endTime)
+                |> List.maximum
+                |> Maybe.withDefault 0.0
+
         applyChannel : Channel -> Maybe AnimatedProperty
         applyChannel (Channel channel) =
             let
-                (Sampler sampler) =
-                    channel.sampler
-
-                inputMax : Float
-                inputMax =
-                    -- TODO: Get this from BufferView
-                    sampler.input
-                        |> List.maximum
-                        |> Maybe.withDefault 0.0
-
                 fract : Float
                 fract =
-                    theta / inputMax
+                    theta / totalDuration
 
                 duration : Float
                 duration =
@@ -122,7 +119,7 @@ animatedProperties theta animations =
 
                 animationTime : Float
                 animationTime =
-                    inputMax * duration
+                    totalDuration * duration
             in
             case channel.path of
                 Channel.Translation ->
@@ -418,56 +415,28 @@ animatedBoneTransforms theta animations (Skin skin) =
 
 channelMatrix : Float -> Channel -> Maybe Mat4
 channelMatrix theta (Channel channel) =
+    let
+        (Sampler sampler) =
+            channel.sampler
+
+        fract : Float
+        fract =
+            theta / sampler.inputMax
+
+        duration : Float
+        duration =
+            fract - (floor fract |> toFloat)
+
+        animationTime : Float
+        animationTime =
+            sampler.inputMax * duration
+    in
     case channel.path of
         Channel.Translation ->
-            let
-                (Sampler sampler) =
-                    channel.sampler
-
-                inputMax : Float
-                inputMax =
-                    -- TODO: Get this from BufferView
-                    sampler.input |> List.maximum |> Maybe.withDefault 0.0
-
-                fract : Float
-                fract =
-                    theta / inputMax
-
-                duration : Float
-                duration =
-                    fract - (floor fract |> toFloat)
-
-                animationTime : Float
-                animationTime =
-                    inputMax * duration
-            in
             animatedProperty (Channel channel) animationTime
                 |> Maybe.map (\(AnimatedPosition position) -> Mat4.makeTranslate position)
 
         Channel.Rotation ->
-            let
-                (Sampler sampler) =
-                    channel.sampler
-
-                inputMax : Float
-                inputMax =
-                    -- TODO: Get this from BufferView
-                    sampler.input
-                        |> List.maximum
-                        |> Maybe.withDefault 0.0
-
-                fract : Float
-                fract =
-                    theta / inputMax
-
-                duration : Float
-                duration =
-                    fract - (floor fract |> toFloat)
-
-                animationTime : Float
-                animationTime =
-                    inputMax * duration
-            in
             animatedRotation (Channel channel) animationTime
                 |> Maybe.map (\(AnimatedRotation rotation) -> Quaternion.toMat4 rotation)
 
