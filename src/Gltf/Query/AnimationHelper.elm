@@ -86,9 +86,30 @@ extractChannel samplers (Internal.Animation.Channel.Channel channel) =
 extractSampler : Gltf -> BufferStore -> Internal.Animation.Sampler.Sampler -> Maybe Sampler
 extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
     Maybe.map2
-        (\input output ->
+        (\( inputAccessor, input ) output ->
+            let
+                inputMin : Float
+                inputMin =
+                    case inputAccessor.min of
+                        min :: [] ->
+                            min
+
+                        _ ->
+                            input |> List.minimum |> Maybe.withDefault 0.0
+
+                inputMax : Float
+                inputMax =
+                    case inputAccessor.max of
+                        min :: [] ->
+                            min
+
+                        _ ->
+                            input |> List.maximum |> Maybe.withDefault 0.0
+            in
             Sampler
                 { input = input
+                , inputMin = inputMin
+                , inputMax = inputMax
                 , output = output
                 , interpolation = interpolationFromSampler sampler.interpolation
                 }
@@ -99,6 +120,8 @@ extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
                 (\accessor ->
                     Common.bufferInfo gltf bufferStore accessor
                         |> Maybe.map Attribute.parseBuffer
+                        |> Maybe.map (List.filterMap Attribute.toFloat)
+                        |> Maybe.map (Tuple.pair accessor)
                 )
         )
         (sampler.output
@@ -114,19 +137,34 @@ extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
 extractAnimation : Gltf -> BufferStore -> Internal.Animation -> Animation
 extractAnimation gltf bufferStore (Internal.Animation x) =
     let
-        samplers : Array Sampler
+        samplers : List Sampler
         samplers =
             x.samplers
                 |> Array.toList
                 |> List.filterMap (extractSampler gltf bufferStore)
-                |> Array.fromList
+
+        startTime : Float
+        startTime =
+            samplers
+                |> List.map (\(Sampler sampler) -> sampler.inputMin)
+                |> List.minimum
+                |> Maybe.withDefault 0.0
+
+        endTime : Float
+        endTime =
+            samplers
+                |> List.map (\(Sampler sampler) -> sampler.inputMax)
+                |> List.maximum
+                |> Maybe.withDefault 0.0
     in
     Animation
         { name = x.name
+        , startTime = startTime
+        , endTime = endTime
         , channels =
             x.channels
                 |> Array.toList
-                |> List.filterMap (extractChannel samplers)
+                |> List.filterMap (extractChannel (samplers |> Array.fromList))
         }
 
 
