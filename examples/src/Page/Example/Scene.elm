@@ -304,11 +304,8 @@ objectIdFromNode node =
         Gltf.Node.Camera cameraId (Gltf.Node.Properties properties) ->
             Camera cameraId properties.nodeIndex
 
-        Gltf.Node.Mesh (_ :: _) (Gltf.Node.Properties properties) ->
+        Gltf.Node.Mesh _ (Gltf.Node.Properties properties) ->
             Mesh properties.nodeIndex
-
-        Gltf.Node.Mesh [] (Gltf.Node.Properties properties) ->
-            Bone properties.nodeIndex
 
         Gltf.Node.SkinnedMesh _ skinIndex _ ->
             SkinnedMesh skinIndex
@@ -362,40 +359,35 @@ objectsFromNode node =
             , []
             )
 
-        Gltf.Node.Mesh (mesh :: rest) (Gltf.Node.Properties properties) ->
-            ( mesh
-                |> objectFromMesh objectId
-                |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                |> applyTransform properties.transform
-            , rest |> List.map (objectFromMesh (Mesh properties.nodeIndex))
-            )
+        Gltf.Node.Mesh meshes (Gltf.Node.Properties properties) ->
+            case meshes of
+                mesh :: rest ->
+                    ( mesh
+                        |> objectFromMesh objectId
+                        |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
+                        |> applyTransform properties.transform
+                    , rest |> List.map (objectFromMesh (Mesh properties.nodeIndex))
+                    )
 
-        Gltf.Node.SkinnedMesh (mesh :: rest) skinIndex (Gltf.Node.Properties properties) ->
-            ( mesh
-                |> objectFromMesh objectId
-                |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
-                |> applyTransform properties.transform
-            , rest |> List.map (objectFromMesh (SkinnedMesh skinIndex))
-            )
+                [] ->
+                    ( Object.group "" |> applyTransform properties.transform
+                    , []
+                    )
 
-        Gltf.Node.Mesh [] (Gltf.Node.Properties properties) ->
-            let
-                name (NodeIndex nodeIndex) =
-                    Maybe.withDefault "Node" properties.nodeName ++ "(" ++ String.fromInt nodeIndex ++ ")"
-            in
-            ( Primitives.bone3 0.1
-                |> Object.objectWithTriangles objectId
-                |> Object.withName (name properties.nodeIndex)
-                |> applyTransform properties.transform
-                |> Object.withColor Color.gray
-                |> Object.disable
-            , []
-            )
+        Gltf.Node.SkinnedMesh meshes skinIndex (Gltf.Node.Properties properties) ->
+            case meshes of
+                mesh :: rest ->
+                    ( mesh
+                        |> objectFromMesh objectId
+                        |> (properties.nodeName |> Maybe.map Object.withName |> Maybe.withDefault identity)
+                        |> applyTransform properties.transform
+                    , rest |> List.map (objectFromMesh (SkinnedMesh skinIndex))
+                    )
 
-        Gltf.Node.SkinnedMesh [] _ (Gltf.Node.Properties _) ->
-            ( Object.group ""
-            , []
-            )
+                [] ->
+                    ( Object.group "" |> applyTransform properties.transform
+                    , []
+                    )
 
         Gltf.Node.Bone _ maybeLength (Gltf.Node.Properties properties) ->
             let
@@ -495,6 +487,7 @@ modifiers theta maybeAnimation skins =
     case maybeAnimation of
         Just animation ->
             boneTransformModifiers theta SkinnedMesh [ animation ] skins
+                ++ GltfHelper.modifiersFromAnimations theta Empty [ animation ]
                 ++ GltfHelper.modifiersFromAnimations theta Mesh [ animation ]
                 ++ GltfHelper.modifiersFromAnimations theta Bone [ animation ]
 
