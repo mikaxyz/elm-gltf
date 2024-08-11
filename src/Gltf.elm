@@ -54,6 +54,7 @@ import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Scene exposing (Scene)
 import Gltf.Skin exposing (Skin)
+import Gltf.Transform
 import Http
 import Internal.Gltf
 import Internal.Image
@@ -61,6 +62,8 @@ import Internal.Node
 import Internal.Sampler
 import Internal.Scene
 import Internal.Skin
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3
 import Task
 import Tree exposing (Tree)
 import WebGL.Texture
@@ -98,7 +101,7 @@ type Query
 {-| Results from a [query](Gltf#queries) which can be used to retrieve [content](Gltf#content).
 -}
 type QueryResult
-    = QueryResult Query Internal.Gltf.Gltf BufferStore TextureStore (List (Tree Node))
+    = QueryResult Query Internal.Gltf.Gltf BufferStore TextureStore (List Skin) (List (Tree Node))
 
 
 
@@ -371,7 +374,7 @@ loadBuffers gltf bufferStore =
 
 
 loadTextures : QueryResult -> Maybe (Cmd ProgressMsg)
-loadTextures (QueryResult _ gltf _ textureStore trees) =
+loadTextures (QueryResult _ gltf _ textureStore _ trees) =
     let
         textureSourceCmd : Mesh -> List (Cmd ProgressMsg)
         textureSourceCmd mesh =
@@ -532,7 +535,7 @@ sceneQuery index =
 {-| Query an already loaded file
 -}
 query : Query -> (Msg -> msg) -> QueryResult -> Cmd msg
-query query_ toMsg (QueryResult _ gltf _ _ _) =
+query query_ toMsg (QueryResult _ gltf _ _ _ _) =
     Task.succeed (Ok gltf) |> Task.perform (GltfLoaded query_ >> toMsg)
 
 
@@ -551,11 +554,19 @@ sceneAtIndex2 textureStore bufferStore query_ index gltf =
     Common.sceneAtIndex gltf index
         |> Maybe.map
             (\(Internal.Scene.Scene scene) ->
+                let
+                    skins_ : List Skin
+                    skins_ =
+                        gltf.skins
+                            |> Array.toIndexedList
+                            |> List.map (Tuple.first >> Gltf.Skin.Index)
+                            |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
+                in
                 scene.nodes
                     |> List.filterMap
                         (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
                     |> List.map (Tree.map (nodeFromNode gltf bufferStore))
-                    |> QueryResult query_ gltf bufferStore textureStore
+                    |> QueryResult query_ gltf bufferStore textureStore skins_
             )
         |> Result.fromMaybe SceneNotFound
 
@@ -567,31 +578,28 @@ sceneAtIndex2 textureStore bufferStore query_ index gltf =
 {-| Get all animations
 -}
 animations : QueryResult -> List Animation
-animations (QueryResult _ gltf bufferStore _ _) =
+animations (QueryResult _ gltf bufferStore _ _ _) =
     AnimationHelper.extractAnimations gltf bufferStore
 
 
 {-| Get all cameras
 -}
 cameras : QueryResult -> List Camera
-cameras (QueryResult _ gltf _ _ _) =
+cameras (QueryResult _ gltf _ _ _ _) =
     gltf.cameras |> Array.toList
 
 
 {-| Get all skins
 -}
 skins : QueryResult -> List Skin
-skins (QueryResult _ gltf bufferStore _ _) =
-    gltf.skins
-        |> Array.toIndexedList
-        |> List.map (Tuple.first >> Gltf.Skin.Index)
-        |> List.filterMap (SkinHelper.skinAtIndex gltf bufferStore)
+skins (QueryResult _ _ _ _ skins_ _) =
+    skins_
 
 
 {-| Get information of all scenes
 -}
 scenes : QueryResult -> List Scene
-scenes (QueryResult _ gltf _ _ _) =
+scenes (QueryResult _ gltf _ _ _ _) =
     gltf.scenes
         |> Array.toIndexedList
         |> List.map
@@ -606,21 +614,21 @@ scenes (QueryResult _ gltf _ _ _) =
 {-| Get node trees returned by [query](Gltf#queries)
 -}
 nodeTrees : QueryResult -> List (Tree Node)
-nodeTrees (QueryResult _ _ _ _ nodes) =
+nodeTrees (QueryResult _ _ _ _ _ nodes) =
     nodes
 
 
 {-| Get camera by index
 -}
 cameraByIndex : Gltf.Camera.Index -> QueryResult -> Maybe Camera
-cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _) =
+cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _ _) =
     Array.get index gltf.cameras
 
 
 {-| Get texture by index.
 -}
 textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
-textureWithIndex (QueryResult _ _ _ textureStore _) textureIndex =
+textureWithIndex (QueryResult _ _ _ textureStore _ _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 
 
@@ -636,45 +644,104 @@ nodeIndexFromNode (Internal.Node.Index index) =
 meshesFromNode : Node -> List Mesh
 meshesFromNode node =
     case node of
-        Gltf.Node.EmptyNode _ ->
+        Gltf.Node.Empty _ ->
             []
 
-        Gltf.Node.CameraNode _ _ ->
+        Gltf.Node.Camera _ _ ->
             []
 
-        Gltf.Node.MeshNode triangularMeshes _ ->
+        Gltf.Node.Mesh triangularMeshes _ ->
             triangularMeshes
 
-        Gltf.Node.SkinnedMeshNode triangularMeshes _ _ ->
+        Gltf.Node.SkinnedMesh triangularMeshes _ _ ->
             triangularMeshes
+
+        Gltf.Node.Bone _ _ _ ->
+            []
 
 
 nodeFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Node
 nodeFromNode gltf bufferStore node =
+    let
+        jointNodeSkinId : Internal.Node.Node -> Maybe ( Gltf.Skin.Index, Maybe Float )
+        jointNodeSkinId (Internal.Node.Node node_) =
+            let
+                (Internal.Node.Index nodeIndex) =
+                    node_.index
+
+                id : Maybe Gltf.Skin.Index
+                id =
+                    gltf.skins
+                        |> Array.indexedMap
+                            (\index skin ->
+                                if List.member (Internal.Skin.JointNodeIndex nodeIndex) skin.joints then
+                                    Just (Gltf.Skin.Index index)
+
+                                else
+                                    Nothing
+                            )
+                        |> Array.toList
+                        |> List.filterMap identity
+                        |> List.head
+            in
+            case id of
+                Just skinId ->
+                    let
+                        length : Gltf.Transform.Transform -> Maybe Float
+                        length transform =
+                            case transform of
+                                Gltf.Transform.TRS { translation } ->
+                                    translation
+                                        |> Maybe.map Vec3.length
+
+                                Gltf.Transform.Matrix mat ->
+                                    Vec3.vec3 0 0 0
+                                        |> Mat4.transform mat
+                                        |> Vec3.length
+                                        |> Just
+                    in
+                    Just
+                        ( skinId
+                        , node_.children
+                            |> List.head
+                            |> Maybe.andThen (Common.nodeAtIndex gltf)
+                            |> Maybe.andThen (\(Internal.Node.Node childNode) -> length childNode.transform)
+                        )
+
+                Nothing ->
+                    Nothing
+    in
     case node |> (\(Internal.Node.Node { skinIndex }) -> skinIndex) |> Maybe.map (\(Internal.Skin.Index index) -> Gltf.Skin.Index index) of
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Gltf.Node.SkinnedMeshNode (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMesh (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
                 Just cameraIndex ->
                     node
                         |> propertiesFromNode
-                        |> Gltf.Node.CameraNode cameraIndex
+                        |> Gltf.Node.Camera cameraIndex
 
                 Nothing ->
-                    case triangularMeshesFromNode gltf bufferStore node of
-                        Just meshes ->
+                    case jointNodeSkinId node of
+                        Just ( skinIndex, length ) ->
                             node
                                 |> propertiesFromNode
-                                |> Gltf.Node.MeshNode meshes
+                                |> Gltf.Node.Bone skinIndex length
 
                         Nothing ->
-                            node
-                                |> propertiesFromNode
-                                |> Gltf.Node.EmptyNode
+                            case triangularMeshesFromNode gltf bufferStore node of
+                                Just meshes ->
+                                    node
+                                        |> propertiesFromNode
+                                        |> Gltf.Node.Mesh meshes
+
+                                Nothing ->
+                                    node
+                                        |> propertiesFromNode
+                                        |> Gltf.Node.Empty
 
 
 propertiesFromNode : Internal.Node.Node -> Gltf.Node.Properties

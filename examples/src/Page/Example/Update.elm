@@ -341,6 +341,33 @@ update msg model =
                     , Cmd.none
                     )
 
+                Keyboard.Digit 5 ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> RemoteData.map
+                                    (XYZScene.map
+                                        (\tree ->
+                                            tree
+                                                |> Tree.map
+                                                    (\object ->
+                                                        case XYZObject.id object of
+                                                            Just (Scene.Bone _) ->
+                                                                if XYZObject.isDisabled object then
+                                                                    XYZObject.enable object
+
+                                                                else
+                                                                    XYZObject.disable object
+
+                                                            _ ->
+                                                                object
+                                                    )
+                                        )
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
                 Keyboard.Digit 7 ->
                     ( model |> Model.mapSceneOptions (XYZSceneOptions.toggle XYZSceneOptions.showGridXOption)
                     , Cmd.none
@@ -355,12 +382,6 @@ update msg model =
                     ( model |> Model.mapSceneOptions (XYZSceneOptions.toggle XYZSceneOptions.showGridZOption)
                     , Cmd.none
                     )
-
-                Keyboard.Character ',' ->
-                    ( model, Cmd.none )
-
-                Keyboard.Character '.' ->
-                    ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -429,7 +450,6 @@ update msg model =
                 , scene =
                     Scene.initWithNodes
                         (Gltf.nodeTrees queryResult)
-                        identity
                         { camera = default.camera
                         , projection = default.projection
                         , sceneSize = model.sceneSize
@@ -484,7 +504,7 @@ update msg model =
                                                         |> List.map
                                                             (\node ->
                                                                 case node of
-                                                                    Gltf.Node.CameraNode cameraIndex (Gltf.Node.Properties properties) ->
+                                                                    Gltf.Node.Camera cameraIndex (Gltf.Node.Properties properties) ->
                                                                         if cameraIndex == index then
                                                                             Just properties.nodeIndex
 

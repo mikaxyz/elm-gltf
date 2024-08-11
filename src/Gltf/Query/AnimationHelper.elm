@@ -123,7 +123,6 @@ extractAnimation gltf bufferStore (Internal.Animation x) =
     in
     Animation
         { name = x.name
-        , samplers = samplers
         , channels =
             x.channels
                 |> Array.toList

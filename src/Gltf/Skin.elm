@@ -1,6 +1,6 @@
 module Gltf.Skin exposing (Index(..), Skin(..), Skeleton)
 
-{-| The [Meshes](Gltf-Mesh#Mesh) of a _SkinnedMeshNode_ can be deformed/animated using a Skin.
+{-| The [Meshes](Gltf-Mesh#Mesh) of a [SkinnedMeshNode](Gltf-Node#Node) can be deformed/animated using a Skin.
 
 @docs Index, Skin, Skeleton
 

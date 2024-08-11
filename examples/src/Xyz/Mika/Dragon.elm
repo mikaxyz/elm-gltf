@@ -70,9 +70,8 @@ update { onDragUpdate, onMouseUp } msg (Dragon dragon) =
             case dragon.drag of
                 Just drag ->
                     ( Dragon { dragon | drag = Just { drag | to = position } }
-                    , Task.perform
-                        (\_ -> onDragUpdate (Vec2.sub position drag.to |> Vec2.toRecord))
-                        (Task.succeed ())
+                    , Task.succeed (Vec2.sub position drag.to |> Vec2.toRecord)
+                        |> Task.perform onDragUpdate
                     )
 
                 Nothing ->
@@ -85,8 +84,8 @@ update { onDragUpdate, onMouseUp } msg (Dragon dragon) =
                     , current = dragon.current |> Vec2.add position
                 }
             , case clickPositionWhenDragDistanceBelow dragon.clickSensitivity dragon.drag of
-                Just pos_ ->
-                    Task.succeed () |> Task.perform (\_ -> onMouseUp pos_)
+                Just clickPosition ->
+                    Task.succeed clickPosition |> Task.perform onMouseUp
 
                 Nothing ->
                     Cmd.none
