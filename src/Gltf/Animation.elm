@@ -109,7 +109,6 @@ animatedProperties theta animations =
                 inputMax =
                     -- TODO: Get this from BufferView
                     sampler.input
-                        |> List.filterMap Attribute.toFloat
                         |> List.maximum
                         |> Maybe.withDefault 0.0
 
@@ -153,7 +152,7 @@ animatedProperty (Channel channel) time =
         data =
             List.map2
                 (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Attribute.toFloat)
+                sampler.input
                 (sampler.output |> List.filterMap Attribute.toVec3)
 
         asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Vec3, to : Maybe Vec3 }
@@ -227,7 +226,7 @@ animatedRotation (Channel channel) time =
         data =
             List.map2
                 (\input output -> ( input, output ))
-                (sampler.input |> List.filterMap Attribute.toFloat)
+                sampler.input
                 (sampler.output |> List.filterMap Attribute.toQuaternion)
 
         asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Quaternion, to : Maybe Quaternion }
@@ -425,15 +424,10 @@ channelMatrix theta (Channel channel) =
                 (Sampler sampler) =
                     channel.sampler
 
-                input : List Float
-                input =
-                    sampler.input
-                        |> List.filterMap Attribute.toFloat
-
                 inputMax : Float
                 inputMax =
                     -- TODO: Get this from BufferView
-                    input |> List.maximum |> Maybe.withDefault 0.0
+                    sampler.input |> List.maximum |> Maybe.withDefault 0.0
 
                 fract : Float
                 fract =
@@ -459,7 +453,6 @@ channelMatrix theta (Channel channel) =
                 inputMax =
                     -- TODO: Get this from BufferView
                     sampler.input
-                        |> List.filterMap Attribute.toFloat
                         |> List.maximum
                         |> Maybe.withDefault 0.0
 

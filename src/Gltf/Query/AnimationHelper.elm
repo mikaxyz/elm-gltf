@@ -99,6 +99,7 @@ extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
                 (\accessor ->
                     Common.bufferInfo gltf bufferStore accessor
                         |> Maybe.map Attribute.parseBuffer
+                        |> Maybe.map (List.filterMap Attribute.toFloat)
                 )
         )
         (sampler.output

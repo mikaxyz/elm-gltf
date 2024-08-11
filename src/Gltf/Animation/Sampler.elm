@@ -9,7 +9,7 @@ type alias Attribute =
 
 type Sampler
     = Sampler
-        { input : List Attribute
+        { input : List Float
         , output : List Attribute
         , interpolation : Interpolation
         }
