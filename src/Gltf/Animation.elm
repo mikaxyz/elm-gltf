@@ -207,7 +207,14 @@ animatedProperty (Channel channel) time =
                 asd.from
                 asd.to
     in
-    properties |> Maybe.map (\x -> AnimatedPosition x.position)
+    case properties |> Maybe.map .position of
+        Just position ->
+            Just (AnimatedPosition position)
+
+        Nothing ->
+            data
+                |> List.head
+                |> Maybe.map (\( _, output ) -> AnimatedPosition output)
 
 
 animatedRotation : Channel -> Float -> Maybe AnimatedRotation
@@ -261,7 +268,14 @@ animatedRotation (Channel channel) time =
                 asd.from
                 asd.to
     in
-    properties |> Maybe.map (\x -> AnimatedRotation x.current)
+    case properties |> Maybe.map .current of
+        Just rotation ->
+            Just (AnimatedRotation rotation)
+
+        Nothing ->
+            data
+                |> List.head
+                |> Maybe.map (\( _, output ) -> AnimatedRotation output)
 
 
 {-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) and a [Skin](Gltf-Skin#Skin) this will give you [AnimatedBones](Gltf-Animation#AnimatedBone) that can be used to deform a mesh at a point in time.
@@ -341,19 +355,19 @@ animatedBoneTransforms theta animations (Skin skin) =
                 rAnimated : Mat4
                 rAnimated =
                     nodeChannel nodeIndex "Rotation"
-                        |> Maybe.map (channelMatrix theta)
+                        |> Maybe.andThen (channelMatrix theta)
                         |> Maybe.withDefault r
 
                 tAnimated : Mat4
                 tAnimated =
                     nodeChannel nodeIndex "Translation"
-                        |> Maybe.map (channelMatrix theta)
+                        |> Maybe.andThen (channelMatrix theta)
                         |> Maybe.withDefault t
 
                 sAnimated : Mat4
                 sAnimated =
                     nodeChannel nodeIndex "Scale"
-                        |> Maybe.map (channelMatrix theta)
+                        |> Maybe.andThen (channelMatrix theta)
                         |> Maybe.withDefault s
             in
             { skinIndex = skinIndex
@@ -403,7 +417,7 @@ animatedBoneTransforms theta animations (Skin skin) =
             )
 
 
-channelMatrix : Float -> Channel -> Mat4
+channelMatrix : Float -> Channel -> Maybe Mat4
 channelMatrix theta (Channel channel) =
     case channel.path of
         Channel.Translation ->
@@ -434,9 +448,7 @@ channelMatrix theta (Channel channel) =
                     inputMax * duration
             in
             animatedProperty (Channel channel) animationTime
-                |> Maybe.map (\(AnimatedPosition position) -> position)
-                |> Maybe.withDefault (Vec3.vec3 0 0 0)
-                |> Mat4.makeTranslate
+                |> Maybe.map (\(AnimatedPosition position) -> Mat4.makeTranslate position)
 
         Channel.Rotation ->
             let
@@ -465,13 +477,12 @@ channelMatrix theta (Channel channel) =
             in
             animatedRotation (Channel channel) animationTime
                 |> Maybe.map (\(AnimatedRotation rotation) -> Quaternion.toMat4 rotation)
-                |> Maybe.withDefault Mat4.identity
 
         Channel.Scale ->
-            Mat4.identity
+            Nothing
 
         Channel.Weights ->
-            Mat4.identity
+            Nothing
 
 
 {-| Spherically interpolates between two quaternions, providing an interpolation between rotations with constant angle change rate.
