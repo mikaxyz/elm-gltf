@@ -3,7 +3,7 @@
     "name": "mikaxyz/elm-gltf",
     "summary": "Import 3d assets from glTF (Graphics Library Transmission Format) file format",
     "license": "BSD-3-Clause",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "exposed-modules": [
         "Gltf",
         "Gltf.Animation",
