@@ -1,5 +1,9 @@
 # Elm glTF library
 
+### ** NOTE **
+
+> ⚠️ *This package is under development and will probably receive a lot of breaking changes until I am happy with the supported glTF features.*
+
 Import 3d assets from [glTF](https://www.khronos.org/gltf/) (Graphics Library Transmission Format) file format for use in your [Elm WebGL](https://package.elm-lang.org/packages/elm-explorations/webgl/latest) programs.
 
 The aim is to support most of [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) but there is still a lot of work to do. See [the example app](https://elm-gltf.mika.xyz/) rendering all [official glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets) for an indication what it can/can not do.
