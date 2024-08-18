@@ -218,7 +218,8 @@ vertex { x, y, z } =
     , color = Nothing
     , weights = Nothing
     , joints = Nothing
-    , texCoords = Nothing
+    , texCoord0 = Nothing
+    , texCoord1 = Nothing
     }
 
 

@@ -24,7 +24,8 @@ type alias VertexAttributes =
     , color : Maybe (List Attribute)
     , joints : Maybe (List Attribute)
     , weights : Maybe (List Attribute)
-    , texCoords : Maybe (List Attribute)
+    , texCoord0 : Maybe (List Attribute)
+    , texCoord1 : Maybe (List Attribute)
     }
 
 
@@ -71,7 +72,8 @@ fromPrimitive gltf bufferStore primitive =
             , color = Maybe.map Attribute.parseBuffer vertexBuffers.color
             , joints = Maybe.map Attribute.parseBuffer vertexBuffers.joints
             , weights = Maybe.map Attribute.parseBuffer vertexBuffers.weights
-            , texCoords = Maybe.map Attribute.parseBuffer vertexBuffers.texCoords
+            , texCoord0 = Maybe.map Attribute.parseBuffer vertexBuffers.texCoord0
+            , texCoord1 = Maybe.map Attribute.parseBuffer vertexBuffers.texCoord1
             }
 
         attributeToJoints : Attribute -> Maybe { j1 : Int, j2 : Int, j3 : Int, j4 : Int }
@@ -104,7 +106,8 @@ fromPrimitive gltf bufferStore primitive =
                                 , color = Nothing
                                 , weights = Nothing
                                 , joints = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                             )
 
@@ -177,14 +180,25 @@ fromPrimitive gltf bufferStore primitive =
                                 vertices
                                 weights
 
-                withTexCoords : List Vertex -> List Vertex
-                withTexCoords vertices =
-                    case a.texCoords |> Maybe.withDefault [] |> List.filterMap Attribute.toVec2 of
+                withTexCoords0 : List Vertex -> List Vertex
+                withTexCoords0 vertices =
+                    case a.texCoord0 |> Maybe.withDefault [] |> List.filterMap Attribute.toVec2 of
                         [] ->
                             vertices
 
                         texCoords ->
-                            List.map2 (\vertex x -> { vertex | texCoords = Just x })
+                            List.map2 (\vertex x -> { vertex | texCoord0 = Just x })
+                                vertices
+                                texCoords
+
+                withTexCoords1 : List Vertex -> List Vertex
+                withTexCoords1 vertices =
+                    case a.texCoord1 |> Maybe.withDefault [] |> List.filterMap Attribute.toVec2 of
+                        [] ->
+                            vertices
+
+                        texCoords ->
+                            List.map2 (\vertex x -> { vertex | texCoord1 = Just x })
                                 vertices
                                 texCoords
             in
@@ -194,7 +208,8 @@ fromPrimitive gltf bufferStore primitive =
                 |> withColors
                 |> withWeights
                 |> withJoints
-                |> withTexCoords
+                |> withTexCoords0
+                |> withTexCoords1
 
         material : Maybe Material
         material =

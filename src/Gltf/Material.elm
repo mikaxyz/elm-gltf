@@ -1,11 +1,17 @@
-module Gltf.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
+module Gltf.Material exposing
+    ( Material(..), Index(..), Texture(..), TextureIndex, AlphaMode(..), PbrMetallicRoughness
+    , textureIndex
+    )
 
 {-| A material as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material).
 
-@docs Material, Index, TextureIndex, AlphaMode, BbrMetallicRoughness
+@docs Material, Index, Texture, TextureIndex, AlphaMode, PbrMetallicRoughness
+
+@docs textureIndex
 
 -}
 
+import Gltf.Material.Extensions exposing (TextureExtensions)
 import Gltf.Query.TextureIndex as TextureIndex
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
@@ -29,12 +35,12 @@ type Material
     = Material
         { name : Maybe String
         , index : Index
-        , pbrMetallicRoughness : BbrMetallicRoughness
-        , normalTexture : Maybe TextureIndex
+        , pbrMetallicRoughness : PbrMetallicRoughness
+        , normalTexture : Maybe Texture
         , normalTextureScale : Float
-        , occlusionTexture : Maybe TextureIndex
+        , occlusionTexture : Maybe Texture
         , occlusionTextureStrength : Float
-        , emissiveTexture : Maybe TextureIndex
+        , emissiveTexture : Maybe Texture
         , emissiveFactor : Vec3
         , doubleSided : Bool
         , alphaMode : AlphaMode
@@ -51,10 +57,27 @@ type AlphaMode
 
 {-| The [Material PBR Metallic Roughness](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness) of the material.
 -}
-type alias BbrMetallicRoughness =
+type alias PbrMetallicRoughness =
     { baseColorFactor : Vec4
-    , baseColorTexture : Maybe TextureIndex
+    , baseColorTexture : Maybe Texture
     , metallicFactor : Float
     , roughnessFactor : Float
-    , metallicRoughnessTexture : Maybe TextureIndex
+    , metallicRoughnessTexture : Maybe Texture
     }
+
+
+{-| Any data associated with a texture
+-}
+type Texture
+    = Texture
+        { index : TextureIndex
+        , texCoord : Int
+        , extensions : Maybe TextureExtensions
+        }
+
+
+{-| Texture index from Texture
+-}
+textureIndex : Texture -> TextureIndex
+textureIndex (Texture { index }) =
+    index

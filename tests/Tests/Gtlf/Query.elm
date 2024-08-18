@@ -203,7 +203,8 @@ suite =
                                 , color = Nothing
                                 , weights = Just weights
                                 , joints = Just joints
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                             )
                             expectedPositions
@@ -246,7 +247,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
@@ -254,7 +256,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
@@ -262,7 +265,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               ]
                             , [ ( 0, 1, 2 ) ]
@@ -296,7 +300,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 0 0 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
@@ -304,7 +309,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 1 0 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               , { joints = Nothing
                                 , normal = Nothing
@@ -312,7 +318,8 @@ suite =
                                 , color = Nothing
                                 , position = vec3 0 1 0
                                 , weights = Nothing
-                                , texCoords = Nothing
+                                , texCoord0 = Nothing
+                                , texCoord1 = Nothing
                                 }
                               )
                             ]

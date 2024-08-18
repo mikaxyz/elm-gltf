@@ -19,7 +19,8 @@ type alias VertexBuffers =
     , color : Maybe ( Accessor, BufferView, Buffer )
     , joints : Maybe ( Accessor, BufferView, Buffer )
     , weights : Maybe ( Accessor, BufferView, Buffer )
-    , texCoords : Maybe ( Accessor, BufferView, Buffer )
+    , texCoord0 : Maybe ( Accessor, BufferView, Buffer )
+    , texCoord1 : Maybe ( Accessor, BufferView, Buffer )
     }
 
 
@@ -76,12 +77,22 @@ fromPrimitive gltf bufferStore { attributes } =
                                     |> Maybe.andThen bufferInfo
                         }
 
-                    Mesh.TexCoord _ accessorIndex ->
+                    Mesh.TexCoord 0 accessorIndex ->
                         { acc
-                            | texCoords =
+                            | texCoord0 =
                                 Common.accessorAtIndex gltf accessorIndex
                                     |> Maybe.andThen bufferInfo
                         }
+
+                    Mesh.TexCoord 1 accessorIndex ->
+                        { acc
+                            | texCoord1 =
+                                Common.accessorAtIndex gltf accessorIndex
+                                    |> Maybe.andThen bufferInfo
+                        }
+
+                    Mesh.TexCoord _ _ ->
+                        acc
 
                     Mesh.Unknown _ ->
                         acc
@@ -92,5 +103,6 @@ fromPrimitive gltf bufferStore { attributes } =
             , color = Nothing
             , joints = Nothing
             , weights = Nothing
-            , texCoords = Nothing
+            , texCoord0 = Nothing
+            , texCoord1 = Nothing
             }

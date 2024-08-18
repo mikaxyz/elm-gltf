@@ -2,6 +2,7 @@ module Gltf.Query.MaterialHelper exposing (fromPrimitive)
 
 import Common
 import Gltf.Material exposing (AlphaMode(..), Material(..))
+import Gltf.Material.Extensions exposing (TextureExtensions)
 import Gltf.Query.TextureIndex exposing (TextureIndex(..))
 import Internal.Gltf exposing (Gltf)
 import Internal.Material as Internal
@@ -13,57 +14,21 @@ fromPrimitive : Gltf -> Primitive -> Maybe Material
 fromPrimitive gltf primitive =
     case Maybe.map2 Tuple.pair primitive.material (primitive.material |> Maybe.andThen (Common.materialAtIndex gltf)) of
         Just ( Internal.Index index, material ) ->
-            let
-                baseColorTexture : Maybe TextureIndex
-                baseColorTexture =
-                    material.pbrMetallicRoughness.baseColorTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                normalTexture : Maybe TextureIndex
-                normalTexture =
-                    material.normalTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                occlusionTexture : Maybe TextureIndex
-                occlusionTexture =
-                    material.occlusionTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                emissiveTexture : Maybe TextureIndex
-                emissiveTexture =
-                    material.emissiveTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-
-                metallicRoughnessTexture : Maybe TextureIndex
-                metallicRoughnessTexture =
-                    material.pbrMetallicRoughness.metallicRoughnessTexture
-                        |> Maybe.andThen (textureFromTextureInfo gltf)
-                        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
-                        |> Maybe.map TextureIndex
-            in
             Material
                 { name = material.name
                 , index = Gltf.Material.Index index
-                , normalTexture = normalTexture
+                , normalTexture = material.normalTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                 , normalTextureScale = material.normalTexture |> Maybe.map .scale |> Maybe.withDefault 1.0
-                , occlusionTexture = occlusionTexture
+                , occlusionTexture = material.occlusionTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                 , occlusionTextureStrength = material.occlusionTexture |> Maybe.map .strength |> Maybe.withDefault 1.0
-                , emissiveTexture = emissiveTexture
+                , emissiveTexture = material.emissiveTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                 , emissiveFactor = material.emissiveFactor
                 , pbrMetallicRoughness =
                     { baseColorFactor = material.pbrMetallicRoughness.baseColorFactor
-                    , baseColorTexture = baseColorTexture
+                    , baseColorTexture = material.pbrMetallicRoughness.baseColorTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                     , metallicFactor = material.pbrMetallicRoughness.metallicFactor
                     , roughnessFactor = material.pbrMetallicRoughness.roughnessFactor
-                    , metallicRoughnessTexture = metallicRoughnessTexture
+                    , metallicRoughnessTexture = material.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                     }
                 , doubleSided = material.doubleSided
                 , alphaMode =
@@ -86,6 +51,18 @@ fromPrimitive gltf primitive =
             Nothing
 
 
-textureFromTextureInfo : Gltf -> { a | index : Internal.Texture.Index } -> Maybe Internal.Texture.Texture
+textureFromTextureInfo :
+    Gltf
+    -> { a | index : Internal.Texture.Index, texCoord : Int, extensions : Maybe TextureExtensions }
+    -> Maybe Gltf.Material.Texture
 textureFromTextureInfo gltf textureInfo =
     Common.textureAtIndex gltf textureInfo.index
+        |> Maybe.andThen (\texture -> texture.source |> Maybe.map (Tuple.pair texture.sampler))
+        |> Maybe.map
+            (\textureIndex ->
+                Gltf.Material.Texture
+                    { index = TextureIndex textureIndex
+                    , texCoord = textureInfo.texCoord
+                    , extensions = textureInfo.extensions
+                    }
+            )

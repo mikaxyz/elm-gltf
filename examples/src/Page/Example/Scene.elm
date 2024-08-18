@@ -513,8 +513,12 @@ toVertex : Gltf.Mesh.Vertex -> Vertex
 toVertex v =
     v.position
         |> Vertex.vertex
-        |> (v.texCoords
+        |> (v.texCoord0
                 |> Maybe.map Vertex.withUV
+                |> Maybe.withDefault identity
+           )
+        |> (v.texCoord1
+                |> Maybe.map Vertex.withUV1
                 |> Maybe.withDefault identity
            )
         |> (v.normal

@@ -381,42 +381,44 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
             case MeshHelper.toMaterial mesh of
                 Just (Gltf.Material.Material m) ->
                     let
-                        maybeLoadTextureInfo : Maybe Gltf.Material.TextureIndex -> Maybe LoadTextureInfo
-                        maybeLoadTextureInfo maybeTextureIndex =
-                            maybeTextureIndex
-                                |> Maybe.andThen (\textureIndex -> TextureStore.get textureIndex textureStore)
-                                |> (\texture ->
-                                        case texture of
-                                            Just _ ->
-                                                Nothing
+                        maybeLoadTextureInfo : Gltf.Material.Texture -> Maybe LoadTextureInfo
+                        maybeLoadTextureInfo (Gltf.Material.Texture { index }) =
+                            case TextureStore.get index textureStore of
+                                Just _ ->
+                                    Nothing
 
-                                            Nothing ->
-                                                maybeTextureIndex
-                                                    |> Maybe.andThen
-                                                        (\textureIndex ->
-                                                            (textureIndex |> TextureIndex.toImageIndex |> Common.imageAtIndex gltf)
-                                                                |> Maybe.map
-                                                                    (\image ->
-                                                                        { textureIndex = textureIndex
-                                                                        , image = image
-                                                                        , maybeSampler =
-                                                                            textureIndex
-                                                                                |> TextureIndex.toSamplerIndex
-                                                                                |> Maybe.andThen (Common.samplerAtIndex gltf)
-                                                                        }
-                                                                    )
-                                                        )
-                                   )
+                                Nothing ->
+                                    (index |> TextureIndex.toImageIndex |> Common.imageAtIndex gltf)
+                                        |> Maybe.map
+                                            (\image ->
+                                                { textureIndex = index
+                                                , image = image
+                                                , maybeSampler =
+                                                    index
+                                                        |> TextureIndex.toSamplerIndex
+                                                        |> Maybe.andThen (Common.samplerAtIndex gltf)
+                                                }
+                                            )
 
                         loadTexture : LoadTextureInfo -> Cmd ProgressMsg
                         loadTexture effect =
                             Task.perform LoadTexture (Task.succeed effect)
                     in
-                    [ maybeLoadTextureInfo m.pbrMetallicRoughness.baseColorTexture |> Maybe.map loadTexture
-                    , maybeLoadTextureInfo m.pbrMetallicRoughness.metallicRoughnessTexture |> Maybe.map loadTexture
-                    , maybeLoadTextureInfo m.normalTexture |> Maybe.map loadTexture
-                    , maybeLoadTextureInfo m.occlusionTexture |> Maybe.map loadTexture
-                    , maybeLoadTextureInfo m.emissiveTexture |> Maybe.map loadTexture
+                    [ m.pbrMetallicRoughness.baseColorTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.pbrMetallicRoughness.metallicRoughnessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.normalTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.occlusionTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.emissiveTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
                     ]
                         |> List.filterMap identity
 
