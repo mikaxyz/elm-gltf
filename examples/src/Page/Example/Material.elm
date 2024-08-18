@@ -35,23 +35,28 @@ renderer fallbackTexture config gltfQueryResult name =
                 { pbrMetallicRoughness =
                     { baseColorTexture =
                         pbr.pbrMetallicRoughness.baseColorTexture
+                            |> Maybe.map Gltf.Material.textureIndex
                             |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                             |> Maybe.withDefault fallbackTexture
                     , metallicRoughnessTexture =
                         pbr.pbrMetallicRoughness.metallicRoughnessTexture
+                            |> Maybe.map Gltf.Material.textureIndex
                             |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                             |> Maybe.withDefault fallbackTexture
                     }
                 , normalTexture =
                     pbr.normalTexture
+                        |> Maybe.map Gltf.Material.textureIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 , occlusionTexture =
                     pbr.occlusionTexture
+                        |> Maybe.map Gltf.Material.textureIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 , emissiveTexture =
                     pbr.emissiveTexture
+                        |> Maybe.map Gltf.Material.textureIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 }

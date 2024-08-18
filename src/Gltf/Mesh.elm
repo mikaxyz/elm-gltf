@@ -36,7 +36,8 @@ type alias Vertex =
     , color : Maybe Vec4
     , weights : Maybe Vec4
     , joints : Maybe Joints
-    , texCoords : Maybe Vec2
+    , texCoord0 : Maybe Vec2
+    , texCoord1 : Maybe Vec2
     }
 
 

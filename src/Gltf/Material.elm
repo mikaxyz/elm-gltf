@@ -1,8 +1,13 @@
-module Gltf.Material exposing (Material(..), Index(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness)
+module Gltf.Material exposing
+    ( Material(..), Index(..), Texture(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness
+    , textureIndex
+    )
 
 {-| A material as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material).
 
-@docs Material, Index, TextureIndex, AlphaMode, BbrMetallicRoughness
+@docs Material, Index, Texture, TextureIndex, AlphaMode, BbrMetallicRoughness
+
+@docs textureIndex
 
 -}
 
@@ -30,11 +35,11 @@ type Material
         { name : Maybe String
         , index : Index
         , pbrMetallicRoughness : BbrMetallicRoughness
-        , normalTexture : Maybe TextureIndex
+        , normalTexture : Maybe Texture
         , normalTextureScale : Float
-        , occlusionTexture : Maybe TextureIndex
+        , occlusionTexture : Maybe Texture
         , occlusionTextureStrength : Float
-        , emissiveTexture : Maybe TextureIndex
+        , emissiveTexture : Maybe Texture
         , emissiveFactor : Vec3
         , doubleSided : Bool
         , alphaMode : AlphaMode
@@ -53,8 +58,24 @@ type AlphaMode
 -}
 type alias BbrMetallicRoughness =
     { baseColorFactor : Vec4
-    , baseColorTexture : Maybe TextureIndex
+    , baseColorTexture : Maybe Texture
     , metallicFactor : Float
     , roughnessFactor : Float
-    , metallicRoughnessTexture : Maybe TextureIndex
+    , metallicRoughnessTexture : Maybe Texture
     }
+
+
+{-| Any data associated with a texture
+-}
+type Texture
+    = Texture
+        { index : TextureIndex
+        , texCoord : Int
+        }
+
+
+{-| Texture index from Texture
+-}
+textureIndex : Texture -> TextureIndex
+textureIndex (Texture { index }) =
+    index

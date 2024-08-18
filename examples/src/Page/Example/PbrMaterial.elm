@@ -35,26 +35,31 @@ type alias Uniforms =
     , u_AlphaCutoff : Float
 
     --
+    , u_MetallicRoughnessCoord : Int
     , u_hasMetallicRoughnessSampler : Int
     , u_MetallicRoughnessSampler : Texture
     , u_MetallicRoughnessValues : Vec2
 
     --
+    , u_BaseColorCoord : Int
     , u_hasBaseColorSampler : Int
     , u_BaseColorSampler : Texture
     , u_BaseColorFactor : Vec4
 
     --
+    , u_NormalCoord : Int
     , u_hasNormalSampler : Int
     , u_NormalSampler : Texture
     , u_NormalScale : Float
 
     --
+    , u_OcclusionCoord : Int
     , u_hasOcclusionSampler : Int
     , u_OcclusionSampler : Texture
     , u_OcclusionStrength : Float
 
     --
+    , u_EmissiveCoord : Int
     , u_hasEmissiveSampler : Int
     , u_EmissiveSampler : Texture
     , u_EmissiveFactor : Vec3
@@ -133,7 +138,8 @@ type alias Uniforms =
 
 type alias Varyings =
     { v_Position : Vec3
-    , v_UV : Vec2
+    , v_UV_0 : Vec2
+    , v_UV_1 : Vec2
     , v_Normal : Vec3
     }
 
@@ -234,6 +240,12 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
 
             else
                 0
+
+        texCoord : Maybe Gltf.Material.Texture -> Int
+        texCoord texture =
+            texture
+                |> Maybe.map (\(Gltf.Material.Texture x) -> x.texCoord)
+                |> Maybe.withDefault 0
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
@@ -247,26 +259,31 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_AlphaCutoff = alphaCutoff
 
         --
+        , u_MetallicRoughnessCoord = texCoord pbr.pbrMetallicRoughness.metallicRoughnessTexture
         , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
         , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture |> flagFromMaybe
         , u_MetallicRoughnessSampler = textures.pbrMetallicRoughness.metallicRoughnessTexture
 
         --
+        , u_BaseColorCoord = texCoord pbr.pbrMetallicRoughness.baseColorTexture
         , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> flagFromMaybe
         , u_BaseColorSampler = textures.pbrMetallicRoughness.baseColorTexture
 
         --
+        , u_NormalCoord = texCoord pbr.normalTexture
         , u_hasNormalSampler = pbr.normalTexture |> flagFromMaybe
         , u_NormalSampler = textures.normalTexture
         , u_NormalScale = pbr.normalTextureScale
 
         --
+        , u_OcclusionCoord = texCoord pbr.occlusionTexture
         , u_hasOcclusionSampler = pbr.occlusionTexture |> flagFromMaybe
         , u_OcclusionSampler = textures.occlusionTexture
         , u_OcclusionStrength = pbr.occlusionTextureStrength
 
         --
+        , u_EmissiveCoord = texCoord pbr.emissiveTexture
         , u_hasEmissiveSampler = pbr.emissiveTexture |> flagFromMaybe
         , u_EmissiveSampler = textures.emissiveTexture
         , u_EmissiveFactor = pbr.emissiveFactor
@@ -364,6 +381,7 @@ vertexShader =
         attribute vec3 normal;
         attribute vec3 tangent;
         attribute vec2 uv;
+        attribute vec2 uv1;
         attribute vec4 joints;
         attribute vec4 weights;
 
@@ -372,7 +390,8 @@ vertexShader =
         uniform mat4 u_NormalMatrix;
 
         varying vec3 v_Position;
-        varying vec2 v_UV;
+        varying vec2 v_UV_0;
+        varying vec2 v_UV_1;
         varying vec3 v_Normal;
 
         uniform mat4 joint0;
@@ -517,7 +536,8 @@ vertexShader =
             vec4 pos = u_ModelMatrix * vec4(position, 1.0);
             v_Position = vec3(pos.xyz) / pos.w;
             v_Normal = normalize(vec3(u_ModelMatrix * vec4(normal.xyz, 0.0)));
-            v_UV = uv;
+            v_UV_0 = uv;
+            v_UV_1 = uv1;
 
             gl_Position = u_MVPMatrix * skinDeform * vec4(position, 1.0); // needs w for proper perspective correction
         }
@@ -538,22 +558,27 @@ fragmentShader =
         uniform samplerCube u_DiffuseEnvSampler;
         uniform samplerCube u_SpecularEnvSampler;
 
+        uniform int u_MetallicRoughnessCoord;
         uniform vec2 u_MetallicRoughnessValues;
         uniform int u_hasMetallicRoughnessSampler;
         uniform sampler2D u_MetallicRoughnessSampler;
 
+        uniform int u_BaseColorCoord;
         uniform vec4 u_BaseColorFactor;
         uniform int u_hasBaseColorSampler;
         uniform sampler2D u_BaseColorSampler;
 
+        uniform int u_NormalCoord;
         uniform int u_hasNormalSampler;
         uniform sampler2D u_NormalSampler;
         uniform float u_NormalScale;
 
+        uniform int u_OcclusionCoord;
         uniform int u_hasOcclusionSampler;
         uniform sampler2D u_OcclusionSampler;
         uniform float u_OcclusionStrength;
 
+        uniform int u_EmissiveCoord;
         uniform int u_hasEmissiveSampler;
         uniform sampler2D u_EmissiveSampler;
         uniform vec3 u_EmissiveFactor;
@@ -561,7 +586,8 @@ fragmentShader =
         uniform vec3 u_Camera;
 
         varying vec3 v_Position;
-        varying vec2 v_UV;
+        varying vec2 v_UV_0;
+        varying vec2 v_UV_1;
         varying vec3 v_Normal;
 
         // Encapsulate the various inputs used by the various functions in the shading equation
@@ -611,14 +637,19 @@ fragmentShader =
 //            return color * intensity;
 //        }
 
+        vec2 uvFromCoord(int coord) {
+            return coord == 0 ? v_UV_0 : v_UV_1;
+        }
+
         // Find the normal for this fragment, pulling either from a predefined normal map
         // or from the interpolated mesh normal and tangent attributes.
         vec3 getNormal()
         {
+            vec2 uv = uvFromCoord(u_NormalCoord);
             vec3 pos_dx = dFdx(v_Position);
             vec3 pos_dy = dFdy(v_Position);
-            vec3 tex_dx = dFdx(vec3(v_UV, 0.0));
-            vec3 tex_dy = dFdy(vec3(v_UV, 0.0));
+            vec3 tex_dx = dFdx(vec3(uv, 0.0));
+            vec3 tex_dy = dFdy(vec3(uv, 0.0));
             vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
 
             vec3 ng = normalize(v_Normal);
@@ -628,7 +659,7 @@ fragmentShader =
 
             vec3 n;
             if (u_hasNormalSampler == 1) {
-                n = texture2D(u_NormalSampler, v_UV).rgb;
+                n = texture2D(u_NormalSampler, uv).rgb;
                 n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
             } else {
                 // The tbn matrix is linearly interpolated, so we need to re-normalize
@@ -726,7 +757,8 @@ fragmentShader =
             float metallic = u_MetallicRoughnessValues.x;
 
             if (u_hasMetallicRoughnessSampler == 1) {
-                vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
+                vec2 uv = uvFromCoord(u_MetallicRoughnessCoord);
+                vec4 mrSample = texture2D(u_MetallicRoughnessSampler, uv);
                 perceptualRoughness = mrSample.g * perceptualRoughness;
                 metallic = mrSample.b * metallic;
             }
@@ -740,7 +772,8 @@ fragmentShader =
             // The albedo may be defined from a base texture or a flat color
             vec4 baseColor = u_BaseColorFactor;
             if (u_hasBaseColorSampler == 1) {
-                baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
+                vec2 uv = uvFromCoord(u_BaseColorCoord);
+                baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, uv)) * u_BaseColorFactor;
             }
 
             vec3 f0 = vec3(0.04);
@@ -801,12 +834,14 @@ fragmentShader =
             color += getIBLContribution(pbrInputs, n, reflection);
 
             if (u_hasOcclusionSampler == 1) {
-                float ao = texture2D(u_OcclusionSampler, v_UV).r;
+                vec2 uv = uvFromCoord(u_OcclusionCoord);
+                float ao = texture2D(u_OcclusionSampler, uv).r;
                 color = mix(color, color * ao, u_OcclusionStrength);
             }
 
             if (u_hasEmissiveSampler == 1) {
-                vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
+                vec2 uv = uvFromCoord(u_EmissiveCoord);
+                vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, uv)).rgb * u_EmissiveFactor;
                 color += emissive;
             }
 
