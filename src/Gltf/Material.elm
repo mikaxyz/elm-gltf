@@ -1,11 +1,11 @@
 module Gltf.Material exposing
-    ( Material(..), Index(..), Texture(..), TextureIndex, AlphaMode(..), BbrMetallicRoughness
+    ( Material(..), Index(..), Texture(..), TextureIndex, AlphaMode(..), PbrMetallicRoughness
     , textureIndex
     )
 
 {-| A material as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material).
 
-@docs Material, Index, Texture, TextureIndex, AlphaMode, BbrMetallicRoughness
+@docs Material, Index, Texture, TextureIndex, AlphaMode, PbrMetallicRoughness
 
 @docs textureIndex
 
@@ -35,7 +35,7 @@ type Material
     = Material
         { name : Maybe String
         , index : Index
-        , pbrMetallicRoughness : BbrMetallicRoughness
+        , pbrMetallicRoughness : PbrMetallicRoughness
         , normalTexture : Maybe Texture
         , normalTextureScale : Float
         , occlusionTexture : Maybe Texture
@@ -57,7 +57,7 @@ type AlphaMode
 
 {-| The [Material PBR Metallic Roughness](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness) of the material.
 -}
-type alias BbrMetallicRoughness =
+type alias PbrMetallicRoughness =
     { baseColorFactor : Vec4
     , baseColorTexture : Maybe Texture
     , metallicFactor : Float

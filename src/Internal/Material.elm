@@ -23,7 +23,7 @@ type Index
 
 type alias Material =
     { name : Maybe String
-    , pbrMetallicRoughness : BbrMetallicRoughness
+    , pbrMetallicRoughness : PbrMetallicRoughness
     , normalTexture : Maybe NormalTextureInfo
     , occlusionTexture : Maybe OcclusionTextureInfo
     , emissiveTexture : Maybe TextureInfo
@@ -55,7 +55,7 @@ type alias OcclusionTextureInfo =
     }
 
 
-type alias BbrMetallicRoughness =
+type alias PbrMetallicRoughness =
     { baseColorFactor : Vec4
     , baseColorTexture : Maybe TextureInfo
     , metallicFactor : Float
@@ -64,8 +64,8 @@ type alias BbrMetallicRoughness =
     }
 
 
-defaultBbrMetallicRoughness : BbrMetallicRoughness
-defaultBbrMetallicRoughness =
+defaultPbrMetallicRoughness : PbrMetallicRoughness
+defaultPbrMetallicRoughness =
     { baseColorFactor = vec4 1 1 1 1
     , baseColorTexture = Nothing
     , metallicFactor = 1
@@ -83,7 +83,7 @@ decoder : JD.Decoder Material
 decoder =
     JD.succeed Material
         |> JDP.optional "name" (JD.maybe JD.string) Nothing
-        |> JDP.optional "pbrMetallicRoughness" pbrMetallicRoughnessDecoder defaultBbrMetallicRoughness
+        |> JDP.optional "pbrMetallicRoughness" pbrMetallicRoughnessDecoder defaultPbrMetallicRoughness
         |> JDP.optional "normalTexture" (JD.maybe normalTextureInfoDecoder) Nothing
         |> JDP.optional "occlusionTexture" (JD.maybe occlusionTextureInfoDecoder) Nothing
         |> JDP.optional "emissiveTexture" (JD.maybe TextureInfo.decoder) Nothing
@@ -156,11 +156,11 @@ vec4Decoder =
             )
 
 
-pbrMetallicRoughnessDecoder : JD.Decoder BbrMetallicRoughness
+pbrMetallicRoughnessDecoder : JD.Decoder PbrMetallicRoughness
 pbrMetallicRoughnessDecoder =
-    JD.succeed BbrMetallicRoughness
-        |> JDP.optional "baseColorFactor" vec4Decoder defaultBbrMetallicRoughness.baseColorFactor
+    JD.succeed PbrMetallicRoughness
+        |> JDP.optional "baseColorFactor" vec4Decoder defaultPbrMetallicRoughness.baseColorFactor
         |> JDP.optional "baseColorTexture" (JD.maybe TextureInfo.decoder) Nothing
-        |> JDP.optional "metallicFactor" JD.float defaultBbrMetallicRoughness.metallicFactor
-        |> JDP.optional "roughnessFactor" JD.float defaultBbrMetallicRoughness.roughnessFactor
+        |> JDP.optional "metallicFactor" JD.float defaultPbrMetallicRoughness.metallicFactor
+        |> JDP.optional "roughnessFactor" JD.float defaultPbrMetallicRoughness.roughnessFactor
         |> JDP.optional "metallicRoughnessTexture" (JD.maybe TextureInfo.decoder) Nothing
