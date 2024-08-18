@@ -190,14 +190,6 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
                 |> Maybe.map DirectionalLight.toVec4
                 |> Maybe.withDefault (vec4 0 0 0 0)
 
-        directionalLight3 : Vec3
-        directionalLight3 =
-            options
-                |> Material.directionalLights
-                |> List.head
-                |> Maybe.map DirectionalLight.direction
-                |> Maybe.withDefault (vec3 0 0 0)
-
         settingsWithAlpha : List WebGL.Settings.Setting -> List WebGL.Settings.Setting
         settingsWithAlpha x =
             case pbr.alphaMode of
@@ -254,8 +246,8 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_Camera = Camera.position (Material.camera options)
 
         --
-        , u_LightDirection = directionalLight3
-        , u_LightColor = vec3 1 1 1
+        , u_LightDirection = vec3 1 1 1
+        , u_LightColor = vec3 0.6 0.59 0.56
         , u_AlphaCutoff = alphaCutoff
 
         --
