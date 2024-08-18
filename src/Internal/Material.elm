@@ -8,6 +8,7 @@ module Internal.Material exposing
     , indexDecoder
     )
 
+import Gltf.Material.Extensions exposing (TextureExtensions)
 import Internal.Texture as Texture
 import Internal.TextureInfo as TextureInfo exposing (TextureInfo)
 import Json.Decode as JD
@@ -42,6 +43,7 @@ type alias NormalTextureInfo =
     { index : Texture.Index
     , texCoord : Int
     , scale : Float
+    , extensions : Maybe TextureExtensions
     }
 
 
@@ -49,6 +51,7 @@ type alias OcclusionTextureInfo =
     { index : Texture.Index
     , texCoord : Int
     , strength : Float
+    , extensions : Maybe TextureExtensions
     }
 
 
@@ -95,6 +98,7 @@ normalTextureInfoDecoder =
         |> JDP.required "index" Texture.indexDecoder
         |> JDP.optional "texCoord" JD.int 0
         |> JDP.optional "scale" JD.float 1
+        |> JDP.optional "extensions" (JD.maybe TextureInfo.textureExtensionsDecoder) Nothing
 
 
 occlusionTextureInfoDecoder : JD.Decoder OcclusionTextureInfo
@@ -103,6 +107,7 @@ occlusionTextureInfoDecoder =
         |> JDP.required "index" Texture.indexDecoder
         |> JDP.optional "texCoord" JD.int 0
         |> JDP.optional "strength" JD.float 1
+        |> JDP.optional "extensions" (JD.maybe TextureInfo.textureExtensionsDecoder) Nothing
 
 
 alphaModeDecoder : JD.Decoder AlphaMode

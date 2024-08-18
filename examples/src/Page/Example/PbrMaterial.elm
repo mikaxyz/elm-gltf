@@ -1,6 +1,7 @@
 module Page.Example.PbrMaterial exposing (Config, renderer)
 
 import Gltf.Material
+import Gltf.Material.Extensions exposing (TextureTransformExtension)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -39,30 +40,45 @@ type alias Uniforms =
     , u_hasMetallicRoughnessSampler : Int
     , u_MetallicRoughnessSampler : Texture
     , u_MetallicRoughnessValues : Vec2
+    , u_MetallicRoughnessTransformScale : Vec2
+    , u_MetallicRoughnessTransformOffset : Vec2
+    , u_MetallicRoughnessTransformRotation : Float
 
     --
     , u_BaseColorCoord : Int
     , u_hasBaseColorSampler : Int
     , u_BaseColorSampler : Texture
     , u_BaseColorFactor : Vec4
+    , u_BaseColorTransformScale : Vec2
+    , u_BaseColorTransformOffset : Vec2
+    , u_BaseColorTransformRotation : Float
 
     --
     , u_NormalCoord : Int
     , u_hasNormalSampler : Int
     , u_NormalSampler : Texture
     , u_NormalScale : Float
+    , u_NormalTransformScale : Vec2
+    , u_NormalTransformOffset : Vec2
+    , u_NormalTransformRotation : Float
 
     --
     , u_OcclusionCoord : Int
     , u_hasOcclusionSampler : Int
     , u_OcclusionSampler : Texture
     , u_OcclusionStrength : Float
+    , u_OcclusionTransformScale : Vec2
+    , u_OcclusionTransformOffset : Vec2
+    , u_OcclusionTransformRotation : Float
 
     --
     , u_EmissiveCoord : Int
     , u_hasEmissiveSampler : Int
     , u_EmissiveSampler : Texture
     , u_EmissiveFactor : Vec3
+    , u_EmissiveTransformScale : Vec2
+    , u_EmissiveTransformOffset : Vec2
+    , u_EmissiveTransformRotation : Float
 
     --
     , u_brdfLUT : Texture
@@ -233,6 +249,30 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
             else
                 0
 
+        textureTransform : Maybe Gltf.Material.Texture -> Maybe TextureTransformExtension
+        textureTransform texture =
+            texture
+                |> Maybe.andThen (\(Gltf.Material.Texture x) -> x.extensions)
+                |> Maybe.andThen (\extensions -> extensions.textureTransform)
+
+        textureScale : Maybe Gltf.Material.Texture -> Vec2
+        textureScale texture =
+            textureTransform texture
+                |> Maybe.map .scale
+                |> Maybe.withDefault (vec2 1 1)
+
+        textureOffset : Maybe Gltf.Material.Texture -> Vec2
+        textureOffset texture =
+            textureTransform texture
+                |> Maybe.map .offset
+                |> Maybe.withDefault (vec2 0 0)
+
+        textureRotation : Maybe Gltf.Material.Texture -> Float
+        textureRotation texture =
+            textureTransform texture
+                |> Maybe.map .rotation
+                |> Maybe.withDefault 0
+
         texCoord : Maybe Gltf.Material.Texture -> Int
         texCoord texture =
             texture
@@ -255,30 +295,45 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_MetallicRoughnessValues = vec2 pbr.pbrMetallicRoughness.metallicFactor pbr.pbrMetallicRoughness.roughnessFactor
         , u_hasMetallicRoughnessSampler = pbr.pbrMetallicRoughness.metallicRoughnessTexture |> flagFromMaybe
         , u_MetallicRoughnessSampler = textures.pbrMetallicRoughness.metallicRoughnessTexture
+        , u_MetallicRoughnessTransformScale = textureScale pbr.pbrMetallicRoughness.metallicRoughnessTexture
+        , u_MetallicRoughnessTransformOffset = textureOffset pbr.pbrMetallicRoughness.metallicRoughnessTexture
+        , u_MetallicRoughnessTransformRotation = textureRotation pbr.pbrMetallicRoughness.metallicRoughnessTexture
 
         --
         , u_BaseColorCoord = texCoord pbr.pbrMetallicRoughness.baseColorTexture
         , u_BaseColorFactor = pbr.pbrMetallicRoughness.baseColorFactor
         , u_hasBaseColorSampler = pbr.pbrMetallicRoughness.baseColorTexture |> flagFromMaybe
         , u_BaseColorSampler = textures.pbrMetallicRoughness.baseColorTexture
+        , u_BaseColorTransformScale = textureScale pbr.pbrMetallicRoughness.baseColorTexture
+        , u_BaseColorTransformOffset = textureOffset pbr.pbrMetallicRoughness.baseColorTexture
+        , u_BaseColorTransformRotation = textureRotation pbr.pbrMetallicRoughness.baseColorTexture
 
         --
         , u_NormalCoord = texCoord pbr.normalTexture
         , u_hasNormalSampler = pbr.normalTexture |> flagFromMaybe
         , u_NormalSampler = textures.normalTexture
         , u_NormalScale = pbr.normalTextureScale
+        , u_NormalTransformScale = textureScale pbr.normalTexture
+        , u_NormalTransformOffset = textureOffset pbr.normalTexture
+        , u_NormalTransformRotation = textureRotation pbr.normalTexture
 
         --
         , u_OcclusionCoord = texCoord pbr.occlusionTexture
         , u_hasOcclusionSampler = pbr.occlusionTexture |> flagFromMaybe
         , u_OcclusionSampler = textures.occlusionTexture
         , u_OcclusionStrength = pbr.occlusionTextureStrength
+        , u_OcclusionTransformScale = textureScale pbr.occlusionTexture
+        , u_OcclusionTransformOffset = textureOffset pbr.occlusionTexture
+        , u_OcclusionTransformRotation = textureRotation pbr.occlusionTexture
 
         --
         , u_EmissiveCoord = texCoord pbr.emissiveTexture
         , u_hasEmissiveSampler = pbr.emissiveTexture |> flagFromMaybe
         , u_EmissiveSampler = textures.emissiveTexture
         , u_EmissiveFactor = pbr.emissiveFactor
+        , u_EmissiveTransformScale = textureScale pbr.emissiveTexture
+        , u_EmissiveTransformOffset = textureOffset pbr.emissiveTexture
+        , u_EmissiveTransformRotation = textureRotation pbr.emissiveTexture
 
         --
         , u_brdfLUT = config.brdfLUTTexture
@@ -554,26 +609,41 @@ fragmentShader =
         uniform vec2 u_MetallicRoughnessValues;
         uniform int u_hasMetallicRoughnessSampler;
         uniform sampler2D u_MetallicRoughnessSampler;
+        uniform vec2 u_MetallicRoughnessTransformScale;
+        uniform vec2 u_MetallicRoughnessTransformOffset;
+        uniform float u_MetallicRoughnessTransformRotation;
 
         uniform int u_BaseColorCoord;
         uniform vec4 u_BaseColorFactor;
         uniform int u_hasBaseColorSampler;
         uniform sampler2D u_BaseColorSampler;
+        uniform vec2 u_BaseColorTransformScale;
+        uniform vec2 u_BaseColorTransformOffset;
+        uniform float u_BaseColorTransformRotation;
 
         uniform int u_NormalCoord;
         uniform int u_hasNormalSampler;
         uniform sampler2D u_NormalSampler;
         uniform float u_NormalScale;
+        uniform vec2 u_NormalTransformScale;
+        uniform vec2 u_NormalTransformOffset;
+        uniform float u_NormalTransformRotation;
 
         uniform int u_OcclusionCoord;
         uniform int u_hasOcclusionSampler;
         uniform sampler2D u_OcclusionSampler;
         uniform float u_OcclusionStrength;
+        uniform vec2 u_OcclusionTransformScale;
+        uniform vec2 u_OcclusionTransformOffset;
+        uniform float u_OcclusionTransformRotation;
 
         uniform int u_EmissiveCoord;
         uniform int u_hasEmissiveSampler;
         uniform sampler2D u_EmissiveSampler;
         uniform vec3 u_EmissiveFactor;
+        uniform vec2 u_EmissiveTransformScale;
+        uniform vec2 u_EmissiveTransformOffset;
+        uniform float u_EmissiveTransformRotation;
 
         uniform vec3 u_Camera;
 
@@ -633,6 +703,22 @@ fragmentShader =
             return coord == 0 ? v_UV_0 : v_UV_1;
         }
 
+        vec2 transformedUv(int coord, vec2 Scale, vec2 Offset, float Rotation)
+        {
+            vec2 uv = uvFromCoord(coord);
+            mat3 translation = mat3(1,0,0, 0,1,0, Offset.x, Offset.y, 1);
+            float c = cos(-Rotation);
+            float s = sin(-Rotation);
+            mat3 rotation = mat3(
+                c, s, 0,
+               -s, c, 0,
+                0, 0, 1
+            );
+            mat3 scale = mat3(Scale.x,0,0, 0,Scale.y,0, 0,0,1);
+            mat3 matrix = translation * rotation * scale;
+            return ( matrix * vec3(uv, 1) ).xy;
+        }
+
         // Find the normal for this fragment, pulling either from a predefined normal map
         // or from the interpolated mesh normal and tangent attributes.
         vec3 getNormal()
@@ -651,7 +737,13 @@ fragmentShader =
 
             vec3 n;
             if (u_hasNormalSampler == 1) {
-                n = texture2D(u_NormalSampler, uv).rgb;
+                vec2 uvTransformed = transformedUv(
+                    u_NormalCoord,
+                    u_NormalTransformScale,
+                    u_NormalTransformOffset,
+                    u_NormalTransformRotation
+                );
+                n = texture2D(u_NormalSampler, uvTransformed).rgb;
                 n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
             } else {
                 // The tbn matrix is linearly interpolated, so we need to re-normalize
@@ -666,8 +758,6 @@ fragmentShader =
         // See our README.md on Environment Maps [3] for additional discussion.
         vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
         {
-            float mipCount = 9.0; // resolution of 512x512
-            float lod = (pbrInputs.perceptualRoughness * mipCount);
             // retrieve a scale and bias to F0. See [1], Figure 3
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
             vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
@@ -749,8 +839,13 @@ fragmentShader =
             float metallic = u_MetallicRoughnessValues.x;
 
             if (u_hasMetallicRoughnessSampler == 1) {
-                vec2 uv = uvFromCoord(u_MetallicRoughnessCoord);
-                vec4 mrSample = texture2D(u_MetallicRoughnessSampler, uv);
+                vec2 uvTransformed = transformedUv(
+                    u_MetallicRoughnessCoord,
+                    u_MetallicRoughnessTransformScale,
+                    u_MetallicRoughnessTransformOffset,
+                    u_MetallicRoughnessTransformRotation
+                );
+                vec4 mrSample = texture2D(u_MetallicRoughnessSampler, uvTransformed);
                 perceptualRoughness = mrSample.g * perceptualRoughness;
                 metallic = mrSample.b * metallic;
             }
@@ -764,8 +859,13 @@ fragmentShader =
             // The albedo may be defined from a base texture or a flat color
             vec4 baseColor = u_BaseColorFactor;
             if (u_hasBaseColorSampler == 1) {
-                vec2 uv = uvFromCoord(u_BaseColorCoord);
-                baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, uv)) * u_BaseColorFactor;
+                vec2 uvTransformed = transformedUv(
+                    u_BaseColorCoord,
+                    u_BaseColorTransformScale,
+                    u_BaseColorTransformOffset,
+                    u_BaseColorTransformRotation
+                );
+                baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, uvTransformed)) * u_BaseColorFactor;
             }
 
             vec3 f0 = vec3(0.04);
@@ -826,14 +926,24 @@ fragmentShader =
             color += getIBLContribution(pbrInputs, n, reflection);
 
             if (u_hasOcclusionSampler == 1) {
-                vec2 uv = uvFromCoord(u_OcclusionCoord);
-                float ao = texture2D(u_OcclusionSampler, uv).r;
+                vec2 uvTransformed = transformedUv(
+                    u_OcclusionCoord,
+                    u_OcclusionTransformScale,
+                    u_OcclusionTransformOffset,
+                    u_OcclusionTransformRotation
+                );
+                float ao = texture2D(u_OcclusionSampler, uvTransformed).r;
                 color = mix(color, color * ao, u_OcclusionStrength);
             }
 
             if (u_hasEmissiveSampler == 1) {
-                vec2 uv = uvFromCoord(u_EmissiveCoord);
-                vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, uv)).rgb * u_EmissiveFactor;
+                vec2 uvTransformed = transformedUv(
+                    u_EmissiveCoord,
+                    u_EmissiveTransformScale,
+                    u_EmissiveTransformOffset,
+                    u_EmissiveTransformRotation
+                );
+                vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, uvTransformed)).rgb * u_EmissiveFactor;
                 color += emissive;
             }
 

@@ -2,6 +2,7 @@ module Gltf.Query.MaterialHelper exposing (fromPrimitive)
 
 import Common
 import Gltf.Material exposing (AlphaMode(..), Material(..))
+import Gltf.Material.Extensions exposing (TextureExtensions)
 import Gltf.Query.TextureIndex exposing (TextureIndex(..))
 import Internal.Gltf exposing (Gltf)
 import Internal.Material as Internal
@@ -52,7 +53,7 @@ fromPrimitive gltf primitive =
 
 textureFromTextureInfo :
     Gltf
-    -> { a | index : Internal.Texture.Index, texCoord : Int }
+    -> { a | index : Internal.Texture.Index, texCoord : Int, extensions : Maybe TextureExtensions }
     -> Maybe Gltf.Material.Texture
 textureFromTextureInfo gltf textureInfo =
     Common.textureAtIndex gltf textureInfo.index
@@ -62,5 +63,6 @@ textureFromTextureInfo gltf textureInfo =
                 Gltf.Material.Texture
                     { index = TextureIndex textureIndex
                     , texCoord = textureInfo.texCoord
+                    , extensions = textureInfo.extensions
                     }
             )

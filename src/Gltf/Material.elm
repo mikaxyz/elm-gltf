@@ -11,6 +11,7 @@ module Gltf.Material exposing
 
 -}
 
+import Gltf.Material.Extensions exposing (TextureExtensions)
 import Gltf.Query.TextureIndex as TextureIndex
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
@@ -71,6 +72,7 @@ type Texture
     = Texture
         { index : TextureIndex
         , texCoord : Int
+        , extensions : Maybe TextureExtensions
         }
 
 
