@@ -14,7 +14,6 @@ import Internal.Util as Util
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
 
 
@@ -51,8 +50,8 @@ transformDecoder =
                     }
             )
             (JD.field "rotation" quaternionDecoder |> JD.maybe)
-            (JD.field "translation" vec3Decoder |> JD.maybe)
-            (JD.field "scale" vec3Decoder |> JD.maybe)
+            (JD.field "translation" Util.vec3Decoder |> JD.maybe)
+            (JD.field "scale" Util.vec3Decoder |> JD.maybe)
         ]
 
 
@@ -104,20 +103,6 @@ type alias Data =
     --
     , transform : Transform
     }
-
-
-vec3Decoder : JD.Decoder Vec3
-vec3Decoder =
-    JD.list JD.float
-        |> JD.andThen
-            (\values ->
-                case values of
-                    x :: y :: z :: [] ->
-                        JD.succeed (Vec3.vec3 x y z)
-
-                    _ ->
-                        JD.fail <| "Failed to decode Vec3 " ++ (values |> List.map String.fromFloat |> String.join ",")
-            )
 
 
 quaternionDecoder : JD.Decoder Quaternion

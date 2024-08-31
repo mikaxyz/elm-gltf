@@ -1,5 +1,6 @@
 module Gltf.Glb exposing (decoder)
 
+import Array exposing (Array)
 import Bytes exposing (Bytes)
 import Bytes.Decode as Decode
 import Bytes.Parser as Parser
@@ -25,7 +26,7 @@ type ChunkType
 type alias Glb =
     { header : Header
     , jsonString : String
-    , buffers : Internal.Buffer.Buffer
+    , buffers : Array Internal.Buffer.Buffer
     }
 
 
@@ -49,7 +50,7 @@ decoder =
                             Decode.fail
                 )
         )
-        (chunkDecoder |> Decode.map (.data >> Internal.Buffer.Buffer))
+        (chunkDecoder |> Decode.map (.data >> Internal.Buffer.Buffer >> Array.repeat 1))
 
 
 headerDecoder : Decode.Decoder Header

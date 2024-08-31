@@ -66,6 +66,26 @@ pathFromUrl url =
 
 decoder : String -> JD.Decoder Gltf
 decoder url =
+    JD.field "buffers" (JD.array Buffer.decoder)
+        |> JD.andThen (decoderWithBuffers url)
+
+
+bytesDecoder : String -> Bytes.Decode.Decoder Gltf
+bytesDecoder url =
+    Glb.decoder
+        |> Bytes.Decode.andThen
+            (\{ jsonString, buffers } ->
+                case JD.decodeString (decoderWithBuffers url buffers) jsonString of
+                    Ok gltf ->
+                        Bytes.Decode.succeed gltf
+
+                    Err _ ->
+                        Bytes.Decode.fail
+            )
+
+
+decoderWithBuffers : String -> Array Buffer -> JD.Decoder Gltf
+decoderWithBuffers url buffers =
     JD.succeed (Gltf (pathFromUrl url))
         |> JDP.required "asset" assetDecoder
         |> JDP.required "scenes" (JD.array Scene.decoder)
@@ -77,55 +97,7 @@ decoder url =
         |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
         |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
         |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
-        |> JDP.required "buffers" (JD.array Buffer.decoder)
-        |> JDP.required "bufferViews" (JD.array BufferView.decoder)
-        |> JDP.required "accessors" (JD.array Accessor.decoder)
-        |> JDP.optional "animations" (JD.array Animation.decoder) Array.empty
-        |> JDP.optional "cameras" (Util.arrayWithIndexedItems Camera.decoder) Array.empty
-
-
-bytesDecoder : String -> Bytes.Decode.Decoder Gltf
-bytesDecoder url =
-    Glb.decoder
-        |> Bytes.Decode.andThen
-            (\{ jsonString, buffers } ->
-                case JD.decodeString (decoderWithSingleBuffer url buffers) jsonString of
-                    Ok gltf ->
-                        Bytes.Decode.succeed gltf
-
-                    Err _ ->
-                        Bytes.Decode.fail
-            )
-
-
-decoderWithSingleBuffer : String -> Buffer -> JD.Decoder Gltf
-decoderWithSingleBuffer url buffer =
-    JD.succeed (Gltf url)
-        |> JDP.required "asset" assetDecoder
-        |> JDP.required "scenes" (JD.array Scene.decoder)
-        |> JDP.optional "scene" (JD.int |> JD.map Scene.Index) (Scene.Index 0)
-        |> JDP.required "nodes"
-            (JD.list JD.value
-                |> JD.map
-                    (\values ->
-                        values
-                            |> List.indexedMap
-                                (\index value ->
-                                    value
-                                        |> JD.decodeValue (Node.decoder index)
-                                        |> Result.toMaybe
-                                )
-                            |> List.filterMap identity
-                            |> Array.fromList
-                    )
-            )
-        |> JDP.required "meshes" (JD.array Mesh.decoder)
-        |> JDP.optional "images" (JD.array Image.decoder) Array.empty
-        |> JDP.optional "materials" (JD.array Material.decoder) Array.empty
-        |> JDP.optional "samplers" (JD.array Sampler.decoder) Array.empty
-        |> JDP.optional "textures" (JD.array Texture.decoder) Array.empty
-        |> JDP.optional "skins" (JD.array Skin.decoder) Array.empty
-        |> JDP.hardcoded ([ buffer ] |> Array.fromList)
+        |> JDP.hardcoded buffers
         |> JDP.required "bufferViews" (JD.array BufferView.decoder)
         |> JDP.required "accessors" (JD.array Accessor.decoder)
         |> JDP.optional "animations" (JD.array Animation.decoder) Array.empty

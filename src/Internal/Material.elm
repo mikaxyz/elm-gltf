@@ -11,6 +11,7 @@ module Internal.Material exposing
 import Gltf.Material.Extensions exposing (TextureExtensions)
 import Internal.Texture as Texture
 import Internal.TextureInfo as TextureInfo exposing (TextureInfo)
+import Internal.Util as Util
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 import Math.Vector3 exposing (Vec3, vec3)
@@ -87,7 +88,7 @@ decoder =
         |> JDP.optional "normalTexture" (JD.maybe normalTextureInfoDecoder) Nothing
         |> JDP.optional "occlusionTexture" (JD.maybe occlusionTextureInfoDecoder) Nothing
         |> JDP.optional "emissiveTexture" (JD.maybe TextureInfo.decoder) Nothing
-        |> JDP.optional "emissiveFactor" vec3Decoder (vec3 0 0 0)
+        |> JDP.optional "emissiveFactor" Util.vec3Decoder (vec3 0 0 0)
         |> JDP.custom alphaModeDecoder
         |> JDP.optional "doubleSided" JD.bool False
 
@@ -126,20 +127,6 @@ alphaModeDecoder =
         )
         |> JDP.optional "alphaMode" JD.string ""
         |> JDP.optional "alphaCutoff" JD.float 0.5
-
-
-vec3Decoder : JD.Decoder Vec3
-vec3Decoder =
-    JD.list JD.float
-        |> JD.andThen
-            (\values ->
-                case values of
-                    [ x, y, z ] ->
-                        JD.succeed (vec3 x y z)
-
-                    _ ->
-                        JD.fail <| "Failed to decode Vec3 " ++ (values |> List.map String.fromFloat |> String.join ",")
-            )
 
 
 vec4Decoder : JD.Decoder Vec4
