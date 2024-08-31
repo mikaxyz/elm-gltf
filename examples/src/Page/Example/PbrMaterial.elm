@@ -224,6 +224,7 @@ type alias Uniforms =
 
 type alias Varyings =
     { v_Position : Vec3
+    , v_Color : Vec3
     , v_UV_0 : Vec2
     , v_UV_1 : Vec2
     , v_Normal : Vec3
@@ -567,6 +568,7 @@ vertexShader =
         attribute vec3 position;
         attribute vec3 normal;
         attribute vec3 tangent;
+        attribute vec3 color;
         attribute vec2 uv;
         attribute vec2 uv1;
         attribute vec4 joints;
@@ -577,6 +579,7 @@ vertexShader =
         uniform mat4 u_NormalMatrix;
 
         varying vec3 v_Position;
+        varying vec3 v_Color;
         varying vec2 v_UV_0;
         varying vec2 v_UV_1;
         varying vec3 v_Normal;
@@ -901,6 +904,7 @@ vertexShader =
             v_Normal = normalize(vec3(u_ModelMatrix * vec4(normal.xyz, 0.0)));
             v_UV_0 = uv;
             v_UV_1 = uv1;
+            v_Color = color;
 
             gl_Position = u_MVPMatrix * skinDeform * vec4(position, 1.0); // needs w for proper perspective correction
         }
@@ -964,6 +968,7 @@ fragmentShader =
         uniform vec3 u_Camera;
 
         varying vec3 v_Position;
+        varying vec3 v_Color;
         varying vec2 v_UV_0;
         varying vec2 v_UV_1;
         varying vec3 v_Normal;
@@ -1184,6 +1189,8 @@ fragmentShader =
                 baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, uvTransformed)) * u_BaseColorFactor;
             }
 
+            baseColor = vec4(v_Color, 1.0) * baseColor;
+
             vec3 f0 = vec3(0.04);
             vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
             diffuseColor *= 1.0 - metallic;
@@ -1235,7 +1242,7 @@ fragmentShader =
             vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
             vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
             // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-            vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+            vec3 color = NdotL * v_Color * u_LightColor * (diffuseContrib + specContrib);
 
 
             // Calculate lighting contribution from image based lighting source (IBL)
