@@ -96,8 +96,8 @@ navigationView =
 pageView : Page -> Html Msg
 pageView page =
     case page of
-        Page.Error _ ->
-            h1 [] [ text "error" ]
+        Page.Error error ->
+            h1 [] [ text <| Debug.toString error ]
 
         Page.Example page_ ->
             Page.Example.view page_
