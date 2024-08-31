@@ -99,6 +99,7 @@ type alias Uniforms =
     , pointLight5Color : Vec3
 
     --
+    , hasBoneTransforms : Int
     , joint0 : Mat4
     , joint1 : Mat4
     , joint2 : Mat4
@@ -253,6 +254,14 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         boneTransforms =
             Object.boneTransforms object
                 |> Maybe.withDefault Object.boneTransformsIdentity
+
+        hasBoneTransforms : Int
+        hasBoneTransforms =
+            if Object.boneTransforms object /= Nothing then
+                1
+
+            else
+                0
 
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -425,6 +434,7 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , pointLight5Color = pointLight 5 |> .color
 
         --
+        , hasBoneTransforms = hasBoneTransforms
         , joint0 = boneTransforms.joint0
         , joint1 = boneTransforms.joint1
         , joint2 = boneTransforms.joint2
@@ -584,6 +594,7 @@ vertexShader =
         varying vec2 v_UV_1;
         varying vec3 v_Normal;
 
+        uniform int hasBoneTransforms;
         uniform mat4 joint0;
         uniform mat4 joint1;
         uniform mat4 joint2;
@@ -706,7 +717,7 @@ vertexShader =
         uniform mat4 inverseBindMatrix58;
         uniform mat4 inverseBindMatrix59;
 
-        mat4 jointMat(int i) {
+        mat4 jointMat(int i, float weights) {
             mat4 m = mat4(1);
             if (i == 0) {
                 m = joint0 * inverseBindMatrix0;
@@ -889,15 +900,18 @@ vertexShader =
             if (i == 59) {
                 m = joint59 * inverseBindMatrix59;
             }
-            return m;
+            return m * weights;
         }
 
         void main () {
-            mat4 skinDeform =
-                jointMat(int(joints.x)) * weights.x +
-                jointMat(int(joints.y)) * weights.y +
-                jointMat(int(joints.z)) * weights.z +
-                jointMat(int(joints.w)) * weights.w;
+            mat4 skinDeform = mat4(1);
+            if (hasBoneTransforms == 1) {
+                skinDeform =
+                    jointMat(int(joints.x), weights.x) +
+                    jointMat(int(joints.y), weights.y) +
+                    jointMat(int(joints.z), weights.z) +
+                    jointMat(int(joints.w), weights.w);
+            }
 
             vec4 pos = u_ModelMatrix * vec4(position, 1.0);
             v_Position = vec3(pos.xyz) / pos.w;
