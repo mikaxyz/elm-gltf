@@ -8,6 +8,7 @@ module Page exposing
     )
 
 import Page.Example
+import Page.Example.Model as Model
 import Route exposing (Route)
 import SampleAssets exposing (SampleAssets)
 
@@ -37,7 +38,7 @@ fromRoute config tagger maybeRoute =
         Just route ->
             case route of
                 Route.Root ->
-                    Page.Example.initWithLocalAsset "/assets/BevyCharacterTextured.gltf"
+                    Page.Example.initWithLocalAsset "/assets/Zombie.glb" Model.Zombie
                         |> Tuple.mapFirst Example
                         |> Tuple.mapSecond (Cmd.map (ExampleMsg >> tagger))
 

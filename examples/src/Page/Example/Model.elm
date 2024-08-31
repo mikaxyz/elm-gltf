@@ -1,5 +1,6 @@
 module Page.Example.Model exposing
     ( Asset(..)
+    , Attribution(..)
     , DragTarget(..)
     , Error(..)
     , Model
@@ -90,7 +91,12 @@ type alias Model =
     , activeScene : Maybe Gltf.Scene.Index
     , activeCamera : Maybe Gltf.Camera.Index
     , gltf : Gltf
+    , attribution : Maybe Attribution
     }
+
+
+type Attribution
+    = Zombie
 
 
 init : Asset -> Model
@@ -116,6 +122,7 @@ init asset =
     , activeScene = Nothing
     , activeCamera = Nothing
     , gltf = Gltf.init
+    , attribution = Nothing
     }
 
 

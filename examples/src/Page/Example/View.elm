@@ -4,13 +4,13 @@ import Gltf
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Gltf.Scene
-import Html exposing (Html, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
-import Html.Attributes as HA exposing (class, style, value)
+import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
+import Html.Attributes as HA exposing (class, href, style, value)
 import Html.Events
 import Json.Decode as JD
 import Math.Vector3 exposing (vec3)
 import Page.Example.Material as Material
-import Page.Example.Model exposing (Model, Msg(..))
+import Page.Example.Model as Model exposing (Model, Msg(..))
 import Page.Example.PbrMaterial
 import Page.Example.Scene as Scene
 import RemoteData exposing (RemoteData)
@@ -30,7 +30,7 @@ import Xyz.Mika.Dragon as Dragon
 view : Model -> Html Msg
 view model =
     let
-        materialConfig : RemoteData Page.Example.Model.Error Page.Example.PbrMaterial.Config
+        materialConfig : RemoteData Model.Error Page.Example.PbrMaterial.Config
         materialConfig =
             RemoteData.map Page.Example.PbrMaterial.Config
                 model.environmentTexture
@@ -70,7 +70,21 @@ view model =
                     scene
                     fallbackTexture
                     config
+                , model.attribution |> Maybe.map attributionView |> Maybe.withDefault (text "")
                 ]
+
+
+attributionView : Model.Attribution -> Html msg
+attributionView _ =
+    Html.aside [ class "attribution" ]
+        [ a [ href "https://poly.pizza/m/xqEzosAVYX" ] [ Html.text "Zombie" ]
+        , Html.text " by "
+        , a [ href "https://poly.pizza/u/bachosoftdesign" ] [ Html.text "bachosoftdesign" ]
+        , Html.text " ["
+        , a [ href "https://creativecommons.org/licenses/by/3.0/" ] [ Html.text "CC - BY" ]
+        , Html.text "] via "
+        , Html.a [ href "https://poly.pizza" ] [ text "Poly Pizza" ]
+        ]
 
 
 progressIndicatorView : String -> Html msg

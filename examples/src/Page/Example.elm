@@ -105,18 +105,19 @@ initWithSampleAsset assetType asset =
     )
 
 
-initWithLocalAsset : String -> ( Model, Cmd Msg )
-initWithLocalAsset path =
+initWithLocalAsset : String -> Model.Attribution -> ( Model, Cmd Msg )
+initWithLocalAsset path attribution =
     ( Model.init (Model.Local path)
         |> (\model ->
                 { model
-                    | sceneOptions =
+                    | attribution = Just attribution
+                    , sceneOptions =
                         model.sceneOptions
                             |> SceneOptions.toggle SceneOptions.showGridYOption
                 }
            )
     , Cmd.batch
-        [ Gltf.getGltf path GltfMsg
+        [ Gltf.getBinary path GltfMsg
         , loadFallbackTexture FallbackTextureReceived
         , loadEnvironmentTexture EnvironmentTextureReceived
         , loadSpecularEnvironmentTexture SpecularEnvironmentTextureReceived

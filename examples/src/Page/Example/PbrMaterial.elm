@@ -124,6 +124,41 @@ type alias Uniforms =
     , joint22 : Mat4
     , joint23 : Mat4
     , joint24 : Mat4
+    , joint25 : Mat4
+    , joint26 : Mat4
+    , joint27 : Mat4
+    , joint28 : Mat4
+    , joint29 : Mat4
+    , joint30 : Mat4
+    , joint31 : Mat4
+    , joint32 : Mat4
+    , joint33 : Mat4
+    , joint34 : Mat4
+    , joint35 : Mat4
+    , joint36 : Mat4
+    , joint37 : Mat4
+    , joint38 : Mat4
+    , joint39 : Mat4
+    , joint40 : Mat4
+    , joint41 : Mat4
+    , joint42 : Mat4
+    , joint43 : Mat4
+    , joint44 : Mat4
+    , joint45 : Mat4
+    , joint46 : Mat4
+    , joint47 : Mat4
+    , joint48 : Mat4
+    , joint49 : Mat4
+    , joint50 : Mat4
+    , joint51 : Mat4
+    , joint52 : Mat4
+    , joint53 : Mat4
+    , joint54 : Mat4
+    , joint55 : Mat4
+    , joint56 : Mat4
+    , joint57 : Mat4
+    , joint58 : Mat4
+    , joint59 : Mat4
     , inverseBindMatrix0 : Mat4
     , inverseBindMatrix1 : Mat4
     , inverseBindMatrix2 : Mat4
@@ -149,6 +184,41 @@ type alias Uniforms =
     , inverseBindMatrix22 : Mat4
     , inverseBindMatrix23 : Mat4
     , inverseBindMatrix24 : Mat4
+    , inverseBindMatrix25 : Mat4
+    , inverseBindMatrix26 : Mat4
+    , inverseBindMatrix27 : Mat4
+    , inverseBindMatrix28 : Mat4
+    , inverseBindMatrix29 : Mat4
+    , inverseBindMatrix30 : Mat4
+    , inverseBindMatrix31 : Mat4
+    , inverseBindMatrix32 : Mat4
+    , inverseBindMatrix33 : Mat4
+    , inverseBindMatrix34 : Mat4
+    , inverseBindMatrix35 : Mat4
+    , inverseBindMatrix36 : Mat4
+    , inverseBindMatrix37 : Mat4
+    , inverseBindMatrix38 : Mat4
+    , inverseBindMatrix39 : Mat4
+    , inverseBindMatrix40 : Mat4
+    , inverseBindMatrix41 : Mat4
+    , inverseBindMatrix42 : Mat4
+    , inverseBindMatrix43 : Mat4
+    , inverseBindMatrix44 : Mat4
+    , inverseBindMatrix45 : Mat4
+    , inverseBindMatrix46 : Mat4
+    , inverseBindMatrix47 : Mat4
+    , inverseBindMatrix48 : Mat4
+    , inverseBindMatrix49 : Mat4
+    , inverseBindMatrix50 : Mat4
+    , inverseBindMatrix51 : Mat4
+    , inverseBindMatrix52 : Mat4
+    , inverseBindMatrix53 : Mat4
+    , inverseBindMatrix54 : Mat4
+    , inverseBindMatrix55 : Mat4
+    , inverseBindMatrix56 : Mat4
+    , inverseBindMatrix57 : Mat4
+    , inverseBindMatrix58 : Mat4
+    , inverseBindMatrix59 : Mat4
     }
 
 
@@ -379,6 +449,41 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , joint22 = boneTransforms.joint22
         , joint23 = boneTransforms.joint23
         , joint24 = boneTransforms.joint24
+        , joint25 = boneTransforms.joint25
+        , joint26 = boneTransforms.joint26
+        , joint27 = boneTransforms.joint27
+        , joint28 = boneTransforms.joint28
+        , joint29 = boneTransforms.joint29
+        , joint30 = boneTransforms.joint30
+        , joint31 = boneTransforms.joint31
+        , joint32 = boneTransforms.joint32
+        , joint33 = boneTransforms.joint33
+        , joint34 = boneTransforms.joint34
+        , joint35 = boneTransforms.joint35
+        , joint36 = boneTransforms.joint36
+        , joint37 = boneTransforms.joint37
+        , joint38 = boneTransforms.joint38
+        , joint39 = boneTransforms.joint39
+        , joint40 = boneTransforms.joint40
+        , joint41 = boneTransforms.joint41
+        , joint42 = boneTransforms.joint42
+        , joint43 = boneTransforms.joint43
+        , joint44 = boneTransforms.joint44
+        , joint45 = boneTransforms.joint45
+        , joint46 = boneTransforms.joint46
+        , joint47 = boneTransforms.joint47
+        , joint48 = boneTransforms.joint48
+        , joint49 = boneTransforms.joint49
+        , joint50 = boneTransforms.joint50
+        , joint51 = boneTransforms.joint51
+        , joint52 = boneTransforms.joint52
+        , joint53 = boneTransforms.joint53
+        , joint54 = boneTransforms.joint54
+        , joint55 = boneTransforms.joint55
+        , joint56 = boneTransforms.joint56
+        , joint57 = boneTransforms.joint57
+        , joint58 = boneTransforms.joint58
+        , joint59 = boneTransforms.joint59
 
         --
         , inverseBindMatrix0 = boneTransforms.inverseBindMatrix0
@@ -406,6 +511,41 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , inverseBindMatrix22 = boneTransforms.inverseBindMatrix22
         , inverseBindMatrix23 = boneTransforms.inverseBindMatrix23
         , inverseBindMatrix24 = boneTransforms.inverseBindMatrix24
+        , inverseBindMatrix25 = boneTransforms.inverseBindMatrix25
+        , inverseBindMatrix26 = boneTransforms.inverseBindMatrix26
+        , inverseBindMatrix27 = boneTransforms.inverseBindMatrix27
+        , inverseBindMatrix28 = boneTransforms.inverseBindMatrix28
+        , inverseBindMatrix29 = boneTransforms.inverseBindMatrix29
+        , inverseBindMatrix30 = boneTransforms.inverseBindMatrix30
+        , inverseBindMatrix31 = boneTransforms.inverseBindMatrix31
+        , inverseBindMatrix32 = boneTransforms.inverseBindMatrix32
+        , inverseBindMatrix33 = boneTransforms.inverseBindMatrix33
+        , inverseBindMatrix34 = boneTransforms.inverseBindMatrix34
+        , inverseBindMatrix35 = boneTransforms.inverseBindMatrix35
+        , inverseBindMatrix36 = boneTransforms.inverseBindMatrix36
+        , inverseBindMatrix37 = boneTransforms.inverseBindMatrix37
+        , inverseBindMatrix38 = boneTransforms.inverseBindMatrix38
+        , inverseBindMatrix39 = boneTransforms.inverseBindMatrix39
+        , inverseBindMatrix40 = boneTransforms.inverseBindMatrix40
+        , inverseBindMatrix41 = boneTransforms.inverseBindMatrix41
+        , inverseBindMatrix42 = boneTransforms.inverseBindMatrix42
+        , inverseBindMatrix43 = boneTransforms.inverseBindMatrix43
+        , inverseBindMatrix44 = boneTransforms.inverseBindMatrix44
+        , inverseBindMatrix45 = boneTransforms.inverseBindMatrix45
+        , inverseBindMatrix46 = boneTransforms.inverseBindMatrix46
+        , inverseBindMatrix47 = boneTransforms.inverseBindMatrix47
+        , inverseBindMatrix48 = boneTransforms.inverseBindMatrix48
+        , inverseBindMatrix49 = boneTransforms.inverseBindMatrix49
+        , inverseBindMatrix50 = boneTransforms.inverseBindMatrix50
+        , inverseBindMatrix51 = boneTransforms.inverseBindMatrix51
+        , inverseBindMatrix52 = boneTransforms.inverseBindMatrix52
+        , inverseBindMatrix53 = boneTransforms.inverseBindMatrix53
+        , inverseBindMatrix54 = boneTransforms.inverseBindMatrix54
+        , inverseBindMatrix55 = boneTransforms.inverseBindMatrix55
+        , inverseBindMatrix56 = boneTransforms.inverseBindMatrix56
+        , inverseBindMatrix57 = boneTransforms.inverseBindMatrix57
+        , inverseBindMatrix58 = boneTransforms.inverseBindMatrix58
+        , inverseBindMatrix59 = boneTransforms.inverseBindMatrix59
         }
         |> Material.toEntityWithSettings settings object
 
@@ -466,6 +606,41 @@ vertexShader =
         uniform mat4 joint22;
         uniform mat4 joint23;
         uniform mat4 joint24;
+        uniform mat4 joint25;
+        uniform mat4 joint26;
+        uniform mat4 joint27;
+        uniform mat4 joint28;
+        uniform mat4 joint29;
+        uniform mat4 joint30;
+        uniform mat4 joint31;
+        uniform mat4 joint32;
+        uniform mat4 joint33;
+        uniform mat4 joint34;
+        uniform mat4 joint35;
+        uniform mat4 joint36;
+        uniform mat4 joint37;
+        uniform mat4 joint38;
+        uniform mat4 joint39;
+        uniform mat4 joint40;
+        uniform mat4 joint41;
+        uniform mat4 joint42;
+        uniform mat4 joint43;
+        uniform mat4 joint44;
+        uniform mat4 joint45;
+        uniform mat4 joint46;
+        uniform mat4 joint47;
+        uniform mat4 joint48;
+        uniform mat4 joint49;
+        uniform mat4 joint50;
+        uniform mat4 joint51;
+        uniform mat4 joint52;
+        uniform mat4 joint53;
+        uniform mat4 joint54;
+        uniform mat4 joint55;
+        uniform mat4 joint56;
+        uniform mat4 joint57;
+        uniform mat4 joint58;
+        uniform mat4 joint59;
 
         uniform mat4 inverseBindMatrix0;
         uniform mat4 inverseBindMatrix1;
@@ -492,6 +667,41 @@ vertexShader =
         uniform mat4 inverseBindMatrix22;
         uniform mat4 inverseBindMatrix23;
         uniform mat4 inverseBindMatrix24;
+        uniform mat4 inverseBindMatrix25;
+        uniform mat4 inverseBindMatrix26;
+        uniform mat4 inverseBindMatrix27;
+        uniform mat4 inverseBindMatrix28;
+        uniform mat4 inverseBindMatrix29;
+        uniform mat4 inverseBindMatrix30;
+        uniform mat4 inverseBindMatrix31;
+        uniform mat4 inverseBindMatrix32;
+        uniform mat4 inverseBindMatrix33;
+        uniform mat4 inverseBindMatrix34;
+        uniform mat4 inverseBindMatrix35;
+        uniform mat4 inverseBindMatrix36;
+        uniform mat4 inverseBindMatrix37;
+        uniform mat4 inverseBindMatrix38;
+        uniform mat4 inverseBindMatrix39;
+        uniform mat4 inverseBindMatrix40;
+        uniform mat4 inverseBindMatrix41;
+        uniform mat4 inverseBindMatrix42;
+        uniform mat4 inverseBindMatrix43;
+        uniform mat4 inverseBindMatrix44;
+        uniform mat4 inverseBindMatrix45;
+        uniform mat4 inverseBindMatrix46;
+        uniform mat4 inverseBindMatrix47;
+        uniform mat4 inverseBindMatrix48;
+        uniform mat4 inverseBindMatrix49;
+        uniform mat4 inverseBindMatrix50;
+        uniform mat4 inverseBindMatrix51;
+        uniform mat4 inverseBindMatrix52;
+        uniform mat4 inverseBindMatrix53;
+        uniform mat4 inverseBindMatrix54;
+        uniform mat4 inverseBindMatrix55;
+        uniform mat4 inverseBindMatrix56;
+        uniform mat4 inverseBindMatrix57;
+        uniform mat4 inverseBindMatrix58;
+        uniform mat4 inverseBindMatrix59;
 
         mat4 jointMat(int i) {
             mat4 m = mat4(1);
@@ -569,6 +779,112 @@ vertexShader =
             }
             if (i == 24) {
                 m = joint24 * inverseBindMatrix24;
+            }
+            if (i == 25) {
+                m = joint25 * inverseBindMatrix25;
+            }
+            if (i == 26) {
+                m = joint26 * inverseBindMatrix26;
+            }
+            if (i == 27) {
+                m = joint27 * inverseBindMatrix27;
+            }
+            if (i == 28) {
+                m = joint28 * inverseBindMatrix28;
+            }
+            if (i == 29) {
+                m = joint29 * inverseBindMatrix29;
+            }
+
+            if (i == 30) {
+                m = joint30 * inverseBindMatrix30;
+            }
+            if (i == 31) {
+                m = joint31 * inverseBindMatrix31;
+            }
+            if (i == 32) {
+                m = joint32 * inverseBindMatrix32;
+            }
+            if (i == 33) {
+                m = joint33 * inverseBindMatrix33;
+            }
+            if (i == 34) {
+                m = joint34 * inverseBindMatrix34;
+            }
+            if (i == 35) {
+                m = joint35 * inverseBindMatrix35;
+            }
+            if (i == 36) {
+                m = joint36 * inverseBindMatrix36;
+            }
+            if (i == 37) {
+                m = joint37 * inverseBindMatrix37;
+            }
+            if (i == 38) {
+                m = joint38 * inverseBindMatrix38;
+            }
+            if (i == 39) {
+                m = joint39 * inverseBindMatrix39;
+            }
+            if (i == 40) {
+                m = joint40 * inverseBindMatrix40;
+            }
+            if (i == 41) {
+                m = joint41 * inverseBindMatrix41;
+            }
+            if (i == 42) {
+                m = joint42 * inverseBindMatrix42;
+            }
+            if (i == 43) {
+                m = joint43 * inverseBindMatrix43;
+            }
+            if (i == 44) {
+                m = joint44 * inverseBindMatrix44;
+            }
+            if (i == 45) {
+                m = joint45 * inverseBindMatrix45;
+            }
+            if (i == 46) {
+                m = joint46 * inverseBindMatrix46;
+            }
+            if (i == 47) {
+                m = joint47 * inverseBindMatrix47;
+            }
+            if (i == 48) {
+                m = joint48 * inverseBindMatrix48;
+            }
+            if (i == 49) {
+                m = joint49 * inverseBindMatrix49;
+            }
+            if (i == 50) {
+                m = joint50 * inverseBindMatrix50;
+            }
+            if (i == 51) {
+                m = joint51 * inverseBindMatrix51;
+            }
+            if (i == 52) {
+                m = joint52 * inverseBindMatrix52;
+            }
+            if (i == 53) {
+                m = joint53 * inverseBindMatrix53;
+            }
+            if (i == 54) {
+                m = joint54 * inverseBindMatrix54;
+            }
+            if (i == 55) {
+                m = joint55 * inverseBindMatrix55;
+            }
+            if (i == 56) {
+                m = joint56 * inverseBindMatrix56;
+            }
+            if (i == 57) {
+                m = joint57 * inverseBindMatrix57;
+            }
+            if (i == 58) {
+                m = joint58 * inverseBindMatrix58;
+            }
+            if (i == 59) {
+                m = joint59 * inverseBindMatrix59;
             }
             return m;
         }

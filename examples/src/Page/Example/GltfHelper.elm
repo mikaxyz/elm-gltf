@@ -109,6 +109,111 @@ boneTransformsFromAnimations theta animations skin =
                     24 ->
                         { acc | joint24 = bone.joint, inverseBindMatrix24 = bone.inverseBindMatrix }
 
+                    25 ->
+                        { acc | joint25 = bone.joint, inverseBindMatrix25 = bone.inverseBindMatrix }
+
+                    26 ->
+                        { acc | joint26 = bone.joint, inverseBindMatrix26 = bone.inverseBindMatrix }
+
+                    27 ->
+                        { acc | joint27 = bone.joint, inverseBindMatrix27 = bone.inverseBindMatrix }
+
+                    28 ->
+                        { acc | joint28 = bone.joint, inverseBindMatrix28 = bone.inverseBindMatrix }
+
+                    29 ->
+                        { acc | joint29 = bone.joint, inverseBindMatrix29 = bone.inverseBindMatrix }
+
+                    30 ->
+                        { acc | joint30 = bone.joint, inverseBindMatrix30 = bone.inverseBindMatrix }
+
+                    31 ->
+                        { acc | joint31 = bone.joint, inverseBindMatrix31 = bone.inverseBindMatrix }
+
+                    32 ->
+                        { acc | joint32 = bone.joint, inverseBindMatrix32 = bone.inverseBindMatrix }
+
+                    33 ->
+                        { acc | joint33 = bone.joint, inverseBindMatrix33 = bone.inverseBindMatrix }
+
+                    34 ->
+                        { acc | joint34 = bone.joint, inverseBindMatrix34 = bone.inverseBindMatrix }
+
+                    35 ->
+                        { acc | joint35 = bone.joint, inverseBindMatrix35 = bone.inverseBindMatrix }
+
+                    36 ->
+                        { acc | joint36 = bone.joint, inverseBindMatrix36 = bone.inverseBindMatrix }
+
+                    37 ->
+                        { acc | joint37 = bone.joint, inverseBindMatrix37 = bone.inverseBindMatrix }
+
+                    38 ->
+                        { acc | joint38 = bone.joint, inverseBindMatrix38 = bone.inverseBindMatrix }
+
+                    39 ->
+                        { acc | joint39 = bone.joint, inverseBindMatrix39 = bone.inverseBindMatrix }
+
+                    40 ->
+                        { acc | joint40 = bone.joint, inverseBindMatrix40 = bone.inverseBindMatrix }
+
+                    41 ->
+                        { acc | joint41 = bone.joint, inverseBindMatrix41 = bone.inverseBindMatrix }
+
+                    42 ->
+                        { acc | joint42 = bone.joint, inverseBindMatrix42 = bone.inverseBindMatrix }
+
+                    43 ->
+                        { acc | joint43 = bone.joint, inverseBindMatrix43 = bone.inverseBindMatrix }
+
+                    44 ->
+                        { acc | joint44 = bone.joint, inverseBindMatrix44 = bone.inverseBindMatrix }
+
+                    45 ->
+                        { acc | joint45 = bone.joint, inverseBindMatrix45 = bone.inverseBindMatrix }
+
+                    46 ->
+                        { acc | joint46 = bone.joint, inverseBindMatrix46 = bone.inverseBindMatrix }
+
+                    47 ->
+                        { acc | joint47 = bone.joint, inverseBindMatrix47 = bone.inverseBindMatrix }
+
+                    48 ->
+                        { acc | joint48 = bone.joint, inverseBindMatrix48 = bone.inverseBindMatrix }
+
+                    49 ->
+                        { acc | joint49 = bone.joint, inverseBindMatrix49 = bone.inverseBindMatrix }
+
+                    50 ->
+                        { acc | joint50 = bone.joint, inverseBindMatrix50 = bone.inverseBindMatrix }
+
+                    51 ->
+                        { acc | joint51 = bone.joint, inverseBindMatrix51 = bone.inverseBindMatrix }
+
+                    52 ->
+                        { acc | joint52 = bone.joint, inverseBindMatrix52 = bone.inverseBindMatrix }
+
+                    53 ->
+                        { acc | joint53 = bone.joint, inverseBindMatrix53 = bone.inverseBindMatrix }
+
+                    54 ->
+                        { acc | joint54 = bone.joint, inverseBindMatrix54 = bone.inverseBindMatrix }
+
+                    55 ->
+                        { acc | joint55 = bone.joint, inverseBindMatrix55 = bone.inverseBindMatrix }
+
+                    56 ->
+                        { acc | joint56 = bone.joint, inverseBindMatrix56 = bone.inverseBindMatrix }
+
+                    57 ->
+                        { acc | joint57 = bone.joint, inverseBindMatrix57 = bone.inverseBindMatrix }
+
+                    58 ->
+                        { acc | joint58 = bone.joint, inverseBindMatrix58 = bone.inverseBindMatrix }
+
+                    59 ->
+                        { acc | joint59 = bone.joint, inverseBindMatrix59 = bone.inverseBindMatrix }
+
                     _ ->
                         acc
             )
