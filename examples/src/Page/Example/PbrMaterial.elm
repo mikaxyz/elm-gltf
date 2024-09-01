@@ -905,17 +905,20 @@ vertexShader =
 
         void main () {
             mat4 skinDeform = mat4(1);
+            mat4 modelMatrix = u_ModelMatrix;
             if (hasBoneTransforms == 1) {
                 skinDeform =
                     jointMat(int(joints.x), weights.x) +
                     jointMat(int(joints.y), weights.y) +
                     jointMat(int(joints.z), weights.z) +
                     jointMat(int(joints.w), weights.w);
+
+                modelMatrix = modelMatrix * skinDeform;
             }
 
-            vec4 pos = u_ModelMatrix * vec4(position, 1.0);
+            vec4 pos = modelMatrix * vec4(position, 1.0);
             v_Position = vec3(pos.xyz) / pos.w;
-            v_Normal = normalize(vec3(u_ModelMatrix * vec4(normal.xyz, 0.0)));
+            v_Normal = normalize(vec3(modelMatrix * vec4(normal.xyz, 0.0)));
             v_UV_0 = uv;
             v_UV_1 = uv1;
             v_Color = color;
