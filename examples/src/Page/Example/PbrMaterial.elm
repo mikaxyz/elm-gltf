@@ -1096,10 +1096,12 @@ fragmentShader =
         // See our README.md on Environment Maps [3] for additional discussion.
         vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
         {
+            float mipCount = 32.0; // resolution of 512x512
+            float lod = (pbrInputs.perceptualRoughness * (mipCount + 1.0));
             // retrieve a scale and bias to F0. See [1], Figure 3
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
             vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
-            vec3 specularLight = SRGBtoLINEAR(textureCube(u_SpecularEnvSampler, reflection)).rgb;
+            vec3 specularLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, reflection, lod)).rgb;
             vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
             vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
 
