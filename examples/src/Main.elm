@@ -27,7 +27,7 @@ init () ( spa, spaCmd ) =
     , Cmd.batch
         [ spaCmd
         , Http.get
-            { url = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/model-index.Khronos.json"
+            { url = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/model-index.json"
             , expect = Http.expectJson SampleAssetsReceived SampleAssets.decoder
             }
         ]
