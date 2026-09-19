@@ -105,13 +105,25 @@ extractSampler gltf bufferStore (Internal.Animation.Sampler.Sampler sampler) =
 
                         _ ->
                             input |> List.maximum |> Maybe.withDefault 0.0
+
+                keyframes : Sampler.Keyframes
+                keyframes =
+                    case output of
+                        (Attribute.Vec4FloatAttribute _) :: _ ->
+                            List.map2 Tuple.pair input (List.filterMap Attribute.toQuaternion output)
+                                |> Array.fromList
+                                |> Sampler.QuaternionKeyframes
+
+                        _ ->
+                            List.map2 Tuple.pair input (List.filterMap Attribute.toVec3 output)
+                                |> Array.fromList
+                                |> Sampler.Vec3Keyframes
             in
             Sampler
-                { input = input
-                , inputMin = inputMin
+                { inputMin = inputMin
                 , inputMax = inputMax
-                , output = output
                 , interpolation = interpolationFromSampler sampler.interpolation
+                , keyframes = keyframes
                 }
         )
         (sampler.input

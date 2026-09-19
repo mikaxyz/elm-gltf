@@ -23,12 +23,12 @@ module Gltf.Animation exposing
 
 -}
 
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Gltf.Animation.Animation exposing (Animation(..))
 import Gltf.Animation.Channel as Channel exposing (Channel(..))
-import Gltf.Animation.Sampler exposing (Sampler(..))
+import Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
 import Gltf.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Attribute as Attribute
 import Gltf.Query.Skeleton as Skeleton exposing (Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform as Transform
@@ -145,72 +145,17 @@ animatedProperty (Channel channel) time =
         (Sampler sampler) =
             channel.sampler
 
-        data : List ( Float, Vec3 )
-        data =
-            List.map2
-                (\input output -> ( input, output ))
-                sampler.input
-                (sampler.output |> List.filterMap Attribute.toVec3)
-
-        asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Vec3, to : Maybe Vec3 }
-        asd =
-            data
-                |> List.foldl
-                    (\( input, output ) acc ->
-                        if input <= time then
-                            { acc | startTime = Just input, from = Just output }
-
-                        else if acc.endTime == Nothing then
-                            { acc | endTime = Just input, to = Just output }
-
-                        else
-                            acc
-                    )
-                    { startTime = Nothing, endTime = Nothing, from = Nothing, to = Nothing }
-
-        properties : Maybe { w : Float, from : Vec3, to : Vec3, timeEnd : Float, timeStart : Float, position : Vec3 }
-        properties =
-            Maybe.map4
-                (\startTime endTime from to ->
-                    let
-                        rTime : Float
-                        rTime =
-                            (time - startTime) / (endTime - startTime)
-
-                        distance : Float
-                        distance =
-                            Vec3.distance to from
-
-                        direction : Vec3
-                        direction =
-                            if distance > 0 then
-                                Vec3.direction to from
-                                    |> Vec3.scale (distance * rTime)
-
-                            else
-                                Vec3.vec3 0 0 0
-                    in
-                    { w = rTime
-                    , from = from
-                    , to = to
-                    , timeEnd = endTime
-                    , timeStart = startTime
-                    , position = from |> Vec3.add direction
-                    }
-                )
-                asd.startTime
-                asd.endTime
-                asd.from
-                asd.to
+        lerp : Vec3 -> Vec3 -> Float -> Vec3
+        lerp from to w =
+            Vec3.add from (Vec3.scale w (Vec3.sub to from))
     in
-    case properties |> Maybe.map .position of
-        Just position ->
-            Just (AnimatedPosition position)
+    case sampler.keyframes of
+        Sampler.Vec3Keyframes keyframes ->
+            sample lerp sampler.interpolation time keyframes
+                |> Maybe.map AnimatedPosition
 
-        Nothing ->
-            data
-                |> List.head
-                |> Maybe.map (\( _, output ) -> AnimatedPosition output)
+        Sampler.QuaternionKeyframes _ ->
+            Nothing
 
 
 animatedRotation : Channel -> Float -> Maybe AnimatedRotation
@@ -218,60 +163,72 @@ animatedRotation (Channel channel) time =
     let
         (Sampler sampler) =
             channel.sampler
+    in
+    case sampler.keyframes of
+        Sampler.QuaternionKeyframes keyframes ->
+            sample quaternionSlerp sampler.interpolation time keyframes
+                |> Maybe.map AnimatedRotation
 
-        data : List ( Float, Quaternion )
-        data =
-            List.map2
-                (\input output -> ( input, output ))
-                sampler.input
-                (sampler.output |> List.filterMap Attribute.toQuaternion)
+        Sampler.Vec3Keyframes _ ->
+            Nothing
 
-        asd : { startTime : Maybe Float, endTime : Maybe Float, from : Maybe Quaternion, to : Maybe Quaternion }
-        asd =
-            data
-                |> List.foldl
-                    (\( input, output ) acc ->
-                        if input <= time then
-                            { acc | startTime = Just input, from = Just output }
 
-                        else if acc.endTime == Nothing then
-                            { acc | endTime = Just input, to = Just output }
+sample : (a -> a -> Float -> a) -> Sampler.Interpolation -> Float -> Array ( Float, a ) -> Maybe a
+sample interpolate interpolation time arr =
+    let
+        i : Int
+        i =
+            lowerBoundIndex time arr
+    in
+    case Array.get i arr of
+        Nothing ->
+            Nothing
+
+        Just ( t0, v0 ) ->
+            case Array.get (i + 1) arr of
+                Nothing ->
+                    Just v0
+
+                Just ( t1, v1 ) ->
+                    if time <= t0 then
+                        Just v0
+
+                    else
+                        case interpolation of
+                            Sampler.Step ->
+                                Just v0
+
+                            _ ->
+                                Just (interpolate v0 v1 ((time - t0) / (t1 - t0)))
+
+
+lowerBoundIndex : Float -> Array ( Float, a ) -> Int
+lowerBoundIndex t arr =
+    let
+        -- binary search
+        go : Int -> Int -> Int
+        go lo hi =
+            if lo >= hi then
+                lo
+
+            else
+                let
+                    mid : Int
+                    mid =
+                        lo + (hi - lo + 1) // 2
+                in
+                case Array.get mid arr of
+                    Just ( time, _ ) ->
+                        if time <= t then
+                            go mid hi
 
                         else
-                            acc
-                    )
-                    { startTime = Nothing, endTime = Nothing, from = Nothing, to = Nothing }
+                            go lo (mid - 1)
 
-        properties : Maybe { w : Float, from : Quaternion, to : Quaternion, timeEnd : Float, timeStart : Float, current : Quaternion }
-        properties =
-            Maybe.map4
-                (\startTime endTime from to ->
-                    let
-                        rTime : Float
-                        rTime =
-                            (time - startTime) / (endTime - startTime)
-                    in
-                    { w = rTime
-                    , from = from
-                    , to = to
-                    , timeEnd = endTime
-                    , timeStart = startTime
-                    , current = quaternionSlerp from to rTime
-                    }
-                )
-                asd.startTime
-                asd.endTime
-                asd.from
-                asd.to
+                    Nothing ->
+                        lo
     in
-    case properties |> Maybe.map .current of
-        Just rotation ->
-            Just (AnimatedRotation rotation)
-
-        Nothing ->
-            data
-                |> List.head
-                |> Maybe.map (\( _, output ) -> AnimatedRotation output)
+    go 0 (Array.length arr - 1)
 
 
 {-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) and a [Skin](Gltf-Skin#Skin) this will give you [AnimatedBones](Gltf-Animation#AnimatedBone) that can be used to deform a mesh at a point in time.

@@ -1,20 +1,22 @@
-module Gltf.Animation.Sampler exposing (Interpolation(..), Sampler(..))
+module Gltf.Animation.Sampler exposing (Interpolation(..), Keyframes(..), Sampler(..))
 
-import Gltf.Query.Attribute as Attribute
-
-
-type alias Attribute =
-    Attribute.Attribute
+import Array exposing (Array)
+import Math.Vector3 exposing (Vec3)
+import Quaternion exposing (Quaternion)
 
 
 type Sampler
     = Sampler
-        { input : List Float
-        , inputMin : Float
+        { inputMin : Float
         , inputMax : Float
-        , output : List Attribute
         , interpolation : Interpolation
+        , keyframes : Keyframes
         }
+
+
+type Keyframes
+    = Vec3Keyframes (Array ( Float, Vec3 ))
+    | QuaternionKeyframes (Array ( Float, Quaternion ))
 
 
 type Interpolation
