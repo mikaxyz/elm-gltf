@@ -7,7 +7,9 @@
     "main": "index.html",
     "scripts": {
         "test": "elm-review && elm-test",
-        "elm-review": "elm-review --compiler ./node_modules/.bin/elm"
+        "elm-review": "elm-review --compiler ./node_modules/.bin/elm src tests benchmarks",
+        "benchmark:generate": "cd benchmarks && sh generate-benchmark-src.sh",
+        "benchmark:animation": "cd benchmarks && ../node_modules/.bin/elm make src/AnimationBenchmarks.elm --optimize --output dist/elm.js && node run.js"
     },
     "devDependencies": {
         "elm": "^0.19.1-6",
