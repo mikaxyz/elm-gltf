@@ -14,6 +14,7 @@ import Gltf.Query.AnimationHelper as AnimationHelper
 import Gltf.Query.BufferStore as BufferStore
 import Internal.Gltf
 import Json.Decode as JD
+import ZombieData
 
 
 port sendOutput : Benchmark.Runner.Cli.Output -> Cmd msg
@@ -33,6 +34,7 @@ suite =
         [ Benchmark.describe "single node animated with two channels"
             [ Benchmark.describe "animatedProperties" (List.map keyframes [ 16, 64, 256, 1024 ])
             ]
+        , Benchmark.describe "rigged (Zombie.glb)" zombieBenchmarks
         ]
 
 
@@ -168,3 +170,39 @@ bufferBytes k =
                     )
     in
     Encode.encode (Encode.sequence (input ++ translation ++ rotation))
+
+
+zombieBenchmarks : List Benchmark
+zombieBenchmarks =
+    case ( ZombieData.current, ZombieData.benchmark ) of
+        ( Just cur, Just bench ) ->
+            let
+                curActive : List Gltf.Animation.Animation
+                curActive =
+                    List.take 1 cur.animations
+
+                benchActive : List BenchmarkGltf.Animation.Animation
+                benchActive =
+                    List.take 1 bench.animations
+            in
+            List.filterMap identity
+                [ Just <|
+                    Benchmark.compare "animatedProperties"
+                        "current"
+                        (\_ -> Gltf.Animation.animatedProperties theta curActive)
+                        "benchmark"
+                        (\_ -> BenchmarkGltf.Animation.animatedProperties theta benchActive)
+                , Maybe.map2
+                    (\curSkin benchSkin ->
+                        Benchmark.compare "animatedBoneTransforms"
+                            "current"
+                            (\_ -> Gltf.Animation.animatedBoneTransforms theta curActive curSkin)
+                            "benchmark"
+                            (\_ -> BenchmarkGltf.Animation.animatedBoneTransforms theta benchActive benchSkin)
+                    )
+                    (List.head cur.skins)
+                    (List.head bench.skins)
+                ]
+
+        _ ->
+            [ Benchmark.benchmark "DECODE FAILED" (\_ -> ()) ]
