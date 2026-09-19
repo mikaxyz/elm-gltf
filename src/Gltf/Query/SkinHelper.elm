@@ -6,10 +6,11 @@ import Bytes.Decode
 import Bytes.Decode.Extra
 import Bytes.Extra
 import Common
+import Dict exposing (Dict)
 import Gltf.NodeIndex exposing (NodeIndex(..))
 import Gltf.Query.Buffer exposing (Buffer(..))
 import Gltf.Query.BufferStore exposing (BufferStore)
-import Gltf.Query.Skeleton exposing (Skeleton(..))
+import Gltf.Query.Skeleton exposing (Bone, Skeleton(..))
 import Gltf.Skin exposing (Skin(..))
 import Gltf.Transform exposing (Transform)
 import Internal.Accessor as Accessor exposing (Accessor)
@@ -33,8 +34,8 @@ skinAtIndex gltf bufferStore (Gltf.Skin.Index index) =
                     joints =
                         skin.joints |> List.map (\(GltfSkin.JointNodeIndex i) -> NodeIndex i)
 
-                    skeleton : Maybe Skeleton
-                    skeleton =
+                    rawSkeleton : Maybe ( Mat4, Tree.Tree RawBone )
+                    rawSkeleton =
                         joints
                             |> List.head
                             |> Maybe.andThen
@@ -53,20 +54,78 @@ skinAtIndex gltf bufferStore (Gltf.Skin.Index index) =
                                 )
                 in
                 Maybe.map2
-                    (\skeleton_ inverseBindMatrices_ ->
+                    (\( baseTransform, rawBones ) inverseBindMatrices_ ->
                         Skin
                             { inverseBindMatrices = inverseBindMatrices_
                             , joints = joints
-                            , skeleton = skeleton_
+                            , skeleton = prepareSkeleton joints inverseBindMatrices_ baseTransform rawBones
                             , index = Gltf.Skin.Index index
                             }
                     )
-                    skeleton
+                    rawSkeleton
                     inverseBindMatrices
             )
 
 
-skeletonFromGltf : Int -> Gltf -> Maybe Skeleton
+{-| A skeleton node before its time-independent bone data has been resolved.
+-}
+type alias RawBone =
+    { nodeIndex : NodeIndex
+    , transform : Transform
+    }
+
+
+{-| Resolve all time-independent bone data once at load: skin index, inverse bind
+matrix, and static translation/rotation/scale matrices per bone.
+-}
+prepareSkeleton : List NodeIndex -> List Mat4 -> Mat4 -> Tree.Tree RawBone -> Skeleton
+prepareSkeleton joints inverseBindMatrices baseTransform rawBones =
+    let
+        skeletonIndices : Dict Int ( Int, Mat4 )
+        skeletonIndices =
+            List.map2 Tuple.pair joints inverseBindMatrices
+                |> List.indexedMap
+                    (\skinIndex ( NodeIndex nodeIndex, inverseBindMatrix ) ->
+                        ( nodeIndex, ( skinIndex, inverseBindMatrix ) )
+                    )
+                |> Dict.fromList
+
+        toBone : RawBone -> Bone
+        toBone bone =
+            let
+                (NodeIndex nodeIndex) =
+                    bone.nodeIndex
+
+                ( skinIndex, inverseBindMatrix ) =
+                    Dict.get nodeIndex skeletonIndices
+                        |> Maybe.withDefault ( -1, Mat4.identity )
+
+                { t, r, s } =
+                    case bone.transform of
+                        Gltf.Transform.TRS { translation, rotation, scale } ->
+                            { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
+                            , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
+                            , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
+                            }
+
+                        Gltf.Transform.Matrix _ ->
+                            { t = Mat4.identity
+                            , r = Mat4.identity
+                            , s = Mat4.identity
+                            }
+            in
+            { nodeIndex = nodeIndex
+            , skinIndex = skinIndex
+            , inverseBindMatrix = inverseBindMatrix
+            , staticTranslation = t
+            , staticRotation = r
+            , staticScale = s
+            }
+    in
+    Skeleton baseTransform (Tree.map toBone rawBones)
+
+
+skeletonFromGltf : Int -> Gltf -> Maybe ( Mat4, Tree.Tree RawBone )
 skeletonFromGltf index gltf =
     let
         nodeParent : Node.Node -> Maybe Node.Node
@@ -122,14 +181,15 @@ skeletonFromGltf index gltf =
                     nodeParentTransform =
                         nodeParentTransforms skeletonRoot []
                 in
-                nodes
+                ( nodeParentTransform
+                , nodes
                     |> Tree.map
                         (\(Node.Node node) ->
                             { nodeIndex = node.index |> (\(Node.Index i) -> NodeIndex i)
                             , transform = node.transform
                             }
                         )
-                    |> Skeleton nodeParentTransform
+                )
             )
 
 

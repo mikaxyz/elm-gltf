@@ -28,7 +28,8 @@ type Skin
         }
 
 
-{-| Internal
+{-| Internal. The skeleton with all time-independent bone data resolved at load,
+sampled per-frame by [Gltf.Animation.animatedBoneTransforms](Gltf-Animation#animatedBoneTransforms).
 -}
 type alias Skeleton =
     Gltf.Query.Skeleton.Skeleton

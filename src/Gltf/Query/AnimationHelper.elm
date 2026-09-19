@@ -5,6 +5,7 @@ module Gltf.Query.AnimationHelper exposing
 
 import Array exposing (Array)
 import Common
+import Dict
 import Gltf.Animation.Animation exposing (Animation(..))
 import Gltf.Animation.Channel as Channel exposing (Channel(..))
 import Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
@@ -168,16 +169,46 @@ extractAnimation gltf bufferStore (Internal.Animation x) =
                 |> List.map (\(Sampler sampler) -> sampler.inputMax)
                 |> List.maximum
                 |> Maybe.withDefault 0.0
+
+        channels : List Channel
+        channels =
+            x.channels
+                |> Array.toList
+                |> List.filterMap (extractChannel (samplers |> Array.fromList))
     in
     Animation
         { name = x.name
         , startTime = startTime
         , endTime = endTime
-        , channels =
-            x.channels
-                |> Array.toList
-                |> List.filterMap (extractChannel (samplers |> Array.fromList))
+        , channels = channels
+        , channelsByNode =
+            channels
+                |> List.map
+                    (\(Channel channel) ->
+                        ( ( channel.nodeIndex |> (\(NodeIndex i) -> i)
+                          , pathToString channel.path
+                          )
+                        , Channel channel
+                        )
+                    )
+                |> Dict.fromList
         }
+
+
+pathToString : Channel.Path -> String
+pathToString path =
+    case path of
+        Channel.Translation ->
+            "Translation"
+
+        Channel.Rotation ->
+            "Rotation"
+
+        Channel.Scale ->
+            "Scale"
+
+        Channel.Weights ->
+            "Weights"
 
 
 primitiveTreeFromNode : Gltf -> Node -> Tree ( Node, Primitive )

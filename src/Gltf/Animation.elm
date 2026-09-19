@@ -24,14 +24,13 @@ module Gltf.Animation exposing
 -}
 
 import Array exposing (Array)
-import Dict exposing (Dict)
+import Dict
 import Gltf.Animation.Animation exposing (Animation(..))
 import Gltf.Animation.Channel as Channel exposing (Channel(..))
 import Gltf.Animation.Sampler as Sampler exposing (Sampler(..))
-import Gltf.NodeIndex exposing (NodeIndex(..))
-import Gltf.Query.Skeleton as Skeleton exposing (Skeleton(..))
+import Gltf.NodeIndex exposing (NodeIndex)
+import Gltf.Query.Skeleton as Skeleton
 import Gltf.Skin exposing (Skin(..))
-import Gltf.Transform as Transform
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Quaternion exposing (Quaternion)
@@ -77,16 +76,6 @@ type AnimatedPosition
 
 type AnimatedRotation
     = AnimatedRotation Quaternion
-
-
-type alias TRS =
-    { skinIndex : Int
-    , inverseBindMatrix : Mat4
-    , globalTransform : Mat4
-    , rAnimated : Mat4
-    , tAnimated : Mat4
-    , sAnimated : Mat4
-    }
 
 
 {-| With the [Animations](Gltf-Animation#Animation) received from a [Gltf.QueryResult](Gltf#animations) this will give you [AnimatedProperties](Gltf-Animation#AnimatedProperty) to transform your nodes at a point in time.
@@ -236,138 +225,73 @@ lowerBoundIndex t arr =
 animatedBoneTransforms : Float -> List Animation -> Skin -> List AnimatedBone
 animatedBoneTransforms theta animations (Skin skin) =
     let
-        pathToString : Channel.Path -> String
-        pathToString path =
-            case path of
-                Channel.Translation ->
-                    "Translation"
-
-                Channel.Rotation ->
-                    "Rotation"
-
-                Channel.Scale ->
-                    "Scale"
-
-                Channel.Weights ->
-                    "Weights"
-
-        channels : Dict ( Int, String ) Channel
-        channels =
-            animations
-                |> List.concatMap (\(Animation x) -> x.channels)
-                |> List.map
-                    (\(Channel channel) ->
-                        ( ( channel.nodeIndex |> (\(NodeIndex i) -> i)
-                          , pathToString channel.path
-                          )
-                        , Channel channel
-                        )
-                    )
-                |> Dict.fromList
-
+        -- Look the channel up in each animation's precomputed table, first match
+        -- wins. No per-frame table building; for the common single-animation case
+        -- this is a single Dict lookup.
         nodeChannel : Int -> String -> Maybe Channel
         nodeChannel nodeIndex path =
-            Dict.get ( nodeIndex, path ) channels
+            animations
+                |> List.foldl
+                    (\(Animation animation) acc ->
+                        case acc of
+                            Just _ ->
+                                acc
 
-        skeletonIndices : Dict Int ( Int, Mat4 )
-        skeletonIndices =
-            List.map2 Tuple.pair
-                skin.joints
-                skin.inverseBindMatrices
-                |> List.indexedMap
-                    (\index ( NodeIndex nodeIndex, inverseBindMatrix ) ->
-                        ( nodeIndex, ( index, inverseBindMatrix ) )
+                            Nothing ->
+                                Dict.get ( nodeIndex, path ) animation.channelsByNode
                     )
-                |> Dict.fromList
+                    Nothing
 
-        boneToTrs : Skeleton.Bone -> TRS
-        boneToTrs bone =
+        localTransform : Skeleton.Bone -> Mat4
+        localTransform bone =
             let
-                nodeIndex : Int
-                nodeIndex =
-                    bone.nodeIndex |> (\(NodeIndex index) -> index)
-
-                ( skinIndex, inverseBindMatrix ) =
-                    Dict.get nodeIndex skeletonIndices
-                        |> Maybe.withDefault ( -1, Mat4.identity )
-
-                { t, r, s } =
-                    case bone.transform of
-                        Transform.TRS { translation, rotation, scale } ->
-                            { t = translation |> Maybe.map Mat4.makeTranslate |> Maybe.withDefault Mat4.identity
-                            , r = rotation |> Maybe.map Quaternion.toMat4 |> Maybe.withDefault Mat4.identity
-                            , s = scale |> Maybe.map Mat4.makeScale |> Maybe.withDefault Mat4.identity
-                            }
-
-                        Transform.Matrix _ ->
-                            { t = Mat4.identity
-                            , r = Mat4.identity
-                            , s = Mat4.identity
-                            }
+                tAnimated : Mat4
+                tAnimated =
+                    nodeChannel bone.nodeIndex "Translation"
+                        |> Maybe.andThen (channelMatrix theta)
+                        |> Maybe.withDefault bone.staticTranslation
 
                 rAnimated : Mat4
                 rAnimated =
-                    nodeChannel nodeIndex "Rotation"
+                    nodeChannel bone.nodeIndex "Rotation"
                         |> Maybe.andThen (channelMatrix theta)
-                        |> Maybe.withDefault r
-
-                tAnimated : Mat4
-                tAnimated =
-                    nodeChannel nodeIndex "Translation"
-                        |> Maybe.andThen (channelMatrix theta)
-                        |> Maybe.withDefault t
+                        |> Maybe.withDefault bone.staticRotation
 
                 sAnimated : Mat4
                 sAnimated =
-                    nodeChannel nodeIndex "Scale"
+                    nodeChannel bone.nodeIndex "Scale"
                         |> Maybe.andThen (channelMatrix theta)
-                        |> Maybe.withDefault s
+                        |> Maybe.withDefault bone.staticScale
             in
-            { skinIndex = skinIndex
-            , inverseBindMatrix = inverseBindMatrix
-            , globalTransform = Mat4.identity
-            , rAnimated = rAnimated
-            , tAnimated = tAnimated
-            , sAnimated = sAnimated
-            }
+            sAnimated
+                |> Mat4.mul rAnimated
+                |> Mat4.mul tAnimated
 
-        trsTreeWithGlobalMatrix : Mat4 -> Tree TRS -> Tree TRS
-        trsTreeWithGlobalMatrix mat tree =
+        walk : Mat4 -> Tree Skeleton.Bone -> Tree AnimatedBone
+        walk parent tree =
             let
-                trs : TRS
-                trs =
+                bone : Skeleton.Bone
+                bone =
                     Tree.label tree
 
-                mat_ : Mat4
-                mat_ =
-                    trs.sAnimated
-                        |> Mat4.mul trs.rAnimated
-                        |> Mat4.mul trs.tAnimated
-                        |> Mat4.mul mat
+                globalTransform : Mat4
+                globalTransform =
+                    localTransform bone |> Mat4.mul parent
             in
-            tree
-                |> Tree.map (\trs_ -> { trs_ | globalTransform = mat_ })
-                |> Tree.mapChildren (List.map (trsTreeWithGlobalMatrix mat_))
-
-        trsTree : Tree TRS
-        trsTree =
-            skin.skeleton
-                |> (\(Skeleton baseTransform bones) ->
-                        bones
-                            |> Tree.map boneToTrs
-                            |> trsTreeWithGlobalMatrix baseTransform
-                   )
-    in
-    trsTree
-        |> Tree.flatten
-        |> List.map
-            (\trs ->
-                AnimatedBone
-                    { skinIndex = trs.skinIndex
-                    , joint = trs.globalTransform
-                    , inverseBindMatrix = trs.inverseBindMatrix
+            Tree.tree
+                (AnimatedBone
+                    { skinIndex = bone.skinIndex
+                    , joint = globalTransform
+                    , inverseBindMatrix = bone.inverseBindMatrix
                     }
-            )
+                )
+                (Tree.children tree |> List.map (walk globalTransform))
+
+        (Skeleton.Skeleton baseTransform bones) =
+            skin.skeleton
+    in
+    walk baseTransform bones
+        |> Tree.flatten
 
 
 channelMatrix : Float -> Channel -> Maybe Mat4

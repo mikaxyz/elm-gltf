@@ -2,8 +2,6 @@
 
 ### ** NOTE **
 
-> ⚠️ *This package is under development and will probably receive a lot of breaking changes until I am happy with the supported glTF features.*
-
 Import 3d assets from [glTF](https://www.khronos.org/gltf/) (Graphics Library Transmission Format) file format for use in your [Elm WebGL](https://package.elm-lang.org/packages/elm-explorations/webgl/latest) programs.
 
 The aim is to support most of [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) but there is still a lot of work to do. See [the example app](https://elm-gltf.mika.xyz/) rendering all [official glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets) for an indication what it can/can not do.
@@ -50,6 +48,6 @@ Nodes contain Meshes that contains Materials. Materials may reference textures. 
 
 ## Animation
 
-**NOTE:** The animation part of this package is **very much** "work in progress". The way animations are handled is very non performant. There is a lot of lists iterated over every frame. Also the interpolation is hardcoded to `Linear`. Etc.
+**NOTE:** Interpolation is hardcoded to `Linear` for now.
 
 The module [Gltf.Animation](https://package.elm-lang.org/packages/mikaxyz/elm-gltf/4.0.0/Gltf-Animation) exposes functions [animatedProperties](https://package.elm-lang.org/packages/mikaxyz/elm-gltf/4.0.0/Gltf-Animation#animatedProperties) and [animatedBoneTransforms](https://package.elm-lang.org/packages/mikaxyz/elm-gltf/4.0.0/Gltf-Animation#animatedBoneTransforms) which gives you transforms for nodes and bones given a timestamp.
