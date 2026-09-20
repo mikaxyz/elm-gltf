@@ -121,7 +121,7 @@ init asset =
     , activeAnimation = Nothing
     , activeScene = Nothing
     , activeCamera = Nothing
-    , gltf = Gltf.init
+    , gltf = Gltf.initWithOptions [ Gltf.GenerateFlatNormals ]
     , attribution = Nothing
     }
 

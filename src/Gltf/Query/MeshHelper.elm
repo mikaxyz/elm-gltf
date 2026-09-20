@@ -1,5 +1,6 @@
 module Gltf.Query.MeshHelper exposing
     ( fromPrimitive
+    , fromPrimitiveWith
     , toMaterial
     )
 
@@ -59,6 +60,11 @@ toMaterial mesh =
 
 fromPrimitive : Gltf -> BufferStore -> Primitive -> Mesh
 fromPrimitive gltf bufferStore primitive =
+    fromPrimitiveWith { generateFlatNormals = False } gltf bufferStore primitive
+
+
+fromPrimitiveWith : { generateFlatNormals : Bool } -> Gltf -> BufferStore -> Primitive -> Mesh
+fromPrimitiveWith { generateFlatNormals } gltf bufferStore primitive =
     let
         vertexBuffers : VertexBuffers
         vertexBuffers =
@@ -296,19 +302,109 @@ fromPrimitive gltf bufferStore primitive =
                             ( [], [] )
                         |> Tuple.second
                         |> List.reverse
+
+                hasNormals : Bool
+                hasNormals =
+                    vertexAttributes.normal
+                        |> Maybe.map (List.any (\attr -> Attribute.toVec3 attr /= Nothing))
+                        |> Maybe.withDefault False
+
+                withFlatNormals : Bool
+                withFlatNormals =
+                    generateFlatNormals && not hasNormals
             in
             case maybeIndices of
                 Just indices ->
-                    IndexedTriangularMesh material
-                        ( vertexAttributesToVertices vertexAttributes
-                        , indices |> toTriangles
-                        )
+                    if withFlatNormals then
+                        flatNormalsIndexed
+                            ( vertexAttributesToVertices vertexAttributes
+                            , indices |> toTriangles
+                            )
+                            |> IndexedTriangularMesh material
+
+                    else
+                        IndexedTriangularMesh material
+                            ( vertexAttributesToVertices vertexAttributes
+                            , indices |> toTriangles
+                            )
 
                 Nothing ->
-                    verticesInlined () |> toTriangles |> TriangularMesh material
+                    let
+                        triangles : List ( Vertex, Vertex, Vertex )
+                        triangles =
+                            verticesInlined () |> toTriangles
+                    in
+                    (if withFlatNormals then
+                        triangles |> List.map flatNormalsTriangle
+
+                     else
+                        triangles
+                    )
+                        |> TriangularMesh material
 
         Internal.Mesh.TriangleStrip ->
             TriangleStrip material (verticesInlined ())
 
         Internal.Mesh.TriangleFan ->
             TriangleFan material (verticesInlined ())
+
+
+faceNormal : Vertex -> Vertex -> Vertex -> Vec3.Vec3
+faceNormal v1 v2 v3 =
+    let
+        cross : Vec3.Vec3
+        cross =
+            Vec3.cross
+                (Vec3.sub v2.position v1.position)
+                (Vec3.sub v3.position v1.position)
+    in
+    if Vec3.length cross == 0 then
+        Vec3.vec3 0 0 1
+
+    else
+        Vec3.normalize cross
+
+
+flatNormalsTriangle : ( Vertex, Vertex, Vertex ) -> ( Vertex, Vertex, Vertex )
+flatNormalsTriangle ( v1, v2, v3 ) =
+    let
+        normal : Vec3.Vec3
+        normal =
+            faceNormal v1 v2 v3
+    in
+    ( { v1 | normal = Just normal }
+    , { v2 | normal = Just normal }
+    , { v3 | normal = Just normal }
+    )
+
+
+flatNormalsIndexed : ( List Vertex, List ( Int, Int, Int ) ) -> ( List Vertex, List ( Int, Int, Int ) )
+flatNormalsIndexed ( vertices, indices ) =
+    let
+        vertexMap : Array Vertex
+        vertexMap =
+            Array.fromList vertices
+
+        expandedVertices : List Vertex
+        expandedVertices =
+            indices
+                |> List.concatMap
+                    (\( i, j, k ) ->
+                        case ( Array.get i vertexMap, Array.get j vertexMap, Array.get k vertexMap ) of
+                            ( Just v1, Just v2, Just v3 ) ->
+                                let
+                                    ( fv1, fv2, fv3 ) =
+                                        flatNormalsTriangle ( v1, v2, v3 )
+                                in
+                                [ fv1, fv2, fv3 ]
+
+                            _ ->
+                                []
+                    )
+
+        expandedIndices : List ( Int, Int, Int )
+        expandedIndices =
+            List.range 0 (List.length expandedVertices // 3 - 1)
+                |> List.map (\n -> ( n * 3, n * 3 + 1, n * 3 + 2 ))
+    in
+    ( expandedVertices, expandedIndices )

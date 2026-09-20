@@ -1,6 +1,6 @@
 module Gltf exposing
-    ( Asset, Error(..), Query, QueryResult
-    , Msg, Gltf, init, update
+    ( Asset, Error(..), Query, QueryResult, Option(..)
+    , Msg, Gltf, init, initWithOptions, update
     , getBinary, getGltf, getBinaryWithQuery, getGltfWithQuery
     , defaultSceneQuery, sceneQuery, query
     , animations, cameras, nodeTrees, scenes, skins, cameraByIndex, textureWithIndex
@@ -11,12 +11,12 @@ module Gltf exposing
 
 # Types
 
-@docs Asset, Error, Query, QueryResult
+@docs Asset, Error, Query, QueryResult, Option
 
 
 # Wiring
 
-@docs Msg, Gltf, init, update
+@docs Msg, Gltf, init, initWithOptions, update
 
 
 # Load content
@@ -98,6 +98,25 @@ type Query
     | SceneQuery Int
 
 
+{-| Options for configuring the behaviour of the importer. Provide them to [initWithOptions](Gltf#initWithOptions).
+
+**GenerateFlatNormals**
+
+When a triangle primitive has no normals triangles/vertices will be separated and assigned one normal per triangle. This results in "flat shading".
+
+The [spec](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) is a bit ambiguous (for webgl v1) here so that is why this is an option.
+
+> _When normals are not specified, client implementations MUST calculate flat normals_
+
+-}
+type Option
+    = GenerateFlatNormals
+
+
+type alias Options =
+    { generateFlatNormals : Bool }
+
+
 {-| Results from a [query](Gltf#queries) which can be used to retrieve [content](Gltf#content).
 -}
 type QueryResult
@@ -140,13 +159,14 @@ type alias LoadTextureInfo =
 
 -}
 type Gltf
-    = Initializing
+    = Initializing Options
     | Progress Model
 
 
 type alias Model =
     { gltf : Internal.Gltf.Gltf
     , query : Query
+    , options : Options
     , bufferStore : BufferStore
     , textureStore : TextureStore
     }
@@ -162,7 +182,20 @@ type alias Model =
 -}
 init : Gltf
 init =
-    Initializing
+    Initializing { generateFlatNormals = False }
+
+
+{-| Same as [init](Gltf#init) but with a list of [Option](Gltf#Option):
+
+    init : Model
+    init =
+        { gltf = Gltf.initWithOptions [ Gltf.GenerateFlatNormals ]
+        }
+
+-}
+initWithOptions : List Option -> Gltf
+initWithOptions options =
+    Initializing { generateFlatNormals = options |> List.member GenerateFlatNormals }
 
 
 {-| Internal update function. Call it in your update something like this:
@@ -196,6 +229,15 @@ update { toMsg, onComplete } msg model =
     case msg of
         GltfLoaded query_ (Ok gltf) ->
             let
+                options : Options
+                options =
+                    case model of
+                        Initializing options_ ->
+                            options_
+
+                        Progress model_ ->
+                            model_.options
+
                 bufferStore : BufferStore
                 bufferStore =
                     BufferStore.init gltf
@@ -204,11 +246,12 @@ update { toMsg, onComplete } msg model =
                 let
                     queryResult : Result Error QueryResult
                     queryResult =
-                        runQuery gltf TextureStore.init bufferStore query_
+                        runQuery options gltf TextureStore.init bufferStore query_
                 in
                 ( Progress
                     { gltf = gltf
                     , query = query_
+                    , options = options
                     , bufferStore = bufferStore
                     , textureStore = TextureStore.init
                     }
@@ -229,6 +272,7 @@ update { toMsg, onComplete } msg model =
                 ( Progress
                     { gltf = gltf
                     , query = query_
+                    , options = options
                     , bufferStore = bufferStore
                     , textureStore = TextureStore.init
                     }
@@ -242,7 +286,7 @@ update { toMsg, onComplete } msg model =
 
         GltfProgressMsg progressMsg ->
             case model of
-                Initializing ->
+                Initializing _ ->
                     ( model
                     , Cmd.none
                     )
@@ -270,7 +314,7 @@ updateProgress toMsg onComplete msg model =
                 let
                     queryResult : Result Error QueryResult
                     queryResult =
-                        runQuery model.gltf model.textureStore bufferStore_ model.query
+                        runQuery model.options model.gltf model.textureStore bufferStore_ model.query
                 in
                 ( { model | bufferStore = bufferStore_ }
                 , case queryResult of
@@ -309,7 +353,7 @@ updateProgress toMsg onComplete msg model =
                         let
                             queryResult : Result Error QueryResult
                             queryResult =
-                                runQuery model.gltf textureStore_ model.bufferStore model.query
+                                runQuery model.options model.gltf textureStore_ model.bufferStore model.query
                         in
                         queryResult |> Task.succeed |> Task.perform onComplete
 
@@ -541,18 +585,18 @@ query query_ toMsg (QueryResult _ gltf _ _ _ _) =
     Task.succeed (Ok gltf) |> Task.perform (GltfLoaded query_ >> toMsg)
 
 
-runQuery : Internal.Gltf.Gltf -> TextureStore -> BufferStore -> Query -> Result Error QueryResult
-runQuery gltf textureStore bufferStore query_ =
+runQuery : Options -> Internal.Gltf.Gltf -> TextureStore -> BufferStore -> Query -> Result Error QueryResult
+runQuery options gltf textureStore bufferStore query_ =
     case query_ of
         DefaultSceneQuery ->
-            sceneAtIndex2 textureStore bufferStore DefaultSceneQuery gltf.scene gltf
+            sceneAtIndex2 options textureStore bufferStore query_ gltf.scene gltf
 
         SceneQuery index ->
-            sceneAtIndex2 textureStore bufferStore (SceneQuery index) (Internal.Scene.Index index) gltf
+            sceneAtIndex2 options textureStore bufferStore query_ (Internal.Scene.Index index) gltf
 
 
-sceneAtIndex2 : TextureStore -> BufferStore -> Query -> Internal.Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
-sceneAtIndex2 textureStore bufferStore query_ index gltf =
+sceneAtIndex2 : Options -> TextureStore -> BufferStore -> Query -> Internal.Scene.Index -> Internal.Gltf.Gltf -> Result Error QueryResult
+sceneAtIndex2 options textureStore bufferStore query_ index gltf =
     Common.sceneAtIndex gltf index
         |> Maybe.map
             (\(Internal.Scene.Scene scene) ->
@@ -567,7 +611,7 @@ sceneAtIndex2 textureStore bufferStore query_ index gltf =
                 scene.nodes
                     |> List.filterMap
                         (\(Internal.Node.Index nodeIndex) -> nodeTree nodeIndex gltf |> Result.toMaybe)
-                    |> List.map (Tree.map (nodeFromNode gltf bufferStore))
+                    |> List.map (Tree.map (nodeFromNode options gltf bufferStore))
                     |> QueryResult query_ gltf bufferStore textureStore skins_
             )
         |> Result.fromMaybe SceneNotFound
@@ -662,8 +706,8 @@ meshesFromNode node =
             []
 
 
-nodeFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Node
-nodeFromNode gltf bufferStore node =
+nodeFromNode : Options -> Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Node
+nodeFromNode options gltf bufferStore node =
     let
         jointNodeSkinId : Internal.Node.Node -> Maybe ( Gltf.Skin.Index, Maybe Float )
         jointNodeSkinId (Internal.Node.Node node_) =
@@ -717,7 +761,7 @@ nodeFromNode gltf bufferStore node =
         Just skinIndex ->
             node
                 |> propertiesFromNode
-                |> Gltf.Node.SkinnedMesh (triangularMeshesFromNode gltf bufferStore node |> Maybe.withDefault []) skinIndex
+                |> Gltf.Node.SkinnedMesh (triangularMeshesFromNode options gltf bufferStore node |> Maybe.withDefault []) skinIndex
 
         Nothing ->
             case node |> (\(Internal.Node.Node x) -> x.cameraIndex) of
@@ -734,7 +778,7 @@ nodeFromNode gltf bufferStore node =
                                 |> Gltf.Node.Bone skinIndex length
 
                         Nothing ->
-                            case triangularMeshesFromNode gltf bufferStore node of
+                            case triangularMeshesFromNode options gltf bufferStore node of
                                 Just meshes ->
                                     node
                                         |> propertiesFromNode
@@ -760,11 +804,11 @@ nodeTree index gltf =
     Common.maybeNodeTree gltf (Internal.Node.Index index) |> Result.fromMaybe NodeNotFound
 
 
-triangularMeshesFromNode : Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Maybe (List Mesh)
-triangularMeshesFromNode gltf bufferStore (Internal.Node.Node node) =
+triangularMeshesFromNode : Options -> Internal.Gltf.Gltf -> BufferStore -> Internal.Node.Node -> Maybe (List Mesh)
+triangularMeshesFromNode generateFlatNormals gltf bufferStore (Internal.Node.Node node) =
     node.meshIndex
         |> Maybe.andThen (Common.meshAtIndex gltf)
         |> Maybe.map
             (\{ primitives } ->
-                primitives |> List.map (MeshHelper.fromPrimitive gltf bufferStore)
+                primitives |> List.map (MeshHelper.fromPrimitiveWith generateFlatNormals gltf bufferStore)
             )

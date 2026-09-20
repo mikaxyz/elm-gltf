@@ -172,7 +172,84 @@ tests gltf bufferStore =
                     in
                     Expect.equal (Just (Gltf.Mesh.IndexedTriangularMesh Nothing expectedVertices)) mesh
             ]
+        , describe "generates flat normals when a triangle primitive has no NORMAL"
+            [ test "leaves normals as Nothing when the flag is off" <|
+                \_ ->
+                    let
+                        mesh : Maybe Mesh
+                        mesh =
+                            Common.meshAtIndex gltf (Internal.Mesh.Index 4)
+                                |> Maybe.map .primitives
+                                |> Maybe.andThen List.head
+                                |> Maybe.map (Gltf.Query.MeshHelper.fromPrimitiveWith { generateFlatNormals = False } gltf bufferStore)
+                    in
+                    case mesh of
+                        Just (Gltf.Mesh.IndexedTriangularMesh Nothing ( vertices, _ )) ->
+                            Expect.equal True (List.all (\v -> v.normal == Nothing) vertices)
+
+                        _ ->
+                            Expect.fail "Expected an IndexedTriangularMesh"
+            , test "de-indexes an IndexedTriangularMesh and assigns per-face normals" <|
+                \_ ->
+                    let
+                        mesh : Maybe Mesh
+                        mesh =
+                            Common.meshAtIndex gltf (Internal.Mesh.Index 4)
+                                |> Maybe.map .primitives
+                                |> Maybe.andThen List.head
+                                |> Maybe.map (Gltf.Query.MeshHelper.fromPrimitiveWith { generateFlatNormals = True } gltf bufferStore)
+
+                        expectedIndices : List ( Int, Int, Int )
+                        expectedIndices =
+                            List.range 0 5 |> List.map (\n -> ( n * 3, n * 3 + 1, n * 3 + 2 ))
+                    in
+                    case mesh of
+                        Just (Gltf.Mesh.IndexedTriangularMesh Nothing ( vertices, indices )) ->
+                            Expect.all
+                                [ \_ -> Expect.equal 18 (List.length vertices)
+                                , \_ -> Expect.equal expectedIndices indices
+                                , \_ -> Expect.equal True (List.all (\v -> normalCloseTo (Vec3.vec3 0 0 1) v.normal) vertices)
+                                ]
+                                ()
+
+                        _ ->
+                            Expect.fail "Expected an IndexedTriangularMesh"
+            , test "assigns per-face normals to a non-indexed TriangularMesh" <|
+                \_ ->
+                    let
+                        mesh : Maybe Mesh
+                        mesh =
+                            Common.meshAtIndex gltf (Internal.Mesh.Index 7)
+                                |> Maybe.map .primitives
+                                |> Maybe.andThen List.head
+                                |> Maybe.map (Gltf.Query.MeshHelper.fromPrimitiveWith { generateFlatNormals = True } gltf bufferStore)
+
+                        triangleHasFlatNormal : ( Gltf.Mesh.Vertex, Gltf.Mesh.Vertex, Gltf.Mesh.Vertex ) -> Bool
+                        triangleHasFlatNormal ( a, b, c ) =
+                            List.all (\v -> normalCloseTo (Vec3.vec3 0 0 1) v.normal) [ a, b, c ]
+                    in
+                    case mesh of
+                        Just (Gltf.Mesh.TriangularMesh Nothing triangles) ->
+                            Expect.all
+                                [ \_ -> Expect.equal 2 (List.length triangles)
+                                , \_ -> Expect.equal True (List.all triangleHasFlatNormal triangles)
+                                ]
+                                ()
+
+                        _ ->
+                            Expect.fail "Expected a TriangularMesh"
+            ]
         ]
+
+
+normalCloseTo : Vec3.Vec3 -> Maybe Vec3.Vec3 -> Bool
+normalCloseTo expected maybeNormal =
+    case maybeNormal of
+        Just normal ->
+            Vec3.distance normal expected < 1.0e-6
+
+        Nothing ->
+            False
 
 
 v0 : Gltf.Mesh.Vertex
@@ -351,6 +428,17 @@ json =
           },
           "indices": 6,
           "mode": 6
+        }
+      ]
+    },
+    {
+      "name": "mesh with TRIANGLES without indices",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 7
+          },
+          "mode": 4
         }
       ]
     }
