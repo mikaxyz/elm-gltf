@@ -11,7 +11,8 @@
         "fonts": "cp -r node_modules/boxicons/fonts dist/fonts",
         "icons": "mkdir -p dist/icons && cp node_modules/boxicons/svg/regular/{bx-camera-movie.svg,bx-run.svg,bx-directions.svg} dist/icons",
         "less": "lessc less/main.less dist/css/main.css",
-        "build": "ELM_HOME=.ELM_HOME elm make src/Main.elm --output dist/main.js && npm run fonts && npm run icons && npm run less"
+        "vendor": "mkdir -p dist/vendor && cp vendor/*.js dist/vendor",
+        "build": "ELM_HOME=.ELM_HOME elm make src/Main.elm --output dist/main.js && npm run fonts && npm run icons && npm run less && npm run vendor"
     },
     "devDependencies": {
         "boxicons": "^2.1.4",
