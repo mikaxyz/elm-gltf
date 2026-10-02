@@ -1,10 +1,10 @@
-module Gltf.Material.Extensions exposing (TextureExtensions, TextureTransformExtension)
+module Gltf.Texture.Extensions exposing (Extensions, Transform)
 
-{-| Extensions from [glTF Texture Info](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo)
+{-| Texture extensions as defined in the [glTF specification](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos).
 
 Currently only supports KHR\_texture\_transform. The raw JSON value is there for everything else.
 
-@docs TextureExtensions, TextureTransformExtension
+@docs Extensions, Transform
 
 -}
 
@@ -14,15 +14,15 @@ import Math.Vector2 exposing (Vec2)
 
 {-| Texture extensions
 -}
-type alias TextureExtensions =
-    { textureTransform : Maybe TextureTransformExtension
+type alias Extensions =
+    { transform : Maybe Transform
     , raw : Json.Decode.Value
     }
 
 
 {-| [KHR\_texture\_transform](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_texture_transform/README.md) extension
 -}
-type alias TextureTransformExtension =
+type alias Transform =
     { offset : Vec2
     , rotation : Float
     , scale : Vec2

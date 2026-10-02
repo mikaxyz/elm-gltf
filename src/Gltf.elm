@@ -54,6 +54,7 @@ import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Scene exposing (Scene)
 import Gltf.Skin exposing (Skin)
+import Gltf.Texture exposing (Texture(..))
 import Gltf.Transform
 import Http
 import Internal.Gltf
@@ -140,12 +141,12 @@ type Msg
 
 type ProgressMsg
     = BufferLoaded (Result Error ( Int, Bytes ))
-    | TextureLoaded Gltf.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | TextureLoaded Gltf.Texture.Index (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | LoadTexture LoadTextureInfo
 
 
 type alias LoadTextureInfo =
-    { textureIndex : Gltf.Material.TextureIndex
+    { textureIndex : Gltf.Texture.Index
     , image : Internal.Image.Image
     , maybeSampler : Maybe Internal.Sampler.Sampler
     }
@@ -425,8 +426,8 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
             case MeshHelper.toMaterial mesh of
                 Just (Gltf.Material.Material m) ->
                     let
-                        maybeLoadTextureInfo : Gltf.Material.Texture -> Maybe LoadTextureInfo
-                        maybeLoadTextureInfo (Gltf.Material.Texture { index }) =
+                        maybeLoadTextureInfo : Texture -> Maybe LoadTextureInfo
+                        maybeLoadTextureInfo (Texture { index }) =
                             case TextureStore.get index textureStore of
                                 Just _ ->
                                     Nothing
@@ -673,7 +674,7 @@ cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _ _) =
 
 {-| Get texture by index.
 -}
-textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
+textureWithIndex : QueryResult -> Gltf.Texture.Index -> Maybe WebGL.Texture.Texture
 textureWithIndex (QueryResult _ _ _ textureStore _ _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 

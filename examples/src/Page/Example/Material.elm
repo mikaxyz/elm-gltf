@@ -2,6 +2,7 @@ module Page.Example.Material exposing (Name(..), renderer)
 
 import Gltf
 import Gltf.Material
+import Gltf.Texture
 import Page.Example.DefaultMaterial
 import Page.Example.PbrMaterial
 import WebGL exposing (Entity)
@@ -35,28 +36,28 @@ renderer fallbackTexture config gltfQueryResult name =
                 { pbrMetallicRoughness =
                     { baseColorTexture =
                         pbr.pbrMetallicRoughness.baseColorTexture
-                            |> Maybe.map Gltf.Material.textureIndex
+                            |> Maybe.map Gltf.Texture.toIndex
                             |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                             |> Maybe.withDefault fallbackTexture
                     , metallicRoughnessTexture =
                         pbr.pbrMetallicRoughness.metallicRoughnessTexture
-                            |> Maybe.map Gltf.Material.textureIndex
+                            |> Maybe.map Gltf.Texture.toIndex
                             |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                             |> Maybe.withDefault fallbackTexture
                     }
                 , normalTexture =
                     pbr.normalTexture
-                        |> Maybe.map Gltf.Material.textureIndex
+                        |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 , occlusionTexture =
                     pbr.occlusionTexture
-                        |> Maybe.map Gltf.Material.textureIndex
+                        |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 , emissiveTexture =
                     pbr.emissiveTexture
-                        |> Maybe.map Gltf.Material.textureIndex
+                        |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
                 }

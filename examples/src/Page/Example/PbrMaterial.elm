@@ -1,7 +1,8 @@
 module Page.Example.PbrMaterial exposing (Config, renderer)
 
 import Gltf.Material
-import Gltf.Material.Extensions exposing (TextureTransformExtension)
+import Gltf.Texture
+import Gltf.Texture.Extensions as TextureExtensions
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -329,34 +330,34 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
             else
                 0
 
-        textureTransform : Maybe Gltf.Material.Texture -> Maybe TextureTransformExtension
+        textureTransform : Maybe Gltf.Texture.Texture -> Maybe TextureExtensions.Transform
         textureTransform texture =
             texture
-                |> Maybe.andThen (\(Gltf.Material.Texture x) -> x.extensions)
-                |> Maybe.andThen (\extensions -> extensions.textureTransform)
+                |> Maybe.andThen (\(Gltf.Texture.Texture x) -> x.extensions)
+                |> Maybe.andThen (\extensions -> extensions.transform)
 
-        textureScale : Maybe Gltf.Material.Texture -> Vec2
+        textureScale : Maybe Gltf.Texture.Texture -> Vec2
         textureScale texture =
             textureTransform texture
                 |> Maybe.map .scale
                 |> Maybe.withDefault (vec2 1 1)
 
-        textureOffset : Maybe Gltf.Material.Texture -> Vec2
+        textureOffset : Maybe Gltf.Texture.Texture -> Vec2
         textureOffset texture =
             textureTransform texture
                 |> Maybe.map .offset
                 |> Maybe.withDefault (vec2 0 0)
 
-        textureRotation : Maybe Gltf.Material.Texture -> Float
+        textureRotation : Maybe Gltf.Texture.Texture -> Float
         textureRotation texture =
             textureTransform texture
                 |> Maybe.map .rotation
                 |> Maybe.withDefault 0
 
-        texCoord : Maybe Gltf.Material.Texture -> Int
+        texCoord : Maybe Gltf.Texture.Texture -> Int
         texCoord texture =
             texture
-                |> Maybe.map (\(Gltf.Material.Texture x) -> x.texCoord)
+                |> Maybe.map (\(Gltf.Texture.Texture x) -> x.texCoord)
                 |> Maybe.withDefault 0
     in
     material

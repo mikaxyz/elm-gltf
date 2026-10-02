@@ -1,26 +1,14 @@
-module Gltf.Material exposing
-    ( Material(..), Index(..), Texture(..), TextureIndex, AlphaMode(..), PbrMetallicRoughness
-    , textureIndex
-    )
+module Gltf.Material exposing (Material(..), Index(..), AlphaMode(..), PbrMetallicRoughness)
 
 {-| A material as defined in the [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material).
 
-@docs Material, Index, Texture, TextureIndex, AlphaMode, PbrMetallicRoughness
-
-@docs textureIndex
+@docs Material, Index, AlphaMode, PbrMetallicRoughness
 
 -}
 
-import Gltf.Material.Extensions exposing (TextureExtensions)
-import Gltf.Query.TextureIndex as TextureIndex
+import Gltf.Texture exposing (Texture)
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
-
-
-{-| Use this to get a [textureWithIndex](Gltf#textureWithIndex)
--}
-type alias TextureIndex =
-    TextureIndex.TextureIndex
 
 
 {-| The index of the material.
@@ -64,20 +52,3 @@ type alias PbrMetallicRoughness =
     , roughnessFactor : Float
     , metallicRoughnessTexture : Maybe Texture
     }
-
-
-{-| Any data associated with a texture
--}
-type Texture
-    = Texture
-        { index : TextureIndex
-        , texCoord : Int
-        , extensions : Maybe TextureExtensions
-        }
-
-
-{-| Texture index from Texture
--}
-textureIndex : Texture -> TextureIndex
-textureIndex (Texture { index }) =
-    index

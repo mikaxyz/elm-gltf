@@ -8,7 +8,7 @@ module Internal.Material exposing
     , indexDecoder
     )
 
-import Gltf.Material.Extensions exposing (TextureExtensions)
+import Gltf.Texture.Extensions as TextureExtensions
 import Internal.Texture as Texture
 import Internal.TextureInfo as TextureInfo exposing (TextureInfo)
 import Internal.Util as Util
@@ -44,7 +44,7 @@ type alias NormalTextureInfo =
     { index : Texture.Index
     , texCoord : Int
     , scale : Float
-    , extensions : Maybe TextureExtensions
+    , extensions : Maybe TextureExtensions.Extensions
     }
 
 
@@ -52,7 +52,7 @@ type alias OcclusionTextureInfo =
     { index : Texture.Index
     , texCoord : Int
     , strength : Float
-    , extensions : Maybe TextureExtensions
+    , extensions : Maybe TextureExtensions.Extensions
     }
 
 
