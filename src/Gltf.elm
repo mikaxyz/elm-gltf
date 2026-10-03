@@ -464,6 +464,16 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
                     , m.emissiveTexture
                         |> Maybe.andThen maybeLoadTextureInfo
                         |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .transmission
+                        |> Maybe.andThen .transmissionTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .volume
+                        |> Maybe.andThen .thicknessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
                     ]
                         |> List.filterMap identity
 

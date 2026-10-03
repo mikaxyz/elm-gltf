@@ -2,6 +2,7 @@ module Gltf.Query.MaterialHelper exposing (fromPrimitive)
 
 import Common
 import Gltf.Material exposing (AlphaMode(..), Material(..))
+import Gltf.Material.Extensions exposing (Extensions)
 import Gltf.Query.TextureIndex exposing (TextureIndex(..))
 import Gltf.Texture exposing (Texture(..))
 import Gltf.Texture.Extensions as TextureExtensions
@@ -45,11 +46,38 @@ fromPrimitive gltf primitive =
                                     Internal.Blend ->
                                         Blend
                            )
+                , extensions = material.extensions |> Maybe.map (extensionsFromExtensionsInfo gltf)
                 }
                 |> Just
 
         Nothing ->
             Nothing
+
+
+extensionsFromExtensionsInfo : Gltf -> Internal.ExtensionsInfo -> Extensions
+extensionsFromExtensionsInfo gltf extensions =
+    { transmission =
+        extensions.transmission
+            |> Maybe.map
+                (\{ transmissionFactor, transmissionTexture } ->
+                    { transmissionFactor = transmissionFactor
+                    , transmissionTexture = transmissionTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , ior = extensions.ior
+    , volume =
+        extensions.volume
+            |> Maybe.map
+                (\{ attenuationColor, attenuationDistance, thicknessFactor, thicknessTexture } ->
+                    { attenuationColor = attenuationColor
+                    , attenuationDistance = attenuationDistance
+                    , thicknessFactor = thicknessFactor
+                    , thicknessTexture = thicknessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , dispersion = extensions.dispersion
+    , raw = extensions.raw
+    }
 
 
 textureFromTextureInfo :

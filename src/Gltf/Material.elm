@@ -6,6 +6,7 @@ module Gltf.Material exposing (Material(..), Index(..), AlphaMode(..), PbrMetall
 
 -}
 
+import Gltf.Material.Extensions exposing (Extensions)
 import Gltf.Texture exposing (Texture)
 import Math.Vector3 exposing (Vec3)
 import Math.Vector4 exposing (Vec4)
@@ -18,6 +19,9 @@ type Index
 
 
 {-| A material assigned to a [Mesh](Gltf-Mesh#Mesh) contained in a [Node](Gltf-Node#Node). Use the properties/textures in the material to render it.
+
+Material extensions are available in [Extensions](Gltf-Material-Extensions).
+
 -}
 type Material
     = Material
@@ -32,6 +36,7 @@ type Material
         , emissiveFactor : Vec3
         , doubleSided : Bool
         , alphaMode : AlphaMode
+        , extensions : Maybe Extensions
         }
 
 

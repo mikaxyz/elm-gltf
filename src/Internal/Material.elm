@@ -1,13 +1,17 @@
 module Internal.Material exposing
     ( AlphaMode(..)
+    , ExtensionsInfo
     , Index(..)
     , Material
     , NormalTextureInfo
     , OcclusionTextureInfo
+    , TransmissionExtensionInfo
+    , VolumeExtensionInfo
     , decoder
     , indexDecoder
     )
 
+import Gltf.Material.Extensions as Extensions
 import Gltf.Texture.Extensions as TextureExtensions
 import Internal.Texture as Texture
 import Internal.TextureInfo as TextureInfo exposing (TextureInfo)
@@ -31,6 +35,7 @@ type alias Material =
     , emissiveFactor : Vec3
     , alphaMode : AlphaMode
     , doubleSided : Bool
+    , extensions : Maybe ExtensionsInfo
     }
 
 
@@ -65,6 +70,29 @@ type alias PbrMetallicRoughness =
     }
 
 
+type alias ExtensionsInfo =
+    { dispersion : Maybe Extensions.Dispersion
+    , ior : Maybe Extensions.Ior
+    , transmission : Maybe TransmissionExtensionInfo
+    , volume : Maybe VolumeExtensionInfo
+    , raw : JD.Value
+    }
+
+
+type alias TransmissionExtensionInfo =
+    { transmissionFactor : Float
+    , transmissionTexture : Maybe TextureInfo
+    }
+
+
+type alias VolumeExtensionInfo =
+    { attenuationColor : Vec3
+    , attenuationDistance : Maybe Float
+    , thicknessFactor : Float
+    , thicknessTexture : Maybe TextureInfo
+    }
+
+
 defaultPbrMetallicRoughness : PbrMetallicRoughness
 defaultPbrMetallicRoughness =
     { baseColorFactor = vec4 1 1 1 1
@@ -91,6 +119,49 @@ decoder =
         |> JDP.optional "emissiveFactor" Util.vec3Decoder (vec3 0 0 0)
         |> JDP.custom alphaModeDecoder
         |> JDP.optional "doubleSided" JD.bool False
+        |> JDP.optional "extensions" (JD.maybe extensionsDecoder) Nothing
+
+
+extensionsDecoder : JD.Decoder ExtensionsInfo
+extensionsDecoder =
+    JD.value
+        |> JD.andThen
+            (\raw ->
+                JD.succeed ExtensionsInfo
+                    |> JDP.optional "KHR_materials_dispersion" (JD.maybe dispersionDecoder) Nothing
+                    |> JDP.optional "KHR_materials_ior" (JD.maybe iorDecoder) Nothing
+                    |> JDP.optional "KHR_materials_transmission" (JD.maybe transmissionDecoder) Nothing
+                    |> JDP.optional "KHR_materials_volume" (JD.maybe volumeDecoder) Nothing
+                    |> JDP.hardcoded raw
+            )
+
+
+dispersionDecoder : JD.Decoder Extensions.Dispersion
+dispersionDecoder =
+    JD.succeed Extensions.Dispersion
+        |> JDP.optional "dispersion" JD.float 0
+
+
+iorDecoder : JD.Decoder Extensions.Ior
+iorDecoder =
+    JD.succeed Extensions.Ior
+        |> JDP.optional "ior" JD.float 1.5
+
+
+transmissionDecoder : JD.Decoder TransmissionExtensionInfo
+transmissionDecoder =
+    JD.succeed TransmissionExtensionInfo
+        |> JDP.optional "transmissionFactor" JD.float 0
+        |> JDP.optional "transmissionTexture" (JD.maybe TextureInfo.decoder) Nothing
+
+
+volumeDecoder : JD.Decoder VolumeExtensionInfo
+volumeDecoder =
+    JD.succeed VolumeExtensionInfo
+        |> JDP.optional "attenuationColor" Util.vec3Decoder (vec3 1 1 1)
+        |> JDP.optional "attenuationDistance" (JD.maybe JD.float) Nothing
+        |> JDP.optional "thicknessFactor" JD.float 0
+        |> JDP.optional "thicknessTexture" (JD.maybe TextureInfo.decoder) Nothing
 
 
 normalTextureInfoDecoder : JD.Decoder NormalTextureInfo

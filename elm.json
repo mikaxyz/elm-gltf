@@ -10,6 +10,7 @@
         "Gltf.Camera",
         "Gltf.Mesh",
         "Gltf.Material",
+        "Gltf.Material.Extensions",
         "Gltf.Node",
         "Gltf.NodeIndex",
         "Gltf.Scene",
