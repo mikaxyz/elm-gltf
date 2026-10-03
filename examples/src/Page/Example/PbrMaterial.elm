@@ -1,6 +1,7 @@
-module Page.Example.PbrMaterial exposing (Config, renderer)
+module Page.Example.PbrMaterial exposing (Config, TransmissionPass(..), renderer)
 
 import Gltf.Material
+import Gltf.Material.Extensions as MaterialExtensions
 import Gltf.Texture
 import Gltf.Texture.Extensions as TextureExtensions
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -24,7 +25,13 @@ type alias Config =
     { environmentTexture : WebGL.Texture.Texture
     , specularEnvironmentTexture : WebGL.Texture.Texture
     , brdfLUTTexture : WebGL.Texture.Texture
+    , transmissionPass : TransmissionPass
     }
+
+
+type TransmissionPass
+    = ScenePass
+    | FinalPass WebGL.Texture.Texture
 
 
 type alias Uniforms =
@@ -80,6 +87,36 @@ type alias Uniforms =
     , u_EmissiveTransformScale : Vec2
     , u_EmissiveTransformOffset : Vec2
     , u_EmissiveTransformRotation : Float
+
+    --
+    , u_TransmissionCoord : Int
+    , u_hasTransmissionSampler : Int
+    , u_TransmissionSampler : Texture
+    , u_TransmissionFactor : Float
+    , u_TransmissionTransformScale : Vec2
+    , u_TransmissionTransformOffset : Vec2
+    , u_TransmissionTransformRotation : Float
+
+    --
+    , u_ThicknessCoord : Int
+    , u_hasThicknessSampler : Int
+    , u_ThicknessSampler : Texture
+    , u_ThicknessFactor : Float
+    , u_ThicknessTransformScale : Vec2
+    , u_ThicknessTransformOffset : Vec2
+    , u_ThicknessTransformRotation : Float
+
+    --
+    , u_Ior : Float
+    , u_Dispersion : Float
+    , u_AttenuationColor : Vec3
+    , u_AttenuationDistance : Float
+
+    --
+    , u_ScenePass : Int
+    , u_hasSceneTexture : Int
+    , u_SceneTexture : Texture
+    , u_ViewProjectionMatrix : Mat4
 
     --
     , u_brdfLUT : Texture
@@ -236,13 +273,16 @@ type alias Varyings =
 renderer :
     Config
     ->
-        { pbrMetallicRoughness :
+        { fallbackTexture : Texture
+        , pbrMetallicRoughness :
             { baseColorTexture : Texture
             , metallicRoughnessTexture : Texture
             }
         , normalTexture : Texture
         , occlusionTexture : Texture
         , emissiveTexture : Texture
+        , transmissionTexture : Texture
+        , thicknessTexture : Texture
         }
     -> Gltf.Material.Material
     -> Material.Options
@@ -359,6 +399,54 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
             texture
                 |> Maybe.map (\(Gltf.Texture.Texture x) -> x.texCoord)
                 |> Maybe.withDefault 0
+
+        transmission : Maybe MaterialExtensions.Transmission
+        transmission =
+            pbr.extensions |> Maybe.andThen .transmission
+
+        volume : Maybe MaterialExtensions.Volume
+        volume =
+            pbr.extensions |> Maybe.andThen .volume
+
+        transmissionTexture : Maybe Gltf.Texture.Texture
+        transmissionTexture =
+            transmission |> Maybe.andThen .transmissionTexture
+
+        thicknessTexture : Maybe Gltf.Texture.Texture
+        thicknessTexture =
+            volume |> Maybe.andThen .thicknessTexture
+
+        ior : Float
+        ior =
+            pbr.extensions
+                |> Maybe.andThen .ior
+                |> Maybe.map (\(MaterialExtensions.Ior x) -> x)
+                |> Maybe.withDefault 1.5
+
+        dispersion : Float
+        dispersion =
+            pbr.extensions
+                |> Maybe.andThen .dispersion
+                |> Maybe.map (\(MaterialExtensions.Dispersion x) -> x)
+                |> Maybe.withDefault 0
+
+        sceneTexture : Maybe Texture
+        sceneTexture =
+            case config.transmissionPass of
+                ScenePass ->
+                    Nothing
+
+                FinalPass texture ->
+                    Just texture
+
+        scenePass : Int
+        scenePass =
+            case config.transmissionPass of
+                ScenePass ->
+                    1
+
+                FinalPass _ ->
+                    0
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
@@ -415,6 +503,36 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_EmissiveTransformScale = textureScale pbr.emissiveTexture
         , u_EmissiveTransformOffset = textureOffset pbr.emissiveTexture
         , u_EmissiveTransformRotation = textureRotation pbr.emissiveTexture
+
+        --
+        , u_TransmissionCoord = texCoord transmissionTexture
+        , u_hasTransmissionSampler = transmissionTexture |> flagFromMaybe
+        , u_TransmissionSampler = textures.transmissionTexture
+        , u_TransmissionFactor = transmission |> Maybe.map .transmissionFactor |> Maybe.withDefault 0
+        , u_TransmissionTransformScale = textureScale transmissionTexture
+        , u_TransmissionTransformOffset = textureOffset transmissionTexture
+        , u_TransmissionTransformRotation = textureRotation transmissionTexture
+
+        --
+        , u_ThicknessCoord = texCoord thicknessTexture
+        , u_hasThicknessSampler = thicknessTexture |> flagFromMaybe
+        , u_ThicknessSampler = textures.thicknessTexture
+        , u_ThicknessFactor = volume |> Maybe.map .thicknessFactor |> Maybe.withDefault 0
+        , u_ThicknessTransformScale = textureScale thicknessTexture
+        , u_ThicknessTransformOffset = textureOffset thicknessTexture
+        , u_ThicknessTransformRotation = textureRotation thicknessTexture
+
+        --
+        , u_Ior = ior
+        , u_Dispersion = dispersion
+        , u_AttenuationColor = volume |> Maybe.map .attenuationColor |> Maybe.withDefault (vec3 1 1 1)
+        , u_AttenuationDistance = volume |> Maybe.andThen .attenuationDistance |> Maybe.withDefault 0
+
+        --
+        , u_ScenePass = scenePass
+        , u_hasSceneTexture = sceneTexture |> flagFromMaybe
+        , u_SceneTexture = sceneTexture |> Maybe.withDefault textures.fallbackTexture
+        , u_ViewProjectionMatrix = Mat4.mul uniforms.scenePerspective uniforms.sceneCamera
 
         --
         , u_brdfLUT = config.brdfLUTTexture
@@ -983,6 +1101,33 @@ fragmentShader =
         uniform vec2 u_EmissiveTransformOffset;
         uniform float u_EmissiveTransformRotation;
 
+        uniform int u_TransmissionCoord;
+        uniform int u_hasTransmissionSampler;
+        uniform sampler2D u_TransmissionSampler;
+        uniform float u_TransmissionFactor;
+        uniform vec2 u_TransmissionTransformScale;
+        uniform vec2 u_TransmissionTransformOffset;
+        uniform float u_TransmissionTransformRotation;
+
+        uniform int u_ThicknessCoord;
+        uniform int u_hasThicknessSampler;
+        uniform sampler2D u_ThicknessSampler;
+        uniform float u_ThicknessFactor;
+        uniform vec2 u_ThicknessTransformScale;
+        uniform vec2 u_ThicknessTransformOffset;
+        uniform float u_ThicknessTransformRotation;
+
+        uniform float u_Ior;
+        uniform float u_Dispersion;
+        uniform vec3 u_AttenuationColor;
+        uniform float u_AttenuationDistance; // 0.0 means infinite (no attenuation)
+
+        uniform int u_ScenePass;
+        uniform int u_hasSceneTexture;
+        uniform sampler2D u_SceneTexture;
+        uniform mat4 u_ViewProjectionMatrix;
+        uniform mat4 u_ModelMatrix;
+
         uniform vec3 u_Camera;
 
         varying vec3 v_Position;
@@ -1095,7 +1240,7 @@ fragmentShader =
         // Calculation of the lighting contribution from an optional Image Based Light source.
         // Precomputed Environment Maps are required uniform inputs and are computed as outlined in [1].
         // See our README.md on Environment Maps [3] for additional discussion.
-        vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
+        vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection, float transmission)
         {
             float mipCount = 32.0; // resolution of 512x512
             float lod = (pbrInputs.perceptualRoughness * (mipCount + 1.0));
@@ -1103,10 +1248,78 @@ fragmentShader =
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
             vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
             vec3 specularLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, reflection, lod)).rgb;
-            vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
+            vec3 diffuse = diffuseLight * pbrInputs.diffuseColor * (1.0 - transmission);
             vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
 
             return diffuse + specular;
+        }
+
+        vec3 refractionVector(vec3 v, vec3 n, float ior)
+        {
+            vec3 r = refract(-v, n, 1.0 / ior);
+            if (dot(r, r) < 0.0001) {
+                // refract() returns vec3(0) on total internal reflection
+                r = reflect(-v, n);
+            }
+            return normalize(r);
+        }
+
+        vec3 volumeRay(vec3 v, vec3 n, float ior, float thickness)
+        {
+            vec3 r = refract(-v, n, 1.0 / ior);
+            if (dot(r, r) < 0.0001) {
+                // Total internal reflection: sample at the entry point
+                return vec3(0.0);
+            }
+            // Thickness is authored in mesh-local space; scale by the node/model scale
+            vec3 modelScale;
+            modelScale.x = length(u_ModelMatrix[0].xyz);
+            modelScale.y = length(u_ModelMatrix[1].xyz);
+            modelScale.z = length(u_ModelMatrix[2].xyz);
+            return normalize(r) * thickness * modelScale;
+        }
+
+        vec3 sampleEnvRefraction(vec3 v, vec3 n, float ior, float lod)
+        {
+            return SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, refractionVector(v, n, ior), lod)).rgb;
+        }
+
+        vec2 refractionUv(vec3 v, vec3 n, float ior, float thickness)
+        {
+            vec3 exitPoint = v_Position + volumeRay(v, n, ior, thickness);
+            vec4 clip = u_ViewProjectionMatrix * vec4(exitPoint, 1.0);
+            vec2 uv = (clip.xy / clip.w) * 0.5 + 0.5;
+            return clamp(uv, vec2(0.0), vec2(1.0));
+        }
+
+        vec3 sampleSceneBlurred(vec2 uv, float roughness)
+        {
+            // The scene texture has no mipmaps so roughness blur is approximated
+            // with a Poisson disk whose radius grows with roughness.
+            float radius = roughness * roughness * 0.05;
+            vec3 sum = SRGBtoLINEAR(texture2D(u_SceneTexture, uv)).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.326, -0.406))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.840, -0.074))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.696, 0.457))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.203, 0.621))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.962, -0.195))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.473, -0.480))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.519, 0.767))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.185, -0.893))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.507, 0.064))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.896, 0.412))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.322, -0.933))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.792, -0.598))).rgb;
+            return sum / 13.0;
+        }
+
+        vec3 sampleTransmission(vec3 v, vec3 n, float ior, float thickness, float roughness)
+        {
+            if (u_hasSceneTexture == 0) {
+                float mipCount = 32.0; // keep in sync with getIBLContribution
+                return sampleEnvRefraction(v, n, ior, roughness * (mipCount + 1.0));
+            }
+            return sampleSceneBlurred(refractionUv(v, n, ior, thickness), roughness);
         }
 
         // Basic Lambertian diffuse
@@ -1211,6 +1424,25 @@ fragmentShader =
 
             baseColor = vec4(v_Color, 1.0) * baseColor;
 
+            if (u_ScenePass == 1 && u_TransmissionFactor > 0.0) {
+                // The scene pass renders what is visible behind transmissive surfaces.
+                // The whole material is excluded: fragments made opaque by a transmission
+                // texture would otherwise be baked into the scene texture on the surface
+                // itself and reappear refracted inside it.
+                discard;
+            }
+
+            float transmission = u_TransmissionFactor;
+            if (u_hasTransmissionSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_TransmissionCoord,
+                    u_TransmissionTransformScale,
+                    u_TransmissionTransformOffset,
+                    u_TransmissionTransformRotation
+                );
+                transmission *= texture2D(u_TransmissionSampler, uvTransformed).r;
+            }
+
             vec3 f0 = vec3(0.04);
             vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
             diffuseColor *= 1.0 - metallic;
@@ -1259,14 +1491,50 @@ fragmentShader =
             float D = microfacetDistribution(pbrInputs);
 
             // Calculation of analytical lighting contribution
-            vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
+            vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs) * (1.0 - transmission);
             vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
             // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
             vec3 color = NdotL * v_Color * u_LightColor * (diffuseContrib + specContrib);
 
 
             // Calculate lighting contribution from image based lighting source (IBL)
-            color += getIBLContribution(pbrInputs, n, reflection);
+            color += getIBLContribution(pbrInputs, n, reflection, transmission);
+
+            if (transmission > 0.0) {
+                float thickness = u_ThicknessFactor;
+                if (u_hasThicknessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_ThicknessCoord,
+                        u_ThicknessTransformScale,
+                        u_ThicknessTransformOffset,
+                        u_ThicknessTransformRotation
+                    );
+                    thickness *= texture2D(u_ThicknessSampler, uvTransformed).g;
+                }
+
+                vec3 transmitted;
+                if (u_Dispersion > 0.0) {
+                    // dispersion = 20 / Abbe number; spread between red and blue is (ior - 1) / Abbe
+                    float halfSpread = (u_Ior - 1.0) * 0.025 * u_Dispersion;
+                    transmitted = vec3(
+                        sampleTransmission(v, n, u_Ior - halfSpread, thickness, perceptualRoughness).r,
+                        sampleTransmission(v, n, u_Ior, thickness, perceptualRoughness).g,
+                        sampleTransmission(v, n, u_Ior + halfSpread, thickness, perceptualRoughness).b
+                    );
+                } else {
+                    transmitted = sampleTransmission(v, n, u_Ior, thickness, perceptualRoughness);
+                }
+                transmitted *= baseColor.rgb;
+
+                float attenuationLength = length(volumeRay(v, n, u_Ior, thickness));
+                if (u_AttenuationDistance > 0.0 && attenuationLength > 0.0) {
+                    vec3 attenuationCoefficient = -log(clamp(u_AttenuationColor, vec3(0.0001), vec3(1.0))) / u_AttenuationDistance;
+                    transmitted *= exp(-attenuationCoefficient * attenuationLength);
+                }
+
+                vec3 Fv = specularEnvironmentR0 + (specularEnvironmentR90 - specularEnvironmentR0) * pow(clamp(1.0 - NdotV, 0.0, 1.0), 5.0);
+                color += transmission * transmitted * (1.0 - Fv);
+            }
 
             if (u_hasOcclusionSampler == 1) {
                 vec2 uvTransformed = transformedUv(

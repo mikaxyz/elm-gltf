@@ -29,11 +29,16 @@ renderer :
 renderer fallbackTexture config gltfQueryResult name =
     case name of
         Default ->
-            Page.Example.DefaultMaterial.renderer config
+            Page.Example.DefaultMaterial.renderer
+                { environmentTexture = config.environmentTexture
+                , specularEnvironmentTexture = config.specularEnvironmentTexture
+                , brdfLUTTexture = config.brdfLUTTexture
+                }
 
         PbrMaterial (Gltf.Material.Material pbr) ->
             Page.Example.PbrMaterial.renderer config
-                { pbrMetallicRoughness =
+                { fallbackTexture = fallbackTexture
+                , pbrMetallicRoughness =
                     { baseColorTexture =
                         pbr.pbrMetallicRoughness.baseColorTexture
                             |> Maybe.map Gltf.Texture.toIndex
@@ -57,6 +62,20 @@ renderer fallbackTexture config gltfQueryResult name =
                         |> Maybe.withDefault fallbackTexture
                 , emissiveTexture =
                     pbr.emissiveTexture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
+                , transmissionTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .transmission
+                        |> Maybe.andThen .transmissionTexture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
+                , thicknessTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .volume
+                        |> Maybe.andThen .thicknessTexture
                         |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture

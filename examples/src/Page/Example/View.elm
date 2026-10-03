@@ -17,7 +17,7 @@ import RemoteData exposing (RemoteData)
 import Tree
 import WebGL
 import WebGL.Texture
-import XYZMika.XYZ
+import XYZMika.WebGL
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene exposing (Scene)
@@ -36,6 +36,7 @@ view model =
                 model.environmentTexture
                 |> RemoteData.andMap model.specularEnvironmentTexture
                 |> RemoteData.andMap model.brdfLUTTexture
+                |> RemoteData.andMap (RemoteData.succeed Page.Example.PbrMaterial.ScenePass)
 
         data =
             RemoteData.map
@@ -226,27 +227,54 @@ sceneView :
     -> Page.Example.PbrMaterial.Config
     -> Html Msg
 sceneView model gltfQueryResult animation scene fallbackTexture config =
-    XYZMika.XYZ.view
-        model.viewport
-        (renderer fallbackTexture config gltfQueryResult)
-        |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation (Gltf.skins gltfQueryResult))
-        |> XYZMika.XYZ.withSceneOptions model.sceneOptions
-        |> XYZMika.XYZ.withRenderOptions
-            (\graph ->
-                let
-                    index : Int
-                    index =
-                        Tuple.first (Tree.label graph)
-                in
-                if model.selectedTreeIndex == Just index then
-                    Just { showBoundingBox = True }
+    let
+        graphRenderOptions : Tree.Tree ( Int, Object Scene.ObjectId Material.Name ) -> Maybe XYZMika.XYZ.Scene.GraphRenderOptions
+        graphRenderOptions graph =
+            let
+                index : Int
+                index =
+                    Tuple.first (Tree.label graph)
+            in
+            if model.selectedTreeIndex == Just index then
+                Just { showBoundingBox = True }
 
-                else
-                    Nothing
-            )
-        |> XYZMika.XYZ.toHtml
-            (HA.id "viewport"
-                :: Dragon.dragEvents DragonMsg
-            )
-            scene
+            else
+                Nothing
+
+        entities : Page.Example.PbrMaterial.TransmissionPass -> List WebGL.Entity
+        entities transmissionPass =
+            XYZMika.XYZ.Scene.render
+                [ Light.directional (vec3 -1 1 1) ]
+                (Scene.modifiers model.time animation (Gltf.skins gltfQueryResult))
+                model.sceneOptions
+                model.viewport
+                graphRenderOptions
+                scene
+                (renderer fallbackTexture { config | transmissionPass = transmissionPass } gltfQueryResult)
+
+        scenePass : XYZMika.WebGL.FrameBuffer
+        scenePass =
+            XYZMika.WebGL.frameBuffer
+                ( model.viewport.width, model.viewport.height )
+                (entities Page.Example.PbrMaterial.ScenePass)
+    in
+    XYZMika.WebGL.toHtmlWithFrameBuffers
+        [ scenePass ]
+        [ WebGL.alpha True
+        , WebGL.antialias
+        , WebGL.depth 1
+        , WebGL.clearColor (22 / 255.0) (22 / 255.0) (29 / 255.0) 1
+        ]
+        (HA.width model.viewport.width
+            :: HA.height model.viewport.height
+            :: HA.id "viewport"
+            :: Dragon.dragEvents DragonMsg
+        )
+        (\textures ->
+            case textures of
+                scenePassTexture :: [] ->
+                    entities (Page.Example.PbrMaterial.FinalPass scenePassTexture)
+
+                _ ->
+                    []
+        )
