@@ -6,7 +6,7 @@ module Gltf exposing
     , animations, cameras, nodeTrees, scenes, skins, cameraByIndex, textureWithIndex
     )
 
-{-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
+{-| Load [glTF files](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) (3D scenes/models with animations and materials) into Elm WebGL
 
 
 # Types

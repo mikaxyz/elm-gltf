@@ -1,6 +1,6 @@
 # Elm glTF library
 
-Import 3d assets from [glTF](https://www.khronos.org/gltf/) (Graphics Library Transmission Format) file format for use in your [Elm WebGL](https://package.elm-lang.org/packages/elm-explorations/webgl/latest) programs.
+Import 3D assets (scenes/models with animations, materials, etc.) from [glTF](https://www.khronos.org/gltf/) (GL Transmission Format) files for use in your [Elm WebGL](https://package.elm-lang.org/packages/elm-explorations/webgl/latest) programs.
 
 The aim is to support most of [glTF specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) but there is still a lot of work to do. See [the example app](https://elm-gltf.mika.xyz/) rendering all [official glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets) for an indication what it can/can not do.
 
@@ -42,7 +42,7 @@ A scene in glTF consists of multiple Node tree data structures. The tree data ty
 
 ## Rendering
 
-Nodes contain Meshes that contains Materials. Materials may reference textures. To render something you need to make these into [entities](https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL#entity). See the example application for one way to do it. I would like to have examples just using the webgl package and Elm 3d Scene etc. If you make one please ping me and I can link to it.
+Nodes contain Meshes that contains Materials. Materials may reference textures. To render something you need to make these into [entities](https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL#entity). See the example application for one way to do it. I would like to have examples just using the webgl package and Elm 3D Scene etc. If you make one please ping me and I can link to it.
 
 ## Animation
 
