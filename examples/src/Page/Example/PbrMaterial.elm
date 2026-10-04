@@ -107,6 +107,33 @@ type alias Uniforms =
     , u_ThicknessTransformRotation : Float
 
     --
+    , u_ClearcoatCoord : Int
+    , u_hasClearcoatSampler : Int
+    , u_ClearcoatSampler : Texture
+    , u_ClearcoatFactor : Float
+    , u_ClearcoatTransformScale : Vec2
+    , u_ClearcoatTransformOffset : Vec2
+    , u_ClearcoatTransformRotation : Float
+
+    --
+    , u_ClearcoatRoughnessCoord : Int
+    , u_hasClearcoatRoughnessSampler : Int
+    , u_ClearcoatRoughnessSampler : Texture
+    , u_ClearcoatRoughnessFactor : Float
+    , u_ClearcoatRoughnessTransformScale : Vec2
+    , u_ClearcoatRoughnessTransformOffset : Vec2
+    , u_ClearcoatRoughnessTransformRotation : Float
+
+    --
+    , u_ClearcoatNormalCoord : Int
+    , u_hasClearcoatNormalSampler : Int
+    , u_ClearcoatNormalSampler : Texture
+    , u_ClearcoatNormalScale : Float
+    , u_ClearcoatNormalTransformScale : Vec2
+    , u_ClearcoatNormalTransformOffset : Vec2
+    , u_ClearcoatNormalTransformRotation : Float
+
+    --
     , u_Ior : Float
     , u_Dispersion : Float
     , u_AttenuationColor : Vec3
@@ -283,6 +310,9 @@ renderer :
         , emissiveTexture : Texture
         , transmissionTexture : Texture
         , thicknessTexture : Texture
+        , clearcoatTexture : Texture
+        , clearcoatRoughnessTexture : Texture
+        , clearcoatNormalTexture : Texture
         }
     -> Gltf.Material.Material
     -> Material.Options
@@ -416,6 +446,22 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         thicknessTexture =
             volume |> Maybe.andThen .thicknessTexture
 
+        clearcoat : Maybe MaterialExtensions.Clearcoat
+        clearcoat =
+            pbr.extensions |> Maybe.andThen .clearcoat
+
+        clearcoatTexture : Maybe Gltf.Texture.Texture
+        clearcoatTexture =
+            clearcoat |> Maybe.andThen .texture
+
+        clearcoatRoughnessTexture : Maybe Gltf.Texture.Texture
+        clearcoatRoughnessTexture =
+            clearcoat |> Maybe.andThen .roughnessTexture
+
+        clearcoatNormalTexture : Maybe Gltf.Texture.Texture
+        clearcoatNormalTexture =
+            clearcoat |> Maybe.andThen .normalTexture
+
         ior : Float
         ior =
             pbr.extensions
@@ -521,6 +567,33 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_ThicknessTransformScale = textureScale thicknessTexture
         , u_ThicknessTransformOffset = textureOffset thicknessTexture
         , u_ThicknessTransformRotation = textureRotation thicknessTexture
+
+        --
+        , u_ClearcoatCoord = texCoord clearcoatTexture
+        , u_hasClearcoatSampler = clearcoatTexture |> flagFromMaybe
+        , u_ClearcoatSampler = textures.clearcoatTexture
+        , u_ClearcoatFactor = clearcoat |> Maybe.map .factor |> Maybe.withDefault 0
+        , u_ClearcoatTransformScale = textureScale clearcoatTexture
+        , u_ClearcoatTransformOffset = textureOffset clearcoatTexture
+        , u_ClearcoatTransformRotation = textureRotation clearcoatTexture
+
+        --
+        , u_ClearcoatRoughnessCoord = texCoord clearcoatRoughnessTexture
+        , u_hasClearcoatRoughnessSampler = clearcoatRoughnessTexture |> flagFromMaybe
+        , u_ClearcoatRoughnessSampler = textures.clearcoatRoughnessTexture
+        , u_ClearcoatRoughnessFactor = clearcoat |> Maybe.map .roughnessFactor |> Maybe.withDefault 0
+        , u_ClearcoatRoughnessTransformScale = textureScale clearcoatRoughnessTexture
+        , u_ClearcoatRoughnessTransformOffset = textureOffset clearcoatRoughnessTexture
+        , u_ClearcoatRoughnessTransformRotation = textureRotation clearcoatRoughnessTexture
+
+        --
+        , u_ClearcoatNormalCoord = texCoord clearcoatNormalTexture
+        , u_hasClearcoatNormalSampler = clearcoatNormalTexture |> flagFromMaybe
+        , u_ClearcoatNormalSampler = textures.clearcoatNormalTexture
+        , u_ClearcoatNormalScale = clearcoat |> Maybe.map .normalTextureScale |> Maybe.withDefault 1
+        , u_ClearcoatNormalTransformScale = textureScale clearcoatNormalTexture
+        , u_ClearcoatNormalTransformOffset = textureOffset clearcoatNormalTexture
+        , u_ClearcoatNormalTransformRotation = textureRotation clearcoatNormalTexture
 
         --
         , u_Ior = ior
@@ -1117,6 +1190,30 @@ fragmentShader =
         uniform vec2 u_ThicknessTransformOffset;
         uniform float u_ThicknessTransformRotation;
 
+        uniform int u_ClearcoatCoord;
+        uniform int u_hasClearcoatSampler;
+        uniform sampler2D u_ClearcoatSampler;
+        uniform float u_ClearcoatFactor;
+        uniform vec2 u_ClearcoatTransformScale;
+        uniform vec2 u_ClearcoatTransformOffset;
+        uniform float u_ClearcoatTransformRotation;
+
+        uniform int u_ClearcoatRoughnessCoord;
+        uniform int u_hasClearcoatRoughnessSampler;
+        uniform sampler2D u_ClearcoatRoughnessSampler;
+        uniform float u_ClearcoatRoughnessFactor;
+        uniform vec2 u_ClearcoatRoughnessTransformScale;
+        uniform vec2 u_ClearcoatRoughnessTransformOffset;
+        uniform float u_ClearcoatRoughnessTransformRotation;
+
+        uniform int u_ClearcoatNormalCoord;
+        uniform int u_hasClearcoatNormalSampler;
+        uniform sampler2D u_ClearcoatNormalSampler;
+        uniform float u_ClearcoatNormalScale;
+        uniform vec2 u_ClearcoatNormalTransformScale;
+        uniform vec2 u_ClearcoatNormalTransformOffset;
+        uniform float u_ClearcoatNormalTransformRotation;
+
         uniform float u_Ior;
         uniform float u_Dispersion;
         uniform vec3 u_AttenuationColor;
@@ -1235,6 +1332,36 @@ fragmentShader =
             }
 
             return n;
+        }
+
+        // The clear coat layer has its own normal map. When none is given the coat
+        // follows the geometry normal, NOT the base material's normal map.
+        vec3 getClearcoatNormal()
+        {
+            vec3 ng = normalize(v_Normal);
+            if (u_hasClearcoatNormalSampler == 0) {
+                return ng;
+            }
+
+            vec2 uv = uvFromCoord(u_ClearcoatNormalCoord);
+            vec3 pos_dx = dFdx(v_Position);
+            vec3 pos_dy = dFdy(v_Position);
+            vec3 tex_dx = dFdx(vec3(uv, 0.0));
+            vec3 tex_dy = dFdy(vec3(uv, 0.0));
+            vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
+
+            t = normalize(t - ng * dot(ng, t));
+            vec3 b = normalize(cross(ng, t));
+            mat3 tbn = mat3(t, b, ng);
+
+            vec2 uvTransformed = transformedUv(
+                u_ClearcoatNormalCoord,
+                u_ClearcoatNormalTransformScale,
+                u_ClearcoatNormalTransformOffset,
+                u_ClearcoatNormalTransformRotation
+            );
+            vec3 n = texture2D(u_ClearcoatNormalSampler, uvTransformed).rgb;
+            return normalize(tbn * ((2.0 * n - 1.0) * vec3(u_ClearcoatNormalScale, u_ClearcoatNormalScale, 1.0)));
         }
 
         // Calculation of the lighting contribution from an optional Image Based Light source.
@@ -1556,6 +1683,68 @@ fragmentShader =
                 );
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, uvTransformed)).rgb * u_EmissiveFactor;
                 color += emissive;
+            }
+
+            float clearcoat = u_ClearcoatFactor;
+            if (u_hasClearcoatSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_ClearcoatCoord,
+                    u_ClearcoatTransformScale,
+                    u_ClearcoatTransformOffset,
+                    u_ClearcoatTransformRotation
+                );
+                clearcoat *= texture2D(u_ClearcoatSampler, uvTransformed).r;
+            }
+
+            if (clearcoat > 0.0) {
+                float clearcoatRoughness = u_ClearcoatRoughnessFactor;
+                if (u_hasClearcoatRoughnessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_ClearcoatRoughnessCoord,
+                        u_ClearcoatRoughnessTransformScale,
+                        u_ClearcoatRoughnessTransformOffset,
+                        u_ClearcoatRoughnessTransformRotation
+                    );
+                    clearcoatRoughness *= texture2D(u_ClearcoatRoughnessSampler, uvTransformed).g;
+                }
+                clearcoatRoughness = clamp(clearcoatRoughness, c_MinRoughness, 1.0);
+
+                // The coat is a dielectric layer with a fixed ior of 1.5 (f0 = 0.04)
+                vec3 nc = getClearcoatNormal();
+                float NcdotL = clamp(dot(nc, l), 0.001, 1.0);
+                float NcdotV = clamp(abs(dot(nc, v)), 0.001, 1.0);
+                float NcdotH = clamp(dot(nc, h), 0.0, 1.0);
+
+                PBRInfo coatInputs = PBRInfo(
+                    NcdotL,
+                    NcdotV,
+                    NcdotH,
+                    LdotH,
+                    VdotH,
+                    clearcoatRoughness,
+                    0.0,
+                    vec3(0.04),
+                    vec3(1.0),
+                    clearcoatRoughness * clearcoatRoughness,
+                    vec3(0.0),
+                    vec3(0.04)
+                );
+
+                vec3 coatF = specularReflection(coatInputs);
+                float coatG = geometricOcclusion(coatInputs);
+                float coatD = microfacetDistribution(coatInputs);
+                vec3 coatColor = NcdotL * u_LightColor * (coatF * coatG * coatD / (4.0 * NcdotL * NcdotV));
+
+                float mipCount = 32.0; // keep in sync with getIBLContribution
+                vec3 coatReflection = -normalize(reflect(v, nc));
+                vec3 coatLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, coatReflection, clearcoatRoughness * (mipCount + 1.0))).rgb;
+                vec3 coatBrdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(NcdotV, 1.0 - clearcoatRoughness))).rgb;
+                coatColor += coatLight * (vec3(0.04) * coatBrdf.x + coatBrdf.y);
+
+                // Layer the coat on top of everything, including emission:
+                // the base is darkened by the coat's Fresnel where the coat reflects
+                float coatFresnel = 0.04 + 0.96 * pow(clamp(1.0 - NcdotV, 0.0, 1.0), 5.0);
+                color = color * (1.0 - clearcoat * coatFresnel) + coatColor * clearcoat;
             }
 
             if (u_AlphaCutoff >= 0.0) {

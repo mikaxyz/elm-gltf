@@ -79,5 +79,26 @@ renderer fallbackTexture config gltfQueryResult name =
                         |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
+                , clearcoatTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .texture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
+                , clearcoatRoughnessTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .roughnessTexture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
+                , clearcoatNormalTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .normalTexture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
                 }
                 (Gltf.Material.Material pbr)
