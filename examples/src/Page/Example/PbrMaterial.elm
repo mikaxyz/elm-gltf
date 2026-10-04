@@ -107,6 +107,16 @@ type alias Uniforms =
     , u_ThicknessTransformRotation : Float
 
     --
+    , u_AnisotropyCoord : Int
+    , u_hasAnisotropySampler : Int
+    , u_AnisotropySampler : Texture
+    , u_AnisotropyStrength : Float
+    , u_AnisotropyRotation : Float
+    , u_AnisotropyTransformScale : Vec2
+    , u_AnisotropyTransformOffset : Vec2
+    , u_AnisotropyTransformRotation : Float
+
+    --
     , u_ClearcoatCoord : Int
     , u_hasClearcoatSampler : Int
     , u_ClearcoatSampler : Texture
@@ -310,6 +320,7 @@ renderer :
         , emissiveTexture : Texture
         , transmissionTexture : Texture
         , thicknessTexture : Texture
+        , anisotropyTexture : Texture
         , clearcoatTexture : Texture
         , clearcoatRoughnessTexture : Texture
         , clearcoatNormalTexture : Texture
@@ -446,6 +457,14 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         thicknessTexture =
             volume |> Maybe.andThen .thicknessTexture
 
+        anisotropy : Maybe MaterialExtensions.Anisotropy
+        anisotropy =
+            pbr.extensions |> Maybe.andThen .anisotropy
+
+        anisotropyTexture : Maybe Gltf.Texture.Texture
+        anisotropyTexture =
+            anisotropy |> Maybe.andThen .texture
+
         clearcoat : Maybe MaterialExtensions.Clearcoat
         clearcoat =
             pbr.extensions |> Maybe.andThen .clearcoat
@@ -567,6 +586,16 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_ThicknessTransformScale = textureScale thicknessTexture
         , u_ThicknessTransformOffset = textureOffset thicknessTexture
         , u_ThicknessTransformRotation = textureRotation thicknessTexture
+
+        --
+        , u_AnisotropyCoord = texCoord anisotropyTexture
+        , u_hasAnisotropySampler = anisotropyTexture |> flagFromMaybe
+        , u_AnisotropySampler = textures.anisotropyTexture
+        , u_AnisotropyStrength = anisotropy |> Maybe.map .strength |> Maybe.withDefault 0
+        , u_AnisotropyRotation = anisotropy |> Maybe.map .rotation |> Maybe.withDefault 0
+        , u_AnisotropyTransformScale = textureScale anisotropyTexture
+        , u_AnisotropyTransformOffset = textureOffset anisotropyTexture
+        , u_AnisotropyTransformRotation = textureRotation anisotropyTexture
 
         --
         , u_ClearcoatCoord = texCoord clearcoatTexture
@@ -1190,6 +1219,15 @@ fragmentShader =
         uniform vec2 u_ThicknessTransformOffset;
         uniform float u_ThicknessTransformRotation;
 
+        uniform int u_AnisotropyCoord;
+        uniform int u_hasAnisotropySampler;
+        uniform sampler2D u_AnisotropySampler;
+        uniform float u_AnisotropyStrength;
+        uniform float u_AnisotropyRotation;
+        uniform vec2 u_AnisotropyTransformScale;
+        uniform vec2 u_AnisotropyTransformOffset;
+        uniform float u_AnisotropyTransformRotation;
+
         uniform int u_ClearcoatCoord;
         uniform int u_hasClearcoatSampler;
         uniform sampler2D u_ClearcoatSampler;
@@ -1298,6 +1336,22 @@ fragmentShader =
             mat3 scale = mat3(Scale.x,0,0, 0,Scale.y,0, 0,0,1);
             mat3 matrix = translation * rotation * scale;
             return ( matrix * vec3(uv, 1) ).xy;
+        }
+
+        // Tangent frame derived from screen-space derivatives of the given UV set,
+        // as there is no mesh TANGENT attribute to rely on
+        mat3 getTBN(vec2 uv)
+        {
+            vec3 pos_dx = dFdx(v_Position);
+            vec3 pos_dy = dFdy(v_Position);
+            vec3 tex_dx = dFdx(vec3(uv, 0.0));
+            vec3 tex_dy = dFdy(vec3(uv, 0.0));
+            vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
+
+            vec3 ng = normalize(v_Normal);
+            t = normalize(t - ng * dot(ng, t));
+            vec3 b = normalize(cross(ng, t));
+            return mat3(t, b, ng);
         }
 
         // Find the normal for this fragment, pulling either from a predefined normal map
@@ -1596,6 +1650,44 @@ fragmentShader =
             float LdotH = clamp(dot(l, h), 0.0, 1.0);
             float VdotH = clamp(dot(v, h), 0.0, 1.0);
 
+            float anisotropy = 0.0;
+            vec3 anisotropicT = vec3(1.0, 0.0, 0.0);
+            vec3 anisotropicB = vec3(0.0, 1.0, 0.0);
+            if (u_AnisotropyStrength > 0.0) {
+                anisotropy = u_AnisotropyStrength;
+                // Direction of the grooves in tangent space, rotated counter-clockwise from the tangent
+                vec2 direction = vec2(cos(u_AnisotropyRotation), sin(u_AnisotropyRotation));
+                if (u_hasAnisotropySampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_AnisotropyCoord,
+                        u_AnisotropyTransformScale,
+                        u_AnisotropyTransformOffset,
+                        u_AnisotropyTransformRotation
+                    );
+                    vec3 anisotropySample = texture2D(u_AnisotropySampler, uvTransformed).rgb;
+                    vec2 textureDirection = anisotropySample.rg * 2.0 - 1.0;
+                    mat2 rotation = mat2(
+                        cos(u_AnisotropyRotation), sin(u_AnisotropyRotation),
+                       -sin(u_AnisotropyRotation), cos(u_AnisotropyRotation)
+                    );
+                    direction = rotation * textureDirection;
+                    anisotropy *= anisotropySample.b;
+                }
+
+                mat3 tbn = getTBN(uvFromCoord(u_AnisotropyCoord));
+                anisotropicT = normalize(tbn * vec3(direction, 0.0));
+                anisotropicB = normalize(cross(tbn[2], anisotropicT));
+
+                // The environment has no anisotropic filtering, so bend the
+                // reflection vector along the grooves instead
+                vec3 bentTangent = cross(anisotropicB, v);
+                vec3 bentAnisotropicNormal = cross(bentTangent, anisotropicB);
+                float bendFactor = 1.0 - anisotropy * (1.0 - perceptualRoughness);
+                float bendFactorPow4 = bendFactor * bendFactor * bendFactor * bendFactor;
+                vec3 bentNormal = normalize(mix(bentAnisotropicNormal, n, bendFactorPow4));
+                reflection = -normalize(reflect(v, bentNormal));
+            }
+
             PBRInfo pbrInputs = PBRInfo(
                 NdotL,
                 NdotV,
@@ -1620,6 +1712,29 @@ fragmentShader =
             // Calculation of analytical lighting contribution
             vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs) * (1.0 - transmission);
             vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+            if (anisotropy > 0.0) {
+                // Anisotropic GGX: the roughness is stretched along the tangent
+                float at = mix(alphaRoughness, 1.0, anisotropy * anisotropy);
+                float ab = alphaRoughness;
+                float TdotV = dot(anisotropicT, v);
+                float BdotV = dot(anisotropicB, v);
+                float TdotL = dot(anisotropicT, l);
+                float BdotL = dot(anisotropicB, l);
+                float TdotH = dot(anisotropicT, h);
+                float BdotH = dot(anisotropicB, h);
+
+                float a2 = at * ab;
+                vec3 anisoF = vec3(ab * TdotH, at * BdotH, a2 * NdotH);
+                float w2 = a2 / dot(anisoF, anisoF);
+                float anisotropicD = a2 * w2 * w2 / M_PI;
+
+                // Visibility term: includes the 1 / (4 NdotL NdotV) of the microfacet BRDF
+                float GGXV = NdotL * length(vec3(at * TdotV, ab * BdotV, NdotV));
+                float GGXL = NdotV * length(vec3(at * TdotL, ab * BdotL, NdotL));
+                float anisotropicV = clamp(0.5 / (GGXV + GGXL), 0.0, 1.0);
+
+                specContrib = F * anisotropicV * anisotropicD;
+            }
             // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
             vec3 color = NdotL * v_Color * u_LightColor * (diffuseContrib + specContrib);
 

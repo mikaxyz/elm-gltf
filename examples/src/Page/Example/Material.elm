@@ -79,6 +79,13 @@ renderer fallbackTexture config gltfQueryResult name =
                         |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture
+                , anisotropyTexture =
+                    pbr.extensions
+                        |> Maybe.andThen .anisotropy
+                        |> Maybe.andThen .texture
+                        |> Maybe.map Gltf.Texture.toIndex
+                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                        |> Maybe.withDefault fallbackTexture
                 , clearcoatTexture =
                     pbr.extensions
                         |> Maybe.andThen .clearcoat
