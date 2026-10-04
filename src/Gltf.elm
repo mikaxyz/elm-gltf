@@ -465,6 +465,56 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
                         |> Maybe.andThen maybeLoadTextureInfo
                         |> Maybe.map loadTexture
                     , m.extensions
+                        |> Maybe.andThen .anisotropy
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .roughnessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .normalTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .iridescence
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .iridescence
+                        |> Maybe.andThen .thicknessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .sheen
+                        |> Maybe.andThen .colorTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .sheen
+                        |> Maybe.andThen .roughnessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .specular
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .specular
+                        |> Maybe.andThen .colorTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
                         |> Maybe.andThen .transmission
                         |> Maybe.andThen .texture
                         |> Maybe.andThen maybeLoadTextureInfo

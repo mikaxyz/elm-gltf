@@ -56,7 +56,63 @@ fromPrimitive gltf primitive =
 
 extensionsFromExtensionsInfo : Gltf -> Internal.ExtensionsInfo -> Extensions
 extensionsFromExtensionsInfo gltf extensions =
-    { transmission =
+    { anisotropy =
+        extensions.anisotropy
+            |> Maybe.map
+                (\{ strength, rotation, texture } ->
+                    { strength = strength
+                    , rotation = rotation
+                    , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , clearcoat =
+        extensions.clearcoat
+            |> Maybe.map
+                (\{ factor, texture, roughnessFactor, roughnessTexture, normalTexture } ->
+                    { factor = factor
+                    , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , roughnessFactor = roughnessFactor
+                    , roughnessTexture = roughnessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , normalTexture = normalTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , normalTextureScale = normalTexture |> Maybe.map .scale |> Maybe.withDefault 1.0
+                    }
+                )
+    , dispersion = extensions.dispersion
+    , emissiveStrength = extensions.emissiveStrength
+    , ior = extensions.ior
+    , iridescence =
+        extensions.iridescence
+            |> Maybe.map
+                (\{ factor, texture, ior, thicknessMinimum, thicknessMaximum, thicknessTexture } ->
+                    { factor = factor
+                    , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , ior = ior
+                    , thicknessMinimum = thicknessMinimum
+                    , thicknessMaximum = thicknessMaximum
+                    , thicknessTexture = thicknessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , sheen =
+        extensions.sheen
+            |> Maybe.map
+                (\{ colorFactor, colorTexture, roughnessFactor, roughnessTexture } ->
+                    { colorFactor = colorFactor
+                    , colorTexture = colorTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , roughnessFactor = roughnessFactor
+                    , roughnessTexture = roughnessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , specular =
+        extensions.specular
+            |> Maybe.map
+                (\{ factor, texture, colorFactor, colorTexture } ->
+                    { factor = factor
+                    , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    , colorFactor = colorFactor
+                    , colorTexture = colorTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                    }
+                )
+    , transmission =
         extensions.transmission
             |> Maybe.map
                 (\{ factor, texture } ->
@@ -64,7 +120,7 @@ extensionsFromExtensionsInfo gltf extensions =
                     , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
                     }
                 )
-    , ior = extensions.ior
+    , unlit = extensions.unlit
     , volume =
         extensions.volume
             |> Maybe.map
@@ -75,7 +131,6 @@ extensionsFromExtensionsInfo gltf extensions =
                     , thicknessTexture = thicknessTexture |> Maybe.andThen (textureFromTextureInfo gltf)
                     }
                 )
-    , dispersion = extensions.dispersion
     , raw = extensions.raw
     }
 
