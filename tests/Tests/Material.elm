@@ -81,8 +81,8 @@ suite =
                     let
                         expected : Internal.Material.TransmissionExtensionInfo
                         expected =
-                            { transmissionFactor = 0.5
-                            , transmissionTexture = Just (TextureInfo (Internal.Texture.Index 1) 0 Nothing)
+                            { factor = 0.5
+                            , texture = Just (TextureInfo (Internal.Texture.Index 1) 0 Nothing)
                             }
                     in
                     JD.decodeString Internal.Material.decoder json
@@ -93,8 +93,8 @@ suite =
                     let
                         expected : Internal.Material.TransmissionExtensionInfo
                         expected =
-                            { transmissionFactor = 0
-                            , transmissionTexture = Nothing
+                            { factor = 0
+                            , texture = Nothing
                             }
                     in
                     JD.decodeString Internal.Material.decoder jsonWithEmptyExtensions

@@ -80,8 +80,8 @@ type alias ExtensionsInfo =
 
 
 type alias TransmissionExtensionInfo =
-    { transmissionFactor : Float
-    , transmissionTexture : Maybe TextureInfo
+    { factor : Float
+    , texture : Maybe TextureInfo
     }
 
 

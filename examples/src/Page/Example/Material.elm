@@ -68,7 +68,7 @@ renderer fallbackTexture config gltfQueryResult name =
                 , transmissionTexture =
                     pbr.extensions
                         |> Maybe.andThen .transmission
-                        |> Maybe.andThen .transmissionTexture
+                        |> Maybe.andThen .texture
                         |> Maybe.map Gltf.Texture.toIndex
                         |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                         |> Maybe.withDefault fallbackTexture

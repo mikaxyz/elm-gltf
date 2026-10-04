@@ -466,7 +466,7 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
                         |> Maybe.map loadTexture
                     , m.extensions
                         |> Maybe.andThen .transmission
-                        |> Maybe.andThen .transmissionTexture
+                        |> Maybe.andThen .texture
                         |> Maybe.andThen maybeLoadTextureInfo
                         |> Maybe.map loadTexture
                     , m.extensions

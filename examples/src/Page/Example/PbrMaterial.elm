@@ -410,7 +410,7 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
 
         transmissionTexture : Maybe Gltf.Texture.Texture
         transmissionTexture =
-            transmission |> Maybe.andThen .transmissionTexture
+            transmission |> Maybe.andThen .texture
 
         thicknessTexture : Maybe Gltf.Texture.Texture
         thicknessTexture =
@@ -508,7 +508,7 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_TransmissionCoord = texCoord transmissionTexture
         , u_hasTransmissionSampler = transmissionTexture |> flagFromMaybe
         , u_TransmissionSampler = textures.transmissionTexture
-        , u_TransmissionFactor = transmission |> Maybe.map .transmissionFactor |> Maybe.withDefault 0
+        , u_TransmissionFactor = transmission |> Maybe.map .factor |> Maybe.withDefault 0
         , u_TransmissionTransformScale = textureScale transmissionTexture
         , u_TransmissionTransformOffset = textureOffset transmissionTexture
         , u_TransmissionTransformRotation = textureRotation transmissionTexture

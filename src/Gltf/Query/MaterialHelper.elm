@@ -59,9 +59,9 @@ extensionsFromExtensionsInfo gltf extensions =
     { transmission =
         extensions.transmission
             |> Maybe.map
-                (\{ transmissionFactor, transmissionTexture } ->
-                    { transmissionFactor = transmissionFactor
-                    , transmissionTexture = transmissionTexture |> Maybe.andThen (textureFromTextureInfo gltf)
+                (\{ factor, texture } ->
+                    { factor = factor
+                    , texture = texture |> Maybe.andThen (textureFromTextureInfo gltf)
                     }
                 )
     , ior = extensions.ior

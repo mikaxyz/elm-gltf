@@ -46,8 +46,8 @@ type Dispersion
 {-| [KHR\_materials\_transmission](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_transmission/README.md) extension
 -}
 type alias Transmission =
-    { transmissionFactor : Float
-    , transmissionTexture : Maybe Texture
+    { factor : Float
+    , texture : Maybe Texture
     }
 
 
