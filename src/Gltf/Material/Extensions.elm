@@ -1,6 +1,7 @@
 module Gltf.Material.Extensions exposing
     ( Extensions
     , Anisotropy, Clearcoat, Dispersion(..), EmissiveStrength(..), Ior(..), Iridescence, Sheen, Specular, Transmission, Unlit(..), Volume
+    , iridescenceTexturesPackedIndex
     )
 
 {-| Material extensions as defined in the [glTF specification](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos).
@@ -23,6 +24,7 @@ The raw JSON value is there for everything else.
 
 @docs Extensions
 @docs Anisotropy, Clearcoat, Dispersion, EmissiveStrength, Ior, Iridescence, Sheen, Specular, Transmission, Unlit, Volume
+@docs iridescenceTexturesPackedIndex
 
 -}
 
@@ -142,3 +144,44 @@ type alias Volume =
     , thicknessFactor : Float
     , thicknessTexture : Maybe Texture
     }
+
+
+{-| Get iridescence texture with the assumption there is only one reference.
+
+If your renderer is limited by max samplers (elm-webgl) you might want to use
+this to only allow materials where values are "packed" into rbg-channels of
+a single texture.
+
+-}
+iridescenceTexturesPackedIndex : Maybe Iridescence -> Result () (Maybe Gltf.Texture.Index)
+iridescenceTexturesPackedIndex maybeIridescence =
+    maybeIridescence
+        |> Maybe.map (\{ texture, thicknessTexture } -> texturePackedIndex texture thicknessTexture)
+        |> Maybe.withDefault (Ok Nothing)
+
+
+texturePackedIndex : Maybe Texture -> Maybe Texture -> Result () (Maybe Gltf.Texture.Index)
+texturePackedIndex maybeA maybeB =
+    case ( maybeA, maybeB ) of
+        ( Just a, Just b ) ->
+            texturePacked a b
+                |> Maybe.map (Gltf.Texture.toIndex >> Just >> Ok)
+                |> Maybe.withDefault (Err ())
+
+        ( Just a, Nothing ) ->
+            a |> Gltf.Texture.toIndex |> Just |> Ok
+
+        ( Nothing, Just b ) ->
+            b |> Gltf.Texture.toIndex |> Just |> Ok
+
+        ( Nothing, Nothing ) ->
+            Ok Nothing
+
+
+texturePacked : Texture -> Texture -> Maybe Texture
+texturePacked a b =
+    if Gltf.Texture.toIndex a == Gltf.Texture.toIndex b then
+        Just a
+
+    else
+        Nothing

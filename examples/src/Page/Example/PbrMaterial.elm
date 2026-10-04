@@ -144,6 +144,27 @@ type alias Uniforms =
     , u_ClearcoatNormalTransformRotation : Float
 
     --
+    , u_IridescenceCoord : Int
+    , u_hasIridescenceSampler : Int
+    , u_IridescenceSampler : Texture
+    , u_IridescenceFactor : Float
+    , u_IridescenceTransformScale : Vec2
+    , u_IridescenceTransformOffset : Vec2
+    , u_IridescenceTransformRotation : Float
+
+    --
+    , u_IridescenceThicknessCoord : Int
+    , u_hasIridescenceThicknessSampler : Int
+    , u_IridescenceThicknessTransformScale : Vec2
+    , u_IridescenceThicknessTransformOffset : Vec2
+    , u_IridescenceThicknessTransformRotation : Float
+
+    --
+    , u_IridescenceIor : Float
+    , u_IridescenceThicknessMin : Float
+    , u_IridescenceThicknessMax : Float
+
+    --
     , u_Ior : Float
     , u_Dispersion : Float
     , u_AttenuationColor : Vec3
@@ -324,6 +345,7 @@ renderer :
         , clearcoatTexture : Texture
         , clearcoatRoughnessTexture : Texture
         , clearcoatNormalTexture : Texture
+        , iridescenceTexturePacked : Texture
         }
     -> Gltf.Material.Material
     -> Material.Options
@@ -481,6 +503,18 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         clearcoatNormalTexture =
             clearcoat |> Maybe.andThen .normalTexture
 
+        iridescence : Maybe MaterialExtensions.Iridescence
+        iridescence =
+            pbr.extensions |> Maybe.andThen .iridescence
+
+        iridescenceTexture : Maybe Gltf.Texture.Texture
+        iridescenceTexture =
+            iridescence |> Maybe.andThen .texture
+
+        iridescenceThicknessTexture : Maybe Gltf.Texture.Texture
+        iridescenceThicknessTexture =
+            iridescence |> Maybe.andThen .thicknessTexture
+
         ior : Float
         ior =
             pbr.extensions
@@ -623,6 +657,27 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_ClearcoatNormalTransformScale = textureScale clearcoatNormalTexture
         , u_ClearcoatNormalTransformOffset = textureOffset clearcoatNormalTexture
         , u_ClearcoatNormalTransformRotation = textureRotation clearcoatNormalTexture
+
+        --
+        , u_IridescenceCoord = texCoord iridescenceTexture
+        , u_hasIridescenceSampler = iridescenceTexture |> flagFromMaybe
+        , u_IridescenceSampler = textures.iridescenceTexturePacked
+        , u_IridescenceFactor = iridescence |> Maybe.map .factor |> Maybe.withDefault 0
+        , u_IridescenceTransformScale = textureScale iridescenceTexture
+        , u_IridescenceTransformOffset = textureOffset iridescenceTexture
+        , u_IridescenceTransformRotation = textureRotation iridescenceTexture
+
+        --
+        , u_IridescenceThicknessCoord = texCoord iridescenceThicknessTexture
+        , u_hasIridescenceThicknessSampler = iridescenceThicknessTexture |> flagFromMaybe
+        , u_IridescenceThicknessTransformScale = textureScale iridescenceThicknessTexture
+        , u_IridescenceThicknessTransformOffset = textureOffset iridescenceThicknessTexture
+        , u_IridescenceThicknessTransformRotation = textureRotation iridescenceThicknessTexture
+
+        --
+        , u_IridescenceIor = iridescence |> Maybe.map .ior |> Maybe.withDefault 1.3
+        , u_IridescenceThicknessMin = iridescence |> Maybe.map .thicknessMinimum |> Maybe.withDefault 100
+        , u_IridescenceThicknessMax = iridescence |> Maybe.map .thicknessMaximum |> Maybe.withDefault 400
 
         --
         , u_Ior = ior
@@ -1252,6 +1307,24 @@ fragmentShader =
         uniform vec2 u_ClearcoatNormalTransformOffset;
         uniform float u_ClearcoatNormalTransformRotation;
 
+        uniform int u_IridescenceCoord;
+        uniform int u_hasIridescenceSampler;
+        uniform sampler2D u_IridescenceSampler;
+        uniform float u_IridescenceFactor;
+        uniform vec2 u_IridescenceTransformScale;
+        uniform vec2 u_IridescenceTransformOffset;
+        uniform float u_IridescenceTransformRotation;
+
+        uniform int u_IridescenceThicknessCoord;
+        uniform int u_hasIridescenceThicknessSampler;
+        uniform vec2 u_IridescenceThicknessTransformScale;
+        uniform vec2 u_IridescenceThicknessTransformOffset;
+        uniform float u_IridescenceThicknessTransformRotation;
+
+        uniform float u_IridescenceIor;
+        uniform float u_IridescenceThicknessMin;
+        uniform float u_IridescenceThicknessMax;
+
         uniform float u_Ior;
         uniform float u_Dispersion;
         uniform vec3 u_AttenuationColor;
@@ -1503,6 +1576,111 @@ fragmentShader =
             return sampleSceneBlurred(refractionUv(v, n, ior, thickness), roughness);
         }
 
+        // Thin-film iridescence, from "A Practical Extension to Microfacet Theory
+        // for the Modeling of Varying Iridescence" (Belcour, Barla 2017) as
+        // adapted by the glTF sample viewer
+
+        float iorToFresnel0(float transmittedIor, float incidentIor)
+        {
+            float r = (transmittedIor - incidentIor) / (transmittedIor + incidentIor);
+            return r * r;
+        }
+
+        vec3 iorToFresnel0Vec(vec3 transmittedIor, float incidentIor)
+        {
+            vec3 r = (transmittedIor - vec3(incidentIor)) / (transmittedIor + vec3(incidentIor));
+            return r * r;
+        }
+
+        // Assumes an air interface on top
+        vec3 fresnel0ToIor(vec3 fresnel0)
+        {
+            vec3 sqrtF0 = sqrt(fresnel0);
+            return (vec3(1.0) + sqrtF0) / (vec3(1.0) - sqrtF0);
+        }
+
+        float schlick(float f0, float cosTheta)
+        {
+            return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+        }
+
+        vec3 schlickVec(vec3 f0, float cosTheta)
+        {
+            return f0 + (vec3(1.0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+        }
+
+        // XYZ sensitivity of the human eye to the interference pattern,
+        // evaluated in Fourier space with a Gaussian fit
+        vec3 evalSensitivity(float opd, vec3 shift)
+        {
+            float phase = 2.0 * M_PI * opd * 1.0e-9;
+            vec3 val = vec3(5.4856e-13, 4.4201e-13, 5.2481e-13);
+            vec3 pos = vec3(1.6810e+6, 1.7953e+6, 2.2084e+6);
+            vec3 var = vec3(4.3278e+9, 9.3046e+9, 6.6121e+9);
+
+            vec3 xyz = val * sqrt(2.0 * M_PI * var) * cos(pos * phase + shift) * exp(-(phase * phase) * var);
+            xyz.x += 9.7470e-14 * sqrt(2.0 * M_PI * 4.5282e+9) * cos(2.2399e+6 * phase + shift.x) * exp(-4.5282e+9 * phase * phase);
+            xyz /= 1.0685e-7;
+
+            mat3 xyzToRgb = mat3(
+                 3.2404542, -0.9692660,  0.0556434,
+                -1.5371385,  1.8760108, -0.2040259,
+                -0.4985314,  0.0415560,  1.0572252
+            );
+            return xyzToRgb * xyz;
+        }
+
+        vec3 evalIridescence(float outsideIor, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0)
+        {
+            // Force the film ior to the outside ior as the thickness goes to 0
+            float iridescenceIor = mix(outsideIor, eta2, smoothstep(0.0, 0.03, thinFilmThickness));
+            // Snell's law for the angle inside the film
+            float sinTheta2Sq = (outsideIor / iridescenceIor) * (outsideIor / iridescenceIor) * (1.0 - cosTheta1 * cosTheta1);
+            float cosTheta2Sq = 1.0 - sinTheta2Sq;
+            if (cosTheta2Sq < 0.0) {
+                // Total internal reflection
+                return vec3(1.0);
+            }
+            float cosTheta2 = sqrt(cosTheta2Sq);
+
+            // First interface: air -> film
+            float R0 = iorToFresnel0(iridescenceIor, outsideIor);
+            float R12 = schlick(R0, cosTheta1);
+            float T121 = 1.0 - R12;
+            float phi12 = iridescenceIor < outsideIor ? M_PI : 0.0;
+            float phi21 = M_PI - phi12;
+
+            // Second interface: film -> base material
+            vec3 baseIor = fresnel0ToIor(clamp(baseF0, vec3(0.0), vec3(0.9999)));
+            vec3 R23 = schlickVec(iorToFresnel0Vec(baseIor, iridescenceIor), cosTheta2);
+            vec3 phi23 = vec3(
+                baseIor.x < iridescenceIor ? M_PI : 0.0,
+                baseIor.y < iridescenceIor ? M_PI : 0.0,
+                baseIor.z < iridescenceIor ? M_PI : 0.0
+            );
+
+            // Optical path difference and phase shift between the bounces
+            float opd = 2.0 * iridescenceIor * thinFilmThickness * cosTheta2;
+            vec3 phi = vec3(phi21) + phi23;
+
+            vec3 R123 = clamp(R12 * R23, vec3(0.00001), vec3(0.9999));
+            vec3 r123 = sqrt(R123);
+            vec3 Rs = (T121 * T121) * R23 / (vec3(1.0) - R123);
+
+            // Reflectance term for m = 0 (DC component)
+            vec3 I = R12 + Rs;
+
+            // First two interference orders are enough for a smooth result
+            vec3 Cm = Rs - T121;
+            for (int m = 1; m <= 2; m++) {
+                Cm *= r123;
+                I += Cm * 2.0 * evalSensitivity(float(m) * opd, float(m) * phi);
+            }
+
+            // Out-of-gamut colors can produce negative values
+            return max(I, vec3(0.0));
+        }
+
         // Basic Lambertian diffuse
         // Implementation from Lambert's Photometria https://archive.org/details/lambertsphotome00lambgoog
         // See also [1], Equation 1
@@ -1688,6 +1866,37 @@ fragmentShader =
                 reflection = -normalize(reflect(v, bentNormal));
             }
 
+            float iridescence = u_IridescenceFactor;
+            vec3 iridescenceFresnel = vec3(0.0);
+            if (iridescence > 0.0) {
+                if (u_hasIridescenceSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_IridescenceCoord,
+                        u_IridescenceTransformScale,
+                        u_IridescenceTransformOffset,
+                        u_IridescenceTransformRotation
+                    );
+                    iridescence *= texture2D(u_IridescenceSampler, uvTransformed).r;
+                }
+
+                float iridescenceThickness = u_IridescenceThicknessMax;
+                if (u_hasIridescenceThicknessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_IridescenceThicknessCoord,
+                        u_IridescenceThicknessTransformScale,
+                        u_IridescenceThicknessTransformOffset,
+                        u_IridescenceThicknessTransformRotation
+                    );
+                    iridescenceThickness = mix(
+                        u_IridescenceThicknessMin,
+                        u_IridescenceThicknessMax,
+                        texture2D(u_IridescenceSampler, uvTransformed).g
+                    );
+                }
+
+                iridescenceFresnel = evalIridescence(1.0, u_IridescenceIor, NdotV, iridescenceThickness, specularColor);
+            }
+
             PBRInfo pbrInputs = PBRInfo(
                 NdotL,
                 NdotV,
@@ -1706,6 +1915,12 @@ fragmentShader =
 
             // Calculate the shading terms for the microfacet specular shading model
             vec3 F = specularReflection(pbrInputs);
+            if (iridescence > 0.0) {
+                // The thin film replaces the Fresnel term of the base specular
+                // lobe, for both the analytic light and the environment
+                F = mix(F, iridescenceFresnel, iridescence);
+                pbrInputs.specularColor = mix(specularColor, iridescenceFresnel, iridescence);
+            }
             float G = geometricOcclusion(pbrInputs);
             float D = microfacetDistribution(pbrInputs);
 

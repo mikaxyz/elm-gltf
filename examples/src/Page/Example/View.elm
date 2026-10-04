@@ -8,7 +8,9 @@ import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, 
 import Html.Attributes as HA exposing (class, href, style, value)
 import Html.Events
 import Json.Decode as JD
+import Math.Vector2 as Vec2
 import Math.Vector3 exposing (vec3)
+import Page.Example.ErrorMaterial
 import Page.Example.Material as Material
 import Page.Example.Model as Model exposing (Model, Msg(..))
 import Page.Example.PbrMaterial
@@ -202,6 +204,7 @@ onChange tagger =
 
 renderer :
     WebGL.Texture.Texture
+    -> Page.Example.ErrorMaterial.Config
     -> Page.Example.PbrMaterial.Config
     -> Gltf.QueryResult
     -> Maybe Material.Name
@@ -209,10 +212,10 @@ renderer :
     -> Uniforms u
     -> Object a Material.Name
     -> WebGL.Entity
-renderer fallbackTexture textures gltfQueryResult name =
+renderer fallbackTexture errorMaterialConfig textures gltfQueryResult name =
     case name of
         Just materialName ->
-            Material.renderer fallbackTexture textures gltfQueryResult materialName
+            Material.renderer fallbackTexture errorMaterialConfig textures gltfQueryResult materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer
@@ -228,6 +231,12 @@ sceneView :
     -> Html Msg
 sceneView model gltfQueryResult animation scene fallbackTexture config =
     let
+        errorMaterialConfig : Page.Example.ErrorMaterial.Config
+        errorMaterialConfig =
+            { resolution = Vec2.vec2 (toFloat model.viewport.width) (toFloat model.viewport.height)
+            , time = model.time / 1000
+            }
+
         graphRenderOptions : Tree.Tree ( Int, Object Scene.ObjectId Material.Name ) -> Maybe XYZMika.XYZ.Scene.GraphRenderOptions
         graphRenderOptions graph =
             let
@@ -250,7 +259,7 @@ sceneView model gltfQueryResult animation scene fallbackTexture config =
                 model.viewport
                 graphRenderOptions
                 scene
-                (renderer fallbackTexture { config | transmissionPass = transmissionPass } gltfQueryResult)
+                (renderer fallbackTexture errorMaterialConfig { config | transmissionPass = transmissionPass } gltfQueryResult)
 
         scenePass : XYZMika.WebGL.FrameBuffer
         scenePass =
