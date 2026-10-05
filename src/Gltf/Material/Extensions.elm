@@ -1,7 +1,7 @@
 module Gltf.Material.Extensions exposing
     ( Extensions
     , Anisotropy, Clearcoat, Dispersion(..), EmissiveStrength(..), Ior(..), Iridescence, Sheen, Specular, Transmission, Unlit(..), Volume
-    , iridescenceTexturesPackedIndex
+    , clearcoatTexturesPackedIndex, iridescenceTexturesPackedIndex
     )
 
 {-| Material extensions as defined in the [glTF specification](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos).
@@ -24,7 +24,7 @@ The raw JSON value is there for everything else.
 
 @docs Extensions
 @docs Anisotropy, Clearcoat, Dispersion, EmissiveStrength, Ior, Iridescence, Sheen, Specular, Transmission, Unlit, Volume
-@docs iridescenceTexturesPackedIndex
+@docs clearcoatTexturesPackedIndex, iridescenceTexturesPackedIndex
 
 -}
 
@@ -144,6 +144,23 @@ type alias Volume =
     , thicknessFactor : Float
     , thicknessTexture : Maybe Texture
     }
+
+
+{-| Get clearcoat texture with the assumption there is only one reference.
+
+If your renderer is limited by max samplers (elm-webgl) you might want to use
+this to only allow materials where values are "packed" into rbg-channels of
+a single texture.
+
+The clearcoat normal texture is not included: it holds full rgb normal data
+and can not share channels.
+
+-}
+clearcoatTexturesPackedIndex : Maybe Clearcoat -> Result () (Maybe Gltf.Texture.Index)
+clearcoatTexturesPackedIndex maybeClearcoat =
+    maybeClearcoat
+        |> Maybe.map (\{ texture, roughnessTexture } -> texturePackedIndex texture roughnessTexture)
+        |> Maybe.withDefault (Ok Nothing)
 
 
 {-| Get iridescence texture with the assumption there is only one reference.

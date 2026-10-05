@@ -128,7 +128,6 @@ type alias Uniforms =
     --
     , u_ClearcoatRoughnessCoord : Int
     , u_hasClearcoatRoughnessSampler : Int
-    , u_ClearcoatRoughnessSampler : Texture
     , u_ClearcoatRoughnessFactor : Float
     , u_ClearcoatRoughnessTransformScale : Vec2
     , u_ClearcoatRoughnessTransformOffset : Vec2
@@ -342,8 +341,7 @@ renderer :
         , transmissionTexture : Texture
         , thicknessTexture : Texture
         , anisotropyTexture : Texture
-        , clearcoatTexture : Texture
-        , clearcoatRoughnessTexture : Texture
+        , clearcoatTexturePacked : Texture
         , clearcoatNormalTexture : Texture
         , iridescenceTexturePacked : Texture
         }
@@ -634,7 +632,7 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         --
         , u_ClearcoatCoord = texCoord clearcoatTexture
         , u_hasClearcoatSampler = clearcoatTexture |> flagFromMaybe
-        , u_ClearcoatSampler = textures.clearcoatTexture
+        , u_ClearcoatSampler = textures.clearcoatTexturePacked
         , u_ClearcoatFactor = clearcoat |> Maybe.map .factor |> Maybe.withDefault 0
         , u_ClearcoatTransformScale = textureScale clearcoatTexture
         , u_ClearcoatTransformOffset = textureOffset clearcoatTexture
@@ -643,7 +641,6 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         --
         , u_ClearcoatRoughnessCoord = texCoord clearcoatRoughnessTexture
         , u_hasClearcoatRoughnessSampler = clearcoatRoughnessTexture |> flagFromMaybe
-        , u_ClearcoatRoughnessSampler = textures.clearcoatRoughnessTexture
         , u_ClearcoatRoughnessFactor = clearcoat |> Maybe.map .roughnessFactor |> Maybe.withDefault 0
         , u_ClearcoatRoughnessTransformScale = textureScale clearcoatRoughnessTexture
         , u_ClearcoatRoughnessTransformOffset = textureOffset clearcoatRoughnessTexture
@@ -1293,7 +1290,6 @@ fragmentShader =
 
         uniform int u_ClearcoatRoughnessCoord;
         uniform int u_hasClearcoatRoughnessSampler;
-        uniform sampler2D u_ClearcoatRoughnessSampler;
         uniform float u_ClearcoatRoughnessFactor;
         uniform vec2 u_ClearcoatRoughnessTransformScale;
         uniform vec2 u_ClearcoatRoughnessTransformOffset;
@@ -2035,7 +2031,7 @@ fragmentShader =
                         u_ClearcoatRoughnessTransformOffset,
                         u_ClearcoatRoughnessTransformRotation
                     );
-                    clearcoatRoughness *= texture2D(u_ClearcoatRoughnessSampler, uvTransformed).g;
+                    clearcoatRoughness *= texture2D(u_ClearcoatSampler, uvTransformed).g;
                 }
                 clearcoatRoughness = clamp(clearcoatRoughness, c_MinRoughness, 1.0);
 

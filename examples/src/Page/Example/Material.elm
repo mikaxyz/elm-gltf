@@ -42,12 +42,16 @@ renderer fallbackTexture errorMaterialConfig config gltfQueryResult name =
 
         PbrMaterial (Gltf.Material.Material pbr) ->
             let
+                clearcoatTexturesPacked : Result () (Maybe Gltf.Texture.Index)
+                clearcoatTexturesPacked =
+                    pbr.extensions |> Maybe.andThen .clearcoat |> Gltf.Material.Extensions.clearcoatTexturesPackedIndex
+
                 iridescenceTexturesPacked : Result () (Maybe Gltf.Texture.Index)
                 iridescenceTexturesPacked =
                     pbr.extensions |> Maybe.andThen .iridescence |> Gltf.Material.Extensions.iridescenceTexturesPackedIndex
             in
-            case iridescenceTexturesPacked of
-                Ok iridescenceTexturePackedIndex ->
+            case Result.map2 Tuple.pair clearcoatTexturesPacked iridescenceTexturesPacked of
+                Ok ( clearcoatTexturePackedIndex, iridescenceTexturePackedIndex ) ->
                     Page.Example.PbrMaterial.renderer config
                         { fallbackTexture = fallbackTexture
                         , pbrMetallicRoughness =
@@ -98,18 +102,8 @@ renderer fallbackTexture errorMaterialConfig config gltfQueryResult name =
                                 |> Maybe.map Gltf.Texture.toIndex
                                 |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                                 |> Maybe.withDefault fallbackTexture
-                        , clearcoatTexture =
-                            pbr.extensions
-                                |> Maybe.andThen .clearcoat
-                                |> Maybe.andThen .texture
-                                |> Maybe.map Gltf.Texture.toIndex
-                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                                |> Maybe.withDefault fallbackTexture
-                        , clearcoatRoughnessTexture =
-                            pbr.extensions
-                                |> Maybe.andThen .clearcoat
-                                |> Maybe.andThen .roughnessTexture
-                                |> Maybe.map Gltf.Texture.toIndex
+                        , clearcoatTexturePacked =
+                            clearcoatTexturePackedIndex
                                 |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                                 |> Maybe.withDefault fallbackTexture
                         , clearcoatNormalTexture =
