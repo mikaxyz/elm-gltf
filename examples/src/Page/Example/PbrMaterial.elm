@@ -164,6 +164,23 @@ type alias Uniforms =
     , u_IridescenceThicknessMax : Float
 
     --
+    , u_SheenColorCoord : Int
+    , u_hasSheenColorSampler : Int
+    , u_SheenSampler : Texture
+    , u_SheenColorFactor : Vec3
+    , u_SheenColorTransformScale : Vec2
+    , u_SheenColorTransformOffset : Vec2
+    , u_SheenColorTransformRotation : Float
+
+    --
+    , u_SheenRoughnessCoord : Int
+    , u_hasSheenRoughnessSampler : Int
+    , u_SheenRoughnessFactor : Float
+    , u_SheenRoughnessTransformScale : Vec2
+    , u_SheenRoughnessTransformOffset : Vec2
+    , u_SheenRoughnessTransformRotation : Float
+
+    --
     , u_Ior : Float
     , u_Dispersion : Float
     , u_AttenuationColor : Vec3
@@ -344,6 +361,7 @@ renderer :
         , clearcoatTexturePacked : Texture
         , clearcoatNormalTexture : Texture
         , iridescenceTexturePacked : Texture
+        , sheenTexturePacked : Texture
         }
     -> Gltf.Material.Material
     -> Material.Options
@@ -513,6 +531,18 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         iridescenceThicknessTexture =
             iridescence |> Maybe.andThen .thicknessTexture
 
+        sheen : Maybe MaterialExtensions.Sheen
+        sheen =
+            pbr.extensions |> Maybe.andThen .sheen
+
+        sheenColorTexture : Maybe Gltf.Texture.Texture
+        sheenColorTexture =
+            sheen |> Maybe.andThen .colorTexture
+
+        sheenRoughnessTexture : Maybe Gltf.Texture.Texture
+        sheenRoughnessTexture =
+            sheen |> Maybe.andThen .roughnessTexture
+
         ior : Float
         ior =
             pbr.extensions
@@ -675,6 +705,23 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_IridescenceIor = iridescence |> Maybe.map .ior |> Maybe.withDefault 1.3
         , u_IridescenceThicknessMin = iridescence |> Maybe.map .thicknessMinimum |> Maybe.withDefault 100
         , u_IridescenceThicknessMax = iridescence |> Maybe.map .thicknessMaximum |> Maybe.withDefault 400
+
+        --
+        , u_SheenColorCoord = texCoord sheenColorTexture
+        , u_hasSheenColorSampler = sheenColorTexture |> flagFromMaybe
+        , u_SheenSampler = textures.sheenTexturePacked
+        , u_SheenColorFactor = sheen |> Maybe.map .colorFactor |> Maybe.withDefault (vec3 0 0 0)
+        , u_SheenColorTransformScale = textureScale sheenColorTexture
+        , u_SheenColorTransformOffset = textureOffset sheenColorTexture
+        , u_SheenColorTransformRotation = textureRotation sheenColorTexture
+
+        --
+        , u_SheenRoughnessCoord = texCoord sheenRoughnessTexture
+        , u_hasSheenRoughnessSampler = sheenRoughnessTexture |> flagFromMaybe
+        , u_SheenRoughnessFactor = sheen |> Maybe.map .roughnessFactor |> Maybe.withDefault 0
+        , u_SheenRoughnessTransformScale = textureScale sheenRoughnessTexture
+        , u_SheenRoughnessTransformOffset = textureOffset sheenRoughnessTexture
+        , u_SheenRoughnessTransformRotation = textureRotation sheenRoughnessTexture
 
         --
         , u_Ior = ior
@@ -1321,6 +1368,21 @@ fragmentShader =
         uniform float u_IridescenceThicknessMin;
         uniform float u_IridescenceThicknessMax;
 
+        uniform int u_SheenColorCoord;
+        uniform int u_hasSheenColorSampler;
+        uniform sampler2D u_SheenSampler;
+        uniform vec3 u_SheenColorFactor;
+        uniform vec2 u_SheenColorTransformScale;
+        uniform vec2 u_SheenColorTransformOffset;
+        uniform float u_SheenColorTransformRotation;
+
+        uniform int u_SheenRoughnessCoord;
+        uniform int u_hasSheenRoughnessSampler;
+        uniform float u_SheenRoughnessFactor;
+        uniform vec2 u_SheenRoughnessTransformScale;
+        uniform vec2 u_SheenRoughnessTransformOffset;
+        uniform float u_SheenRoughnessTransformRotation;
+
         uniform float u_Ior;
         uniform float u_Dispersion;
         uniform vec3 u_AttenuationColor;
@@ -1677,6 +1739,29 @@ fragmentShader =
             return max(I, vec3(0.0));
         }
 
+        // "Charlie" sheen distribution, from "Production Friendly Microfacet
+        // Sheen BRDF" (Estevez, Kulla 2017) as used by the glTF sample viewer
+        float sheenDistribution(float sheenRoughness, float NdotH)
+        {
+            float alphaG = sheenRoughness * sheenRoughness;
+            float invR = 1.0 / alphaG;
+            float cos2h = NdotH * NdotH;
+            float sin2h = 1.0 - cos2h;
+            return (2.0 + invR) * pow(sin2h, invR * 0.5) / (2.0 * M_PI);
+        }
+
+        // Directional albedo of the sheen lobe under the environment,
+        // analytic fit from three.js (Analytical DFG Term for IBL, after
+        // "Accurate Real-Time Specular Reflections with Radiance Caching")
+        float sheenEnvironmentBrdf(float sheenRoughness, float NdotV)
+        {
+            float r2 = sheenRoughness * sheenRoughness;
+            float a = sheenRoughness < 0.25 ? -339.2 * r2 + 161.4 * sheenRoughness - 25.9 : -8.48 * r2 + 14.3 * sheenRoughness - 9.95;
+            float b = sheenRoughness < 0.25 ? 44.0 * r2 - 23.7 * sheenRoughness + 3.26 : 1.97 * r2 - 3.27 * sheenRoughness + 0.72;
+            float dg = exp(a * NdotV + b) + (sheenRoughness < 0.25 ? 0.0 : 0.1 * (sheenRoughness - 0.25));
+            return clamp(dg * (1.0 / M_PI), 0.0, 1.0);
+        }
+
         // Basic Lambertian diffuse
         // Implementation from Lambert's Photometria https://archive.org/details/lambertsphotome00lambgoog
         // See also [1], Equation 1
@@ -1987,6 +2072,47 @@ fragmentShader =
 
                 vec3 Fv = specularEnvironmentR0 + (specularEnvironmentR90 - specularEnvironmentR0) * pow(clamp(1.0 - NdotV, 0.0, 1.0), 5.0);
                 color += transmission * transmitted * (1.0 - Fv);
+            }
+
+            vec3 sheenColor = u_SheenColorFactor;
+            if (u_hasSheenColorSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_SheenColorCoord,
+                    u_SheenColorTransformScale,
+                    u_SheenColorTransformOffset,
+                    u_SheenColorTransformRotation
+                );
+                sheenColor *= SRGBtoLINEAR(texture2D(u_SheenSampler, uvTransformed)).rgb;
+            }
+
+            float maxSheenColor = max(sheenColor.r, max(sheenColor.g, sheenColor.b));
+            if (maxSheenColor > 0.0) {
+                float sheenRoughness = u_SheenRoughnessFactor;
+                if (u_hasSheenRoughnessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_SheenRoughnessCoord,
+                        u_SheenRoughnessTransformScale,
+                        u_SheenRoughnessTransformOffset,
+                        u_SheenRoughnessTransformRotation
+                    );
+                    sheenRoughness *= texture2D(u_SheenSampler, uvTransformed).a;
+                }
+                sheenRoughness = clamp(sheenRoughness, c_MinRoughness, 1.0);
+
+                // Analytic light: Charlie distribution with the Ashikhmin
+                // visibility term (no Fresnel in the sheen lobe)
+                float sheenD = sheenDistribution(sheenRoughness, NdotH);
+                float sheenV = 1.0 / (4.0 * (NdotL + NdotV - NdotL * NdotV));
+                vec3 sheenAnalytic = NdotL * u_LightColor * sheenColor * sheenD * sheenV;
+
+                // Environment: irradiance scaled by the sheen directional albedo
+                float sheenEnvBrdf = sheenEnvironmentBrdf(sheenRoughness, NdotV);
+                vec3 sheenIbl = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb * sheenColor * sheenEnvBrdf;
+
+                // The sheen layer sits above the base: scale the base down by
+                // the energy the sheen reflects away
+                float sheenAlbedoScaling = 1.0 - maxSheenColor * sheenEnvBrdf;
+                color = color * sheenAlbedoScaling + sheenAnalytic + sheenIbl;
             }
 
             if (u_hasOcclusionSampler == 1) {

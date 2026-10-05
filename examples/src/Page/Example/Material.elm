@@ -49,9 +49,13 @@ renderer fallbackTexture errorMaterialConfig config gltfQueryResult name =
                 iridescenceTexturesPacked : Result () (Maybe Gltf.Texture.Index)
                 iridescenceTexturesPacked =
                     pbr.extensions |> Maybe.andThen .iridescence |> Gltf.Material.Extensions.iridescenceTexturesPackedIndex
+
+                sheenTexturesPacked : Result () (Maybe Gltf.Texture.Index)
+                sheenTexturesPacked =
+                    pbr.extensions |> Maybe.andThen .sheen |> Gltf.Material.Extensions.sheenTexturesPackedIndex
             in
-            case Result.map2 Tuple.pair clearcoatTexturesPacked iridescenceTexturesPacked of
-                Ok ( clearcoatTexturePackedIndex, iridescenceTexturePackedIndex ) ->
+            case Result.map3 (\a b c -> ( a, b, c )) clearcoatTexturesPacked iridescenceTexturesPacked sheenTexturesPacked of
+                Ok ( clearcoatTexturePackedIndex, iridescenceTexturePackedIndex, sheenTexturePackedIndex ) ->
                     Page.Example.PbrMaterial.renderer config
                         { fallbackTexture = fallbackTexture
                         , pbrMetallicRoughness =
@@ -115,6 +119,10 @@ renderer fallbackTexture errorMaterialConfig config gltfQueryResult name =
                                 |> Maybe.withDefault fallbackTexture
                         , iridescenceTexturePacked =
                             iridescenceTexturePackedIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , sheenTexturePacked =
+                            sheenTexturePackedIndex
                                 |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
                                 |> Maybe.withDefault fallbackTexture
                         }
