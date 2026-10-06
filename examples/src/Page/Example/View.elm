@@ -4,9 +4,10 @@ import Gltf
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Gltf.Scene
-import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
+import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, p, progress, select, span, text)
 import Html.Attributes as HA exposing (class, href, style, value)
 import Html.Events
+import Http
 import Json.Decode as JD
 import Math.Vector2 as Vec2
 import Math.Vector3 exposing (vec3)
@@ -40,6 +41,14 @@ view model =
                 |> RemoteData.andMap model.brdfLUTTexture
                 |> RemoteData.andMap (RemoteData.succeed Page.Example.PbrMaterial.ScenePass)
 
+        data :
+            RemoteData
+                Model.Error
+                { gltfQueryResult : Gltf.QueryResult
+                , scene : Scene Scene.ObjectId Material.Name
+                , fallbackTexture : WebGL.Texture.Texture
+                , config : Page.Example.PbrMaterial.Config
+                }
         data =
             RemoteData.map
                 (\queryResult scene fallbackTexture config ->
@@ -62,7 +71,54 @@ view model =
             progressIndicatorView "Loading"
 
         RemoteData.Failure error ->
-            h1 [] [ text <| Debug.toString error ]
+            let
+                textureErrorMessage : WebGL.Texture.Error -> String
+                textureErrorMessage textureError =
+                    case textureError of
+                        WebGL.Texture.LoadError ->
+                            "Could not load texture"
+
+                        WebGL.Texture.SizeError w h ->
+                            "Texture size error [" ++ String.fromInt w ++ "x" ++ String.fromInt h ++ "]"
+
+                errorMessage : ( String, String )
+                errorMessage =
+                    case error of
+                        Model.TextureError textureError ->
+                            ( "TextureError", textureErrorMessage textureError )
+
+                        Model.GltfError gltfError ->
+                            case gltfError of
+                                Gltf.HttpError httpError ->
+                                    case httpError of
+                                        Http.BadUrl url ->
+                                            ( "Gltf.HttpError - BadUrl", url )
+
+                                        Http.Timeout ->
+                                            ( "Gltf.HttpError - Timeout", "" )
+
+                                        Http.NetworkError ->
+                                            ( "Gltf.HttpError - NetworkError", "" )
+
+                                        Http.BadStatus int ->
+                                            ( "Gltf.HttpError - BadStatus", String.fromInt int )
+
+                                        Http.BadBody body ->
+                                            ( "Gltf.HttpError - BadBody", body )
+
+                                Gltf.TextureError textureError ->
+                                    ( "Gltf.TextureError", textureErrorMessage textureError )
+
+                                Gltf.SceneNotFound ->
+                                    ( "Gltf - Scene not found", "" )
+
+                                Gltf.NodeNotFound ->
+                                    ( "Gltf - Node not found", "" )
+            in
+            div [ style "padding" "2rem 12rem" ]
+                [ h1 [] [ text <| Tuple.first errorMessage ]
+                , p [] [ text <| Tuple.second errorMessage ]
+                ]
 
         RemoteData.Success { gltfQueryResult, scene, fallbackTexture, config } ->
             div [ style "display" "contents" ]
