@@ -4,11 +4,14 @@ import Gltf
 import Gltf.Animation exposing (Animation)
 import Gltf.Camera
 import Gltf.Scene
-import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, progress, select, span, text)
+import Html exposing (Html, a, aside, div, fieldset, h1, label, legend, option, p, progress, select, span, text)
 import Html.Attributes as HA exposing (class, href, style, value)
 import Html.Events
+import Http
 import Json.Decode as JD
+import Math.Vector2 as Vec2
 import Math.Vector3 exposing (vec3)
+import Page.Example.ErrorMaterial
 import Page.Example.Material as Material
 import Page.Example.Model as Model exposing (Model, Msg(..))
 import Page.Example.PbrMaterial
@@ -17,7 +20,7 @@ import RemoteData exposing (RemoteData)
 import Tree
 import WebGL
 import WebGL.Texture
-import XYZMika.XYZ
+import XYZMika.WebGL
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene exposing (Scene)
@@ -36,7 +39,16 @@ view model =
                 model.environmentTexture
                 |> RemoteData.andMap model.specularEnvironmentTexture
                 |> RemoteData.andMap model.brdfLUTTexture
+                |> RemoteData.andMap (RemoteData.succeed Page.Example.PbrMaterial.ScenePass)
 
+        data :
+            RemoteData
+                Model.Error
+                { gltfQueryResult : Gltf.QueryResult
+                , scene : Scene Scene.ObjectId Material.Name
+                , fallbackTexture : WebGL.Texture.Texture
+                , config : Page.Example.PbrMaterial.Config
+                }
         data =
             RemoteData.map
                 (\queryResult scene fallbackTexture config ->
@@ -59,7 +71,54 @@ view model =
             progressIndicatorView "Loading"
 
         RemoteData.Failure error ->
-            h1 [] [ text <| Debug.toString error ]
+            let
+                textureErrorMessage : WebGL.Texture.Error -> String
+                textureErrorMessage textureError =
+                    case textureError of
+                        WebGL.Texture.LoadError ->
+                            "Could not load texture"
+
+                        WebGL.Texture.SizeError w h ->
+                            "Texture size error [" ++ String.fromInt w ++ "x" ++ String.fromInt h ++ "]"
+
+                errorMessage : ( String, String )
+                errorMessage =
+                    case error of
+                        Model.TextureError textureError ->
+                            ( "TextureError", textureErrorMessage textureError )
+
+                        Model.GltfError gltfError ->
+                            case gltfError of
+                                Gltf.HttpError httpError ->
+                                    case httpError of
+                                        Http.BadUrl url ->
+                                            ( "Gltf.HttpError - BadUrl", url )
+
+                                        Http.Timeout ->
+                                            ( "Gltf.HttpError - Timeout", "" )
+
+                                        Http.NetworkError ->
+                                            ( "Gltf.HttpError - NetworkError", "" )
+
+                                        Http.BadStatus int ->
+                                            ( "Gltf.HttpError - BadStatus", String.fromInt int )
+
+                                        Http.BadBody body ->
+                                            ( "Gltf.HttpError - BadBody", body )
+
+                                Gltf.TextureError textureError ->
+                                    ( "Gltf.TextureError", textureErrorMessage textureError )
+
+                                Gltf.SceneNotFound ->
+                                    ( "Gltf - Scene not found", "" )
+
+                                Gltf.NodeNotFound ->
+                                    ( "Gltf - Node not found", "" )
+            in
+            div [ style "padding" "2rem 12rem" ]
+                [ h1 [] [ text <| Tuple.first errorMessage ]
+                , p [] [ text <| Tuple.second errorMessage ]
+                ]
 
         RemoteData.Success { gltfQueryResult, scene, fallbackTexture, config } ->
             div [ style "display" "contents" ]
@@ -201,6 +260,7 @@ onChange tagger =
 
 renderer :
     WebGL.Texture.Texture
+    -> Page.Example.ErrorMaterial.Config
     -> Page.Example.PbrMaterial.Config
     -> Gltf.QueryResult
     -> Maybe Material.Name
@@ -208,10 +268,10 @@ renderer :
     -> Uniforms u
     -> Object a Material.Name
     -> WebGL.Entity
-renderer fallbackTexture textures gltfQueryResult name =
+renderer fallbackTexture errorMaterialConfig textures gltfQueryResult name =
     case name of
         Just materialName ->
-            Material.renderer fallbackTexture textures gltfQueryResult materialName
+            Material.renderer fallbackTexture errorMaterialConfig textures gltfQueryResult materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer
@@ -226,27 +286,60 @@ sceneView :
     -> Page.Example.PbrMaterial.Config
     -> Html Msg
 sceneView model gltfQueryResult animation scene fallbackTexture config =
-    XYZMika.XYZ.view
-        model.viewport
-        (renderer fallbackTexture config gltfQueryResult)
-        |> XYZMika.XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
-        |> XYZMika.XYZ.withModifiers (Scene.modifiers model.time animation (Gltf.skins gltfQueryResult))
-        |> XYZMika.XYZ.withSceneOptions model.sceneOptions
-        |> XYZMika.XYZ.withRenderOptions
-            (\graph ->
-                let
-                    index : Int
-                    index =
-                        Tuple.first (Tree.label graph)
-                in
-                if model.selectedTreeIndex == Just index then
-                    Just { showBoundingBox = True }
+    let
+        errorMaterialConfig : Page.Example.ErrorMaterial.Config
+        errorMaterialConfig =
+            { resolution = Vec2.vec2 (toFloat model.viewport.width) (toFloat model.viewport.height)
+            , time = model.time / 1000
+            }
 
-                else
-                    Nothing
-            )
-        |> XYZMika.XYZ.toHtml
-            (HA.id "viewport"
-                :: Dragon.dragEvents DragonMsg
-            )
-            scene
+        graphRenderOptions : Tree.Tree ( Int, Object Scene.ObjectId Material.Name ) -> Maybe XYZMika.XYZ.Scene.GraphRenderOptions
+        graphRenderOptions graph =
+            let
+                index : Int
+                index =
+                    Tuple.first (Tree.label graph)
+            in
+            if model.selectedTreeIndex == Just index then
+                Just { showBoundingBox = True }
+
+            else
+                Nothing
+
+        entities : Page.Example.PbrMaterial.TransmissionPass -> List WebGL.Entity
+        entities transmissionPass =
+            XYZMika.XYZ.Scene.render
+                [ Light.directional (vec3 -1 1 1) ]
+                (Scene.modifiers model.time animation (Gltf.skins gltfQueryResult))
+                model.sceneOptions
+                model.viewport
+                graphRenderOptions
+                scene
+                (renderer fallbackTexture errorMaterialConfig { config | transmissionPass = transmissionPass } gltfQueryResult)
+
+        scenePass : XYZMika.WebGL.FrameBuffer
+        scenePass =
+            XYZMika.WebGL.frameBuffer
+                ( model.viewport.width, model.viewport.height )
+                (entities Page.Example.PbrMaterial.ScenePass)
+    in
+    XYZMika.WebGL.toHtmlWithFrameBuffers
+        [ scenePass ]
+        [ WebGL.alpha True
+        , WebGL.antialias
+        , WebGL.depth 1
+        , WebGL.clearColor (22 / 255.0) (22 / 255.0) (29 / 255.0) 1
+        ]
+        (HA.width model.viewport.width
+            :: HA.height model.viewport.height
+            :: HA.id "viewport"
+            :: Dragon.dragEvents DragonMsg
+        )
+        (\textures ->
+            case textures of
+                scenePassTexture :: [] ->
+                    entities (Page.Example.PbrMaterial.FinalPass scenePassTexture)
+
+                _ ->
+                    []
+        )

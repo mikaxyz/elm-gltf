@@ -6,7 +6,7 @@ module Gltf exposing
     , animations, cameras, nodeTrees, scenes, skins, cameraByIndex, textureWithIndex
     )
 
-{-| Import 3d assets from glTF (Graphics Library Transmission Format) file format
+{-| Load [glTF files](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) (3D scenes/models with animations and materials) into Elm WebGL
 
 
 # Types
@@ -54,6 +54,7 @@ import Gltf.Query.TextureIndex as TextureIndex
 import Gltf.Query.TextureStore as TextureStore exposing (TextureStore)
 import Gltf.Scene exposing (Scene)
 import Gltf.Skin exposing (Skin)
+import Gltf.Texture exposing (Texture(..))
 import Gltf.Transform
 import Http
 import Internal.Gltf
@@ -140,12 +141,12 @@ type Msg
 
 type ProgressMsg
     = BufferLoaded (Result Error ( Int, Bytes ))
-    | TextureLoaded Gltf.Material.TextureIndex (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    | TextureLoaded Gltf.Texture.Index (Result WebGL.Texture.Error WebGL.Texture.Texture)
     | LoadTexture LoadTextureInfo
 
 
 type alias LoadTextureInfo =
-    { textureIndex : Gltf.Material.TextureIndex
+    { textureIndex : Gltf.Texture.Index
     , image : Internal.Image.Image
     , maybeSampler : Maybe Internal.Sampler.Sampler
     }
@@ -425,8 +426,8 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
             case MeshHelper.toMaterial mesh of
                 Just (Gltf.Material.Material m) ->
                     let
-                        maybeLoadTextureInfo : Gltf.Material.Texture -> Maybe LoadTextureInfo
-                        maybeLoadTextureInfo (Gltf.Material.Texture { index }) =
+                        maybeLoadTextureInfo : Texture -> Maybe LoadTextureInfo
+                        maybeLoadTextureInfo (Texture { index }) =
                             case TextureStore.get index textureStore of
                                 Just _ ->
                                     Nothing
@@ -461,6 +462,66 @@ loadTextures (QueryResult _ gltf _ textureStore _ trees) =
                         |> Maybe.andThen maybeLoadTextureInfo
                         |> Maybe.map loadTexture
                     , m.emissiveTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .anisotropy
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .roughnessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .clearcoat
+                        |> Maybe.andThen .normalTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .iridescence
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .iridescence
+                        |> Maybe.andThen .thicknessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .sheen
+                        |> Maybe.andThen .colorTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .sheen
+                        |> Maybe.andThen .roughnessTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .specular
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .specular
+                        |> Maybe.andThen .colorTexture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .transmission
+                        |> Maybe.andThen .texture
+                        |> Maybe.andThen maybeLoadTextureInfo
+                        |> Maybe.map loadTexture
+                    , m.extensions
+                        |> Maybe.andThen .volume
+                        |> Maybe.andThen .thicknessTexture
                         |> Maybe.andThen maybeLoadTextureInfo
                         |> Maybe.map loadTexture
                     ]
@@ -673,7 +734,7 @@ cameraByIndex (Gltf.Camera.Index index) (QueryResult _ gltf _ _ _ _) =
 
 {-| Get texture by index.
 -}
-textureWithIndex : QueryResult -> Gltf.Material.TextureIndex -> Maybe WebGL.Texture.Texture
+textureWithIndex : QueryResult -> Gltf.Texture.Index -> Maybe WebGL.Texture.Texture
 textureWithIndex (QueryResult _ _ _ textureStore _ _) textureIndex =
     TextureStore.textureWithTextureIndex textureIndex textureStore
 

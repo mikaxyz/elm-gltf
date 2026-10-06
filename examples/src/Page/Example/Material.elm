@@ -2,7 +2,12 @@ module Page.Example.Material exposing (Name(..), renderer)
 
 import Gltf
 import Gltf.Material
+import Gltf.Material.Extensions exposing (Iridescence)
+import Gltf.Mesh
+import Gltf.Node
+import Gltf.Texture exposing (Texture)
 import Page.Example.DefaultMaterial
+import Page.Example.ErrorMaterial
 import Page.Example.PbrMaterial
 import WebGL exposing (Entity)
 import WebGL.Texture
@@ -18,6 +23,7 @@ type Name
 
 renderer :
     WebGL.Texture.Texture
+    -> Page.Example.ErrorMaterial.Config
     -> Page.Example.PbrMaterial.Config
     -> Gltf.QueryResult
     -> Name
@@ -25,39 +31,102 @@ renderer :
     -> Uniforms u
     -> Object objectId materialId
     -> Entity
-renderer fallbackTexture config gltfQueryResult name =
+renderer fallbackTexture errorMaterialConfig config gltfQueryResult name =
     case name of
         Default ->
-            Page.Example.DefaultMaterial.renderer config
+            Page.Example.DefaultMaterial.renderer
+                { environmentTexture = config.environmentTexture
+                , specularEnvironmentTexture = config.specularEnvironmentTexture
+                , brdfLUTTexture = config.brdfLUTTexture
+                }
 
         PbrMaterial (Gltf.Material.Material pbr) ->
-            Page.Example.PbrMaterial.renderer config
-                { pbrMetallicRoughness =
-                    { baseColorTexture =
-                        pbr.pbrMetallicRoughness.baseColorTexture
-                            |> Maybe.map Gltf.Material.textureIndex
-                            |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                            |> Maybe.withDefault fallbackTexture
-                    , metallicRoughnessTexture =
-                        pbr.pbrMetallicRoughness.metallicRoughnessTexture
-                            |> Maybe.map Gltf.Material.textureIndex
-                            |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                            |> Maybe.withDefault fallbackTexture
-                    }
-                , normalTexture =
-                    pbr.normalTexture
-                        |> Maybe.map Gltf.Material.textureIndex
-                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                        |> Maybe.withDefault fallbackTexture
-                , occlusionTexture =
-                    pbr.occlusionTexture
-                        |> Maybe.map Gltf.Material.textureIndex
-                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                        |> Maybe.withDefault fallbackTexture
-                , emissiveTexture =
-                    pbr.emissiveTexture
-                        |> Maybe.map Gltf.Material.textureIndex
-                        |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
-                        |> Maybe.withDefault fallbackTexture
-                }
-                (Gltf.Material.Material pbr)
+            let
+                clearcoatTexturesPacked : Result () (Maybe Gltf.Texture.Index)
+                clearcoatTexturesPacked =
+                    pbr.extensions |> Maybe.andThen .clearcoat |> Gltf.Material.Extensions.clearcoatTexturesPackedIndex
+
+                iridescenceTexturesPacked : Result () (Maybe Gltf.Texture.Index)
+                iridescenceTexturesPacked =
+                    pbr.extensions |> Maybe.andThen .iridescence |> Gltf.Material.Extensions.iridescenceTexturesPackedIndex
+
+                sheenTexturesPacked : Result () (Maybe Gltf.Texture.Index)
+                sheenTexturesPacked =
+                    pbr.extensions |> Maybe.andThen .sheen |> Gltf.Material.Extensions.sheenTexturesPackedIndex
+            in
+            case Result.map3 (\a b c -> ( a, b, c )) clearcoatTexturesPacked iridescenceTexturesPacked sheenTexturesPacked of
+                Ok ( clearcoatTexturePackedIndex, iridescenceTexturePackedIndex, sheenTexturePackedIndex ) ->
+                    Page.Example.PbrMaterial.renderer config
+                        { fallbackTexture = fallbackTexture
+                        , pbrMetallicRoughness =
+                            { baseColorTexture =
+                                pbr.pbrMetallicRoughness.baseColorTexture
+                                    |> Maybe.map Gltf.Texture.toIndex
+                                    |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                    |> Maybe.withDefault fallbackTexture
+                            , metallicRoughnessTexture =
+                                pbr.pbrMetallicRoughness.metallicRoughnessTexture
+                                    |> Maybe.map Gltf.Texture.toIndex
+                                    |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                    |> Maybe.withDefault fallbackTexture
+                            }
+                        , normalTexture =
+                            pbr.normalTexture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , occlusionTexture =
+                            pbr.occlusionTexture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , emissiveTexture =
+                            pbr.emissiveTexture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , transmissionTexture =
+                            pbr.extensions
+                                |> Maybe.andThen .transmission
+                                |> Maybe.andThen .texture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , thicknessTexture =
+                            pbr.extensions
+                                |> Maybe.andThen .volume
+                                |> Maybe.andThen .thicknessTexture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , anisotropyTexture =
+                            pbr.extensions
+                                |> Maybe.andThen .anisotropy
+                                |> Maybe.andThen .texture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , clearcoatTexturePacked =
+                            clearcoatTexturePackedIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , clearcoatNormalTexture =
+                            pbr.extensions
+                                |> Maybe.andThen .clearcoat
+                                |> Maybe.andThen .normalTexture
+                                |> Maybe.map Gltf.Texture.toIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , iridescenceTexturePacked =
+                            iridescenceTexturePackedIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        , sheenTexturePacked =
+                            sheenTexturePackedIndex
+                                |> Maybe.andThen (Gltf.textureWithIndex gltfQueryResult)
+                                |> Maybe.withDefault fallbackTexture
+                        }
+                        (Gltf.Material.Material pbr)
+
+                Err () ->
+                    Page.Example.ErrorMaterial.renderer errorMaterialConfig

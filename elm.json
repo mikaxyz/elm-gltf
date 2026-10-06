@@ -1,9 +1,9 @@
 {
     "type": "package",
     "name": "mikaxyz/elm-gltf",
-    "summary": "Import 3d assets from glTF (Graphics Library Transmission Format) file format",
+    "summary": "Load glTF files (3D scenes/models with animations and materials) into Elm WebGL",
     "license": "BSD-3-Clause",
-    "version": "4.1.0",
+    "version": "5.0.0",
     "exposed-modules": [
         "Gltf",
         "Gltf.Animation",
@@ -15,6 +15,8 @@
         "Gltf.NodeIndex",
         "Gltf.Scene",
         "Gltf.Skin",
+        "Gltf.Texture",
+        "Gltf.Texture.Extensions",
         "Gltf.Transform"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",

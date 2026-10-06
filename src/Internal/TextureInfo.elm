@@ -6,7 +6,7 @@ module Internal.TextureInfo exposing
     , textureExtensionsDecoder
     )
 
-import Gltf.Material.Extensions exposing (TextureExtensions, TextureTransformExtension)
+import Gltf.Texture.Extensions as Extensions exposing (Extensions)
 import Internal.Texture as Texture
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
@@ -20,7 +20,7 @@ type Index
 type alias TextureInfo =
     { index : Texture.Index
     , texCoord : Int
-    , extensions : Maybe TextureExtensions
+    , extensions : Maybe Extensions
     }
 
 
@@ -37,20 +37,20 @@ decoder =
         |> JDP.optional "extensions" (JD.maybe textureExtensionsDecoder) Nothing
 
 
-textureExtensionsDecoder : JD.Decoder TextureExtensions
+textureExtensionsDecoder : JD.Decoder Extensions
 textureExtensionsDecoder =
     JD.value
         |> JD.andThen
             (\raw ->
-                JD.succeed TextureExtensions
+                JD.succeed Extensions
                     |> JDP.optional "KHR_texture_transform" (JD.maybe textureTransformExtensionDecoder) Nothing
                     |> JDP.hardcoded raw
             )
 
 
-textureTransformExtensionDecoder : JD.Decoder TextureTransformExtension
+textureTransformExtensionDecoder : JD.Decoder Extensions.Transform
 textureTransformExtensionDecoder =
-    JD.succeed TextureTransformExtension
+    JD.succeed Extensions.Transform
         |> JDP.optional "offset" vec2Decoder (vec2 0 0)
         |> JDP.optional "rotation" JD.float 0
         |> JDP.optional "scale" vec2Decoder (vec2 1 1)

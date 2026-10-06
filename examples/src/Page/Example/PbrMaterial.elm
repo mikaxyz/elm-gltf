@@ -1,7 +1,9 @@
-module Page.Example.PbrMaterial exposing (Config, renderer)
+module Page.Example.PbrMaterial exposing (Config, TransmissionPass(..), renderer)
 
 import Gltf.Material
-import Gltf.Material.Extensions exposing (TextureTransformExtension)
+import Gltf.Material.Extensions as MaterialExtensions
+import Gltf.Texture
+import Gltf.Texture.Extensions as TextureExtensions
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -23,7 +25,13 @@ type alias Config =
     { environmentTexture : WebGL.Texture.Texture
     , specularEnvironmentTexture : WebGL.Texture.Texture
     , brdfLUTTexture : WebGL.Texture.Texture
+    , transmissionPass : TransmissionPass
     }
+
+
+type TransmissionPass
+    = ScenePass
+    | FinalPass WebGL.Texture.Texture
 
 
 type alias Uniforms =
@@ -79,6 +87,110 @@ type alias Uniforms =
     , u_EmissiveTransformScale : Vec2
     , u_EmissiveTransformOffset : Vec2
     , u_EmissiveTransformRotation : Float
+
+    --
+    , u_TransmissionCoord : Int
+    , u_hasTransmissionSampler : Int
+    , u_TransmissionSampler : Texture
+    , u_TransmissionFactor : Float
+    , u_TransmissionTransformScale : Vec2
+    , u_TransmissionTransformOffset : Vec2
+    , u_TransmissionTransformRotation : Float
+
+    --
+    , u_ThicknessCoord : Int
+    , u_hasThicknessSampler : Int
+    , u_ThicknessSampler : Texture
+    , u_ThicknessFactor : Float
+    , u_ThicknessTransformScale : Vec2
+    , u_ThicknessTransformOffset : Vec2
+    , u_ThicknessTransformRotation : Float
+
+    --
+    , u_AnisotropyCoord : Int
+    , u_hasAnisotropySampler : Int
+    , u_AnisotropySampler : Texture
+    , u_AnisotropyStrength : Float
+    , u_AnisotropyRotation : Float
+    , u_AnisotropyTransformScale : Vec2
+    , u_AnisotropyTransformOffset : Vec2
+    , u_AnisotropyTransformRotation : Float
+
+    --
+    , u_ClearcoatCoord : Int
+    , u_hasClearcoatSampler : Int
+    , u_ClearcoatSampler : Texture
+    , u_ClearcoatFactor : Float
+    , u_ClearcoatTransformScale : Vec2
+    , u_ClearcoatTransformOffset : Vec2
+    , u_ClearcoatTransformRotation : Float
+
+    --
+    , u_ClearcoatRoughnessCoord : Int
+    , u_hasClearcoatRoughnessSampler : Int
+    , u_ClearcoatRoughnessFactor : Float
+    , u_ClearcoatRoughnessTransformScale : Vec2
+    , u_ClearcoatRoughnessTransformOffset : Vec2
+    , u_ClearcoatRoughnessTransformRotation : Float
+
+    --
+    , u_ClearcoatNormalCoord : Int
+    , u_hasClearcoatNormalSampler : Int
+    , u_ClearcoatNormalSampler : Texture
+    , u_ClearcoatNormalScale : Float
+    , u_ClearcoatNormalTransformScale : Vec2
+    , u_ClearcoatNormalTransformOffset : Vec2
+    , u_ClearcoatNormalTransformRotation : Float
+
+    --
+    , u_IridescenceCoord : Int
+    , u_hasIridescenceSampler : Int
+    , u_IridescenceSampler : Texture
+    , u_IridescenceFactor : Float
+    , u_IridescenceTransformScale : Vec2
+    , u_IridescenceTransformOffset : Vec2
+    , u_IridescenceTransformRotation : Float
+
+    --
+    , u_IridescenceThicknessCoord : Int
+    , u_hasIridescenceThicknessSampler : Int
+    , u_IridescenceThicknessTransformScale : Vec2
+    , u_IridescenceThicknessTransformOffset : Vec2
+    , u_IridescenceThicknessTransformRotation : Float
+
+    --
+    , u_IridescenceIor : Float
+    , u_IridescenceThicknessMin : Float
+    , u_IridescenceThicknessMax : Float
+
+    --
+    , u_SheenColorCoord : Int
+    , u_hasSheenColorSampler : Int
+    , u_SheenSampler : Texture
+    , u_SheenColorFactor : Vec3
+    , u_SheenColorTransformScale : Vec2
+    , u_SheenColorTransformOffset : Vec2
+    , u_SheenColorTransformRotation : Float
+
+    --
+    , u_SheenRoughnessCoord : Int
+    , u_hasSheenRoughnessSampler : Int
+    , u_SheenRoughnessFactor : Float
+    , u_SheenRoughnessTransformScale : Vec2
+    , u_SheenRoughnessTransformOffset : Vec2
+    , u_SheenRoughnessTransformRotation : Float
+
+    --
+    , u_Ior : Float
+    , u_Dispersion : Float
+    , u_AttenuationColor : Vec3
+    , u_AttenuationDistance : Float
+
+    --
+    , u_ScenePass : Int
+    , u_hasSceneTexture : Int
+    , u_SceneTexture : Texture
+    , u_ViewProjectionMatrix : Mat4
 
     --
     , u_brdfLUT : Texture
@@ -235,13 +347,21 @@ type alias Varyings =
 renderer :
     Config
     ->
-        { pbrMetallicRoughness :
+        { fallbackTexture : Texture
+        , pbrMetallicRoughness :
             { baseColorTexture : Texture
             , metallicRoughnessTexture : Texture
             }
         , normalTexture : Texture
         , occlusionTexture : Texture
         , emissiveTexture : Texture
+        , transmissionTexture : Texture
+        , thicknessTexture : Texture
+        , anisotropyTexture : Texture
+        , clearcoatTexturePacked : Texture
+        , clearcoatNormalTexture : Texture
+        , iridescenceTexturePacked : Texture
+        , sheenTexturePacked : Texture
         }
     -> Gltf.Material.Material
     -> Material.Options
@@ -329,35 +449,131 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
             else
                 0
 
-        textureTransform : Maybe Gltf.Material.Texture -> Maybe TextureTransformExtension
+        textureTransform : Maybe Gltf.Texture.Texture -> Maybe TextureExtensions.Transform
         textureTransform texture =
             texture
-                |> Maybe.andThen (\(Gltf.Material.Texture x) -> x.extensions)
-                |> Maybe.andThen (\extensions -> extensions.textureTransform)
+                |> Maybe.andThen (\(Gltf.Texture.Texture x) -> x.extensions)
+                |> Maybe.andThen (\extensions -> extensions.transform)
 
-        textureScale : Maybe Gltf.Material.Texture -> Vec2
+        textureScale : Maybe Gltf.Texture.Texture -> Vec2
         textureScale texture =
             textureTransform texture
                 |> Maybe.map .scale
                 |> Maybe.withDefault (vec2 1 1)
 
-        textureOffset : Maybe Gltf.Material.Texture -> Vec2
+        textureOffset : Maybe Gltf.Texture.Texture -> Vec2
         textureOffset texture =
             textureTransform texture
                 |> Maybe.map .offset
                 |> Maybe.withDefault (vec2 0 0)
 
-        textureRotation : Maybe Gltf.Material.Texture -> Float
+        textureRotation : Maybe Gltf.Texture.Texture -> Float
         textureRotation texture =
             textureTransform texture
                 |> Maybe.map .rotation
                 |> Maybe.withDefault 0
 
-        texCoord : Maybe Gltf.Material.Texture -> Int
+        texCoord : Maybe Gltf.Texture.Texture -> Int
         texCoord texture =
             texture
-                |> Maybe.map (\(Gltf.Material.Texture x) -> x.texCoord)
+                |> Maybe.map (\(Gltf.Texture.Texture x) -> x.texCoord)
                 |> Maybe.withDefault 0
+
+        transmission : Maybe MaterialExtensions.Transmission
+        transmission =
+            pbr.extensions |> Maybe.andThen .transmission
+
+        volume : Maybe MaterialExtensions.Volume
+        volume =
+            pbr.extensions |> Maybe.andThen .volume
+
+        transmissionTexture : Maybe Gltf.Texture.Texture
+        transmissionTexture =
+            transmission |> Maybe.andThen .texture
+
+        thicknessTexture : Maybe Gltf.Texture.Texture
+        thicknessTexture =
+            volume |> Maybe.andThen .thicknessTexture
+
+        anisotropy : Maybe MaterialExtensions.Anisotropy
+        anisotropy =
+            pbr.extensions |> Maybe.andThen .anisotropy
+
+        anisotropyTexture : Maybe Gltf.Texture.Texture
+        anisotropyTexture =
+            anisotropy |> Maybe.andThen .texture
+
+        clearcoat : Maybe MaterialExtensions.Clearcoat
+        clearcoat =
+            pbr.extensions |> Maybe.andThen .clearcoat
+
+        clearcoatTexture : Maybe Gltf.Texture.Texture
+        clearcoatTexture =
+            clearcoat |> Maybe.andThen .texture
+
+        clearcoatRoughnessTexture : Maybe Gltf.Texture.Texture
+        clearcoatRoughnessTexture =
+            clearcoat |> Maybe.andThen .roughnessTexture
+
+        clearcoatNormalTexture : Maybe Gltf.Texture.Texture
+        clearcoatNormalTexture =
+            clearcoat |> Maybe.andThen .normalTexture
+
+        iridescence : Maybe MaterialExtensions.Iridescence
+        iridescence =
+            pbr.extensions |> Maybe.andThen .iridescence
+
+        iridescenceTexture : Maybe Gltf.Texture.Texture
+        iridescenceTexture =
+            iridescence |> Maybe.andThen .texture
+
+        iridescenceThicknessTexture : Maybe Gltf.Texture.Texture
+        iridescenceThicknessTexture =
+            iridescence |> Maybe.andThen .thicknessTexture
+
+        sheen : Maybe MaterialExtensions.Sheen
+        sheen =
+            pbr.extensions |> Maybe.andThen .sheen
+
+        sheenColorTexture : Maybe Gltf.Texture.Texture
+        sheenColorTexture =
+            sheen |> Maybe.andThen .colorTexture
+
+        sheenRoughnessTexture : Maybe Gltf.Texture.Texture
+        sheenRoughnessTexture =
+            sheen |> Maybe.andThen .roughnessTexture
+
+        ior : Float
+        ior =
+            pbr.extensions
+                |> Maybe.andThen .ior
+                |> Maybe.map (\(MaterialExtensions.Ior x) -> x)
+                |> Maybe.withDefault 1.5
+
+        dispersion : Float
+        dispersion =
+            pbr.extensions
+                |> Maybe.andThen .dispersion
+                |> Maybe.map (\(MaterialExtensions.Dispersion x) -> x)
+                |> Maybe.withDefault 0
+
+        sceneTexture : Maybe Texture
+        sceneTexture =
+            case config.transmissionPass of
+                ScenePass ->
+                    Nothing
+
+                FinalPass texture ->
+                    Just texture
+
+        scenePass : Int
+        scenePass =
+            case config.transmissionPass of
+                ScenePass ->
+                    1
+
+                FinalPass _ ->
+                    0
     in
     material
         { u_MVPMatrix = Mat4.mul (Mat4.mul uniforms.scenePerspective uniforms.sceneCamera) uniforms.sceneMatrix
@@ -414,6 +630,110 @@ renderer config textures (Gltf.Material.Material pbr) options uniforms object =
         , u_EmissiveTransformScale = textureScale pbr.emissiveTexture
         , u_EmissiveTransformOffset = textureOffset pbr.emissiveTexture
         , u_EmissiveTransformRotation = textureRotation pbr.emissiveTexture
+
+        --
+        , u_TransmissionCoord = texCoord transmissionTexture
+        , u_hasTransmissionSampler = transmissionTexture |> flagFromMaybe
+        , u_TransmissionSampler = textures.transmissionTexture
+        , u_TransmissionFactor = transmission |> Maybe.map .factor |> Maybe.withDefault 0
+        , u_TransmissionTransformScale = textureScale transmissionTexture
+        , u_TransmissionTransformOffset = textureOffset transmissionTexture
+        , u_TransmissionTransformRotation = textureRotation transmissionTexture
+
+        --
+        , u_ThicknessCoord = texCoord thicknessTexture
+        , u_hasThicknessSampler = thicknessTexture |> flagFromMaybe
+        , u_ThicknessSampler = textures.thicknessTexture
+        , u_ThicknessFactor = volume |> Maybe.map .thicknessFactor |> Maybe.withDefault 0
+        , u_ThicknessTransformScale = textureScale thicknessTexture
+        , u_ThicknessTransformOffset = textureOffset thicknessTexture
+        , u_ThicknessTransformRotation = textureRotation thicknessTexture
+
+        --
+        , u_AnisotropyCoord = texCoord anisotropyTexture
+        , u_hasAnisotropySampler = anisotropyTexture |> flagFromMaybe
+        , u_AnisotropySampler = textures.anisotropyTexture
+        , u_AnisotropyStrength = anisotropy |> Maybe.map .strength |> Maybe.withDefault 0
+        , u_AnisotropyRotation = anisotropy |> Maybe.map .rotation |> Maybe.withDefault 0
+        , u_AnisotropyTransformScale = textureScale anisotropyTexture
+        , u_AnisotropyTransformOffset = textureOffset anisotropyTexture
+        , u_AnisotropyTransformRotation = textureRotation anisotropyTexture
+
+        --
+        , u_ClearcoatCoord = texCoord clearcoatTexture
+        , u_hasClearcoatSampler = clearcoatTexture |> flagFromMaybe
+        , u_ClearcoatSampler = textures.clearcoatTexturePacked
+        , u_ClearcoatFactor = clearcoat |> Maybe.map .factor |> Maybe.withDefault 0
+        , u_ClearcoatTransformScale = textureScale clearcoatTexture
+        , u_ClearcoatTransformOffset = textureOffset clearcoatTexture
+        , u_ClearcoatTransformRotation = textureRotation clearcoatTexture
+
+        --
+        , u_ClearcoatRoughnessCoord = texCoord clearcoatRoughnessTexture
+        , u_hasClearcoatRoughnessSampler = clearcoatRoughnessTexture |> flagFromMaybe
+        , u_ClearcoatRoughnessFactor = clearcoat |> Maybe.map .roughnessFactor |> Maybe.withDefault 0
+        , u_ClearcoatRoughnessTransformScale = textureScale clearcoatRoughnessTexture
+        , u_ClearcoatRoughnessTransformOffset = textureOffset clearcoatRoughnessTexture
+        , u_ClearcoatRoughnessTransformRotation = textureRotation clearcoatRoughnessTexture
+
+        --
+        , u_ClearcoatNormalCoord = texCoord clearcoatNormalTexture
+        , u_hasClearcoatNormalSampler = clearcoatNormalTexture |> flagFromMaybe
+        , u_ClearcoatNormalSampler = textures.clearcoatNormalTexture
+        , u_ClearcoatNormalScale = clearcoat |> Maybe.map .normalTextureScale |> Maybe.withDefault 1
+        , u_ClearcoatNormalTransformScale = textureScale clearcoatNormalTexture
+        , u_ClearcoatNormalTransformOffset = textureOffset clearcoatNormalTexture
+        , u_ClearcoatNormalTransformRotation = textureRotation clearcoatNormalTexture
+
+        --
+        , u_IridescenceCoord = texCoord iridescenceTexture
+        , u_hasIridescenceSampler = iridescenceTexture |> flagFromMaybe
+        , u_IridescenceSampler = textures.iridescenceTexturePacked
+        , u_IridescenceFactor = iridescence |> Maybe.map .factor |> Maybe.withDefault 0
+        , u_IridescenceTransformScale = textureScale iridescenceTexture
+        , u_IridescenceTransformOffset = textureOffset iridescenceTexture
+        , u_IridescenceTransformRotation = textureRotation iridescenceTexture
+
+        --
+        , u_IridescenceThicknessCoord = texCoord iridescenceThicknessTexture
+        , u_hasIridescenceThicknessSampler = iridescenceThicknessTexture |> flagFromMaybe
+        , u_IridescenceThicknessTransformScale = textureScale iridescenceThicknessTexture
+        , u_IridescenceThicknessTransformOffset = textureOffset iridescenceThicknessTexture
+        , u_IridescenceThicknessTransformRotation = textureRotation iridescenceThicknessTexture
+
+        --
+        , u_IridescenceIor = iridescence |> Maybe.map .ior |> Maybe.withDefault 1.3
+        , u_IridescenceThicknessMin = iridescence |> Maybe.map .thicknessMinimum |> Maybe.withDefault 100
+        , u_IridescenceThicknessMax = iridescence |> Maybe.map .thicknessMaximum |> Maybe.withDefault 400
+
+        --
+        , u_SheenColorCoord = texCoord sheenColorTexture
+        , u_hasSheenColorSampler = sheenColorTexture |> flagFromMaybe
+        , u_SheenSampler = textures.sheenTexturePacked
+        , u_SheenColorFactor = sheen |> Maybe.map .colorFactor |> Maybe.withDefault (vec3 0 0 0)
+        , u_SheenColorTransformScale = textureScale sheenColorTexture
+        , u_SheenColorTransformOffset = textureOffset sheenColorTexture
+        , u_SheenColorTransformRotation = textureRotation sheenColorTexture
+
+        --
+        , u_SheenRoughnessCoord = texCoord sheenRoughnessTexture
+        , u_hasSheenRoughnessSampler = sheenRoughnessTexture |> flagFromMaybe
+        , u_SheenRoughnessFactor = sheen |> Maybe.map .roughnessFactor |> Maybe.withDefault 0
+        , u_SheenRoughnessTransformScale = textureScale sheenRoughnessTexture
+        , u_SheenRoughnessTransformOffset = textureOffset sheenRoughnessTexture
+        , u_SheenRoughnessTransformRotation = textureRotation sheenRoughnessTexture
+
+        --
+        , u_Ior = ior
+        , u_Dispersion = dispersion
+        , u_AttenuationColor = volume |> Maybe.map .attenuationColor |> Maybe.withDefault (vec3 1 1 1)
+        , u_AttenuationDistance = volume |> Maybe.andThen .attenuationDistance |> Maybe.withDefault 0
+
+        --
+        , u_ScenePass = scenePass
+        , u_hasSceneTexture = sceneTexture |> flagFromMaybe
+        , u_SceneTexture = sceneTexture |> Maybe.withDefault textures.fallbackTexture
+        , u_ViewProjectionMatrix = Mat4.mul uniforms.scenePerspective uniforms.sceneCamera
 
         --
         , u_brdfLUT = config.brdfLUTTexture
@@ -982,6 +1302,98 @@ fragmentShader =
         uniform vec2 u_EmissiveTransformOffset;
         uniform float u_EmissiveTransformRotation;
 
+        uniform int u_TransmissionCoord;
+        uniform int u_hasTransmissionSampler;
+        uniform sampler2D u_TransmissionSampler;
+        uniform float u_TransmissionFactor;
+        uniform vec2 u_TransmissionTransformScale;
+        uniform vec2 u_TransmissionTransformOffset;
+        uniform float u_TransmissionTransformRotation;
+
+        uniform int u_ThicknessCoord;
+        uniform int u_hasThicknessSampler;
+        uniform sampler2D u_ThicknessSampler;
+        uniform float u_ThicknessFactor;
+        uniform vec2 u_ThicknessTransformScale;
+        uniform vec2 u_ThicknessTransformOffset;
+        uniform float u_ThicknessTransformRotation;
+
+        uniform int u_AnisotropyCoord;
+        uniform int u_hasAnisotropySampler;
+        uniform sampler2D u_AnisotropySampler;
+        uniform float u_AnisotropyStrength;
+        uniform float u_AnisotropyRotation;
+        uniform vec2 u_AnisotropyTransformScale;
+        uniform vec2 u_AnisotropyTransformOffset;
+        uniform float u_AnisotropyTransformRotation;
+
+        uniform int u_ClearcoatCoord;
+        uniform int u_hasClearcoatSampler;
+        uniform sampler2D u_ClearcoatSampler;
+        uniform float u_ClearcoatFactor;
+        uniform vec2 u_ClearcoatTransformScale;
+        uniform vec2 u_ClearcoatTransformOffset;
+        uniform float u_ClearcoatTransformRotation;
+
+        uniform int u_ClearcoatRoughnessCoord;
+        uniform int u_hasClearcoatRoughnessSampler;
+        uniform float u_ClearcoatRoughnessFactor;
+        uniform vec2 u_ClearcoatRoughnessTransformScale;
+        uniform vec2 u_ClearcoatRoughnessTransformOffset;
+        uniform float u_ClearcoatRoughnessTransformRotation;
+
+        uniform int u_ClearcoatNormalCoord;
+        uniform int u_hasClearcoatNormalSampler;
+        uniform sampler2D u_ClearcoatNormalSampler;
+        uniform float u_ClearcoatNormalScale;
+        uniform vec2 u_ClearcoatNormalTransformScale;
+        uniform vec2 u_ClearcoatNormalTransformOffset;
+        uniform float u_ClearcoatNormalTransformRotation;
+
+        uniform int u_IridescenceCoord;
+        uniform int u_hasIridescenceSampler;
+        uniform sampler2D u_IridescenceSampler;
+        uniform float u_IridescenceFactor;
+        uniform vec2 u_IridescenceTransformScale;
+        uniform vec2 u_IridescenceTransformOffset;
+        uniform float u_IridescenceTransformRotation;
+
+        uniform int u_IridescenceThicknessCoord;
+        uniform int u_hasIridescenceThicknessSampler;
+        uniform vec2 u_IridescenceThicknessTransformScale;
+        uniform vec2 u_IridescenceThicknessTransformOffset;
+        uniform float u_IridescenceThicknessTransformRotation;
+
+        uniform float u_IridescenceIor;
+        uniform float u_IridescenceThicknessMin;
+        uniform float u_IridescenceThicknessMax;
+
+        uniform int u_SheenColorCoord;
+        uniform int u_hasSheenColorSampler;
+        uniform sampler2D u_SheenSampler;
+        uniform vec3 u_SheenColorFactor;
+        uniform vec2 u_SheenColorTransformScale;
+        uniform vec2 u_SheenColorTransformOffset;
+        uniform float u_SheenColorTransformRotation;
+
+        uniform int u_SheenRoughnessCoord;
+        uniform int u_hasSheenRoughnessSampler;
+        uniform float u_SheenRoughnessFactor;
+        uniform vec2 u_SheenRoughnessTransformScale;
+        uniform vec2 u_SheenRoughnessTransformOffset;
+        uniform float u_SheenRoughnessTransformRotation;
+
+        uniform float u_Ior;
+        uniform float u_Dispersion;
+        uniform vec3 u_AttenuationColor;
+        uniform float u_AttenuationDistance; // 0.0 means infinite (no attenuation)
+
+        uniform int u_ScenePass;
+        uniform int u_hasSceneTexture;
+        uniform sampler2D u_SceneTexture;
+        uniform mat4 u_ViewProjectionMatrix;
+        uniform mat4 u_ModelMatrix;
+
         uniform vec3 u_Camera;
 
         varying vec3 v_Position;
@@ -1057,6 +1469,22 @@ fragmentShader =
             return ( matrix * vec3(uv, 1) ).xy;
         }
 
+        // Tangent frame derived from screen-space derivatives of the given UV set,
+        // as there is no mesh TANGENT attribute to rely on
+        mat3 getTBN(vec2 uv)
+        {
+            vec3 pos_dx = dFdx(v_Position);
+            vec3 pos_dy = dFdy(v_Position);
+            vec3 tex_dx = dFdx(vec3(uv, 0.0));
+            vec3 tex_dy = dFdy(vec3(uv, 0.0));
+            vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
+
+            vec3 ng = normalize(v_Normal);
+            t = normalize(t - ng * dot(ng, t));
+            vec3 b = normalize(cross(ng, t));
+            return mat3(t, b, ng);
+        }
+
         // Find the normal for this fragment, pulling either from a predefined normal map
         // or from the interpolated mesh normal and tangent attributes.
         vec3 getNormal()
@@ -1091,10 +1519,40 @@ fragmentShader =
             return n;
         }
 
+        // The clear coat layer has its own normal map. When none is given the coat
+        // follows the geometry normal, NOT the base material's normal map.
+        vec3 getClearcoatNormal()
+        {
+            vec3 ng = normalize(v_Normal);
+            if (u_hasClearcoatNormalSampler == 0) {
+                return ng;
+            }
+
+            vec2 uv = uvFromCoord(u_ClearcoatNormalCoord);
+            vec3 pos_dx = dFdx(v_Position);
+            vec3 pos_dy = dFdy(v_Position);
+            vec3 tex_dx = dFdx(vec3(uv, 0.0));
+            vec3 tex_dy = dFdy(vec3(uv, 0.0));
+            vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
+
+            t = normalize(t - ng * dot(ng, t));
+            vec3 b = normalize(cross(ng, t));
+            mat3 tbn = mat3(t, b, ng);
+
+            vec2 uvTransformed = transformedUv(
+                u_ClearcoatNormalCoord,
+                u_ClearcoatNormalTransformScale,
+                u_ClearcoatNormalTransformOffset,
+                u_ClearcoatNormalTransformRotation
+            );
+            vec3 n = texture2D(u_ClearcoatNormalSampler, uvTransformed).rgb;
+            return normalize(tbn * ((2.0 * n - 1.0) * vec3(u_ClearcoatNormalScale, u_ClearcoatNormalScale, 1.0)));
+        }
+
         // Calculation of the lighting contribution from an optional Image Based Light source.
         // Precomputed Environment Maps are required uniform inputs and are computed as outlined in [1].
         // See our README.md on Environment Maps [3] for additional discussion.
-        vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
+        vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection, float transmission)
         {
             float mipCount = 32.0; // resolution of 512x512
             float lod = (pbrInputs.perceptualRoughness * (mipCount + 1.0));
@@ -1102,10 +1560,206 @@ fragmentShader =
             vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
             vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
             vec3 specularLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, reflection, lod)).rgb;
-            vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
+            vec3 diffuse = diffuseLight * pbrInputs.diffuseColor * (1.0 - transmission);
             vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
 
             return diffuse + specular;
+        }
+
+        vec3 refractionVector(vec3 v, vec3 n, float ior)
+        {
+            vec3 r = refract(-v, n, 1.0 / ior);
+            if (dot(r, r) < 0.0001) {
+                // refract() returns vec3(0) on total internal reflection
+                r = reflect(-v, n);
+            }
+            return normalize(r);
+        }
+
+        vec3 volumeRay(vec3 v, vec3 n, float ior, float thickness)
+        {
+            vec3 r = refract(-v, n, 1.0 / ior);
+            if (dot(r, r) < 0.0001) {
+                // Total internal reflection: sample at the entry point
+                return vec3(0.0);
+            }
+            // Thickness is authored in mesh-local space; scale by the node/model scale
+            vec3 modelScale;
+            modelScale.x = length(u_ModelMatrix[0].xyz);
+            modelScale.y = length(u_ModelMatrix[1].xyz);
+            modelScale.z = length(u_ModelMatrix[2].xyz);
+            return normalize(r) * thickness * modelScale;
+        }
+
+        vec3 sampleEnvRefraction(vec3 v, vec3 n, float ior, float lod)
+        {
+            return SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, refractionVector(v, n, ior), lod)).rgb;
+        }
+
+        vec2 refractionUv(vec3 v, vec3 n, float ior, float thickness)
+        {
+            vec3 exitPoint = v_Position + volumeRay(v, n, ior, thickness);
+            vec4 clip = u_ViewProjectionMatrix * vec4(exitPoint, 1.0);
+            vec2 uv = (clip.xy / clip.w) * 0.5 + 0.5;
+            return clamp(uv, vec2(0.0), vec2(1.0));
+        }
+
+        vec3 sampleSceneBlurred(vec2 uv, float roughness)
+        {
+            // The scene texture has no mipmaps so roughness blur is approximated
+            // with a Poisson disk whose radius grows with roughness.
+            float radius = roughness * roughness * 0.05;
+            vec3 sum = SRGBtoLINEAR(texture2D(u_SceneTexture, uv)).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.326, -0.406))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.840, -0.074))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.696, 0.457))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.203, 0.621))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.962, -0.195))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.473, -0.480))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.519, 0.767))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.185, -0.893))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.507, 0.064))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(0.896, 0.412))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.322, -0.933))).rgb;
+            sum += SRGBtoLINEAR(texture2D(u_SceneTexture, uv + radius * vec2(-0.792, -0.598))).rgb;
+            return sum / 13.0;
+        }
+
+        vec3 sampleTransmission(vec3 v, vec3 n, float ior, float thickness, float roughness)
+        {
+            if (u_hasSceneTexture == 0) {
+                float mipCount = 32.0; // keep in sync with getIBLContribution
+                return sampleEnvRefraction(v, n, ior, roughness * (mipCount + 1.0));
+            }
+            return sampleSceneBlurred(refractionUv(v, n, ior, thickness), roughness);
+        }
+
+        // Thin-film iridescence, from "A Practical Extension to Microfacet Theory
+        // for the Modeling of Varying Iridescence" (Belcour, Barla 2017) as
+        // adapted by the glTF sample viewer
+
+        float iorToFresnel0(float transmittedIor, float incidentIor)
+        {
+            float r = (transmittedIor - incidentIor) / (transmittedIor + incidentIor);
+            return r * r;
+        }
+
+        vec3 iorToFresnel0Vec(vec3 transmittedIor, float incidentIor)
+        {
+            vec3 r = (transmittedIor - vec3(incidentIor)) / (transmittedIor + vec3(incidentIor));
+            return r * r;
+        }
+
+        // Assumes an air interface on top
+        vec3 fresnel0ToIor(vec3 fresnel0)
+        {
+            vec3 sqrtF0 = sqrt(fresnel0);
+            return (vec3(1.0) + sqrtF0) / (vec3(1.0) - sqrtF0);
+        }
+
+        float schlick(float f0, float cosTheta)
+        {
+            return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+        }
+
+        vec3 schlickVec(vec3 f0, float cosTheta)
+        {
+            return f0 + (vec3(1.0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+        }
+
+        // XYZ sensitivity of the human eye to the interference pattern,
+        // evaluated in Fourier space with a Gaussian fit
+        vec3 evalSensitivity(float opd, vec3 shift)
+        {
+            float phase = 2.0 * M_PI * opd * 1.0e-9;
+            vec3 val = vec3(5.4856e-13, 4.4201e-13, 5.2481e-13);
+            vec3 pos = vec3(1.6810e+6, 1.7953e+6, 2.2084e+6);
+            vec3 var = vec3(4.3278e+9, 9.3046e+9, 6.6121e+9);
+
+            vec3 xyz = val * sqrt(2.0 * M_PI * var) * cos(pos * phase + shift) * exp(-(phase * phase) * var);
+            xyz.x += 9.7470e-14 * sqrt(2.0 * M_PI * 4.5282e+9) * cos(2.2399e+6 * phase + shift.x) * exp(-4.5282e+9 * phase * phase);
+            xyz /= 1.0685e-7;
+
+            mat3 xyzToRgb = mat3(
+                 3.2404542, -0.9692660,  0.0556434,
+                -1.5371385,  1.8760108, -0.2040259,
+                -0.4985314,  0.0415560,  1.0572252
+            );
+            return xyzToRgb * xyz;
+        }
+
+        vec3 evalIridescence(float outsideIor, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0)
+        {
+            // Force the film ior to the outside ior as the thickness goes to 0
+            float iridescenceIor = mix(outsideIor, eta2, smoothstep(0.0, 0.03, thinFilmThickness));
+            // Snell's law for the angle inside the film
+            float sinTheta2Sq = (outsideIor / iridescenceIor) * (outsideIor / iridescenceIor) * (1.0 - cosTheta1 * cosTheta1);
+            float cosTheta2Sq = 1.0 - sinTheta2Sq;
+            if (cosTheta2Sq < 0.0) {
+                // Total internal reflection
+                return vec3(1.0);
+            }
+            float cosTheta2 = sqrt(cosTheta2Sq);
+
+            // First interface: air -> film
+            float R0 = iorToFresnel0(iridescenceIor, outsideIor);
+            float R12 = schlick(R0, cosTheta1);
+            float T121 = 1.0 - R12;
+            float phi12 = iridescenceIor < outsideIor ? M_PI : 0.0;
+            float phi21 = M_PI - phi12;
+
+            // Second interface: film -> base material
+            vec3 baseIor = fresnel0ToIor(clamp(baseF0, vec3(0.0), vec3(0.9999)));
+            vec3 R23 = schlickVec(iorToFresnel0Vec(baseIor, iridescenceIor), cosTheta2);
+            vec3 phi23 = vec3(
+                baseIor.x < iridescenceIor ? M_PI : 0.0,
+                baseIor.y < iridescenceIor ? M_PI : 0.0,
+                baseIor.z < iridescenceIor ? M_PI : 0.0
+            );
+
+            // Optical path difference and phase shift between the bounces
+            float opd = 2.0 * iridescenceIor * thinFilmThickness * cosTheta2;
+            vec3 phi = vec3(phi21) + phi23;
+
+            vec3 R123 = clamp(R12 * R23, vec3(0.00001), vec3(0.9999));
+            vec3 r123 = sqrt(R123);
+            vec3 Rs = (T121 * T121) * R23 / (vec3(1.0) - R123);
+
+            // Reflectance term for m = 0 (DC component)
+            vec3 I = R12 + Rs;
+
+            // First two interference orders are enough for a smooth result
+            vec3 Cm = Rs - T121;
+            for (int m = 1; m <= 2; m++) {
+                Cm *= r123;
+                I += Cm * 2.0 * evalSensitivity(float(m) * opd, float(m) * phi);
+            }
+
+            // Out-of-gamut colors can produce negative values
+            return max(I, vec3(0.0));
+        }
+
+        // "Charlie" sheen distribution, from "Production Friendly Microfacet
+        // Sheen BRDF" (Estevez, Kulla 2017) as used by the glTF sample viewer
+        float sheenDistribution(float sheenRoughness, float NdotH)
+        {
+            float alphaG = sheenRoughness * sheenRoughness;
+            float invR = 1.0 / alphaG;
+            float cos2h = NdotH * NdotH;
+            float sin2h = 1.0 - cos2h;
+            return (2.0 + invR) * pow(sin2h, invR * 0.5) / (2.0 * M_PI);
+        }
+
+        // Directional albedo of the sheen lobe under the environment,
+        // analytic fit from three.js (Analytical DFG Term for IBL, after
+        // "Accurate Real-Time Specular Reflections with Radiance Caching")
+        float sheenEnvironmentBrdf(float sheenRoughness, float NdotV)
+        {
+            float r2 = sheenRoughness * sheenRoughness;
+            float a = sheenRoughness < 0.25 ? -339.2 * r2 + 161.4 * sheenRoughness - 25.9 : -8.48 * r2 + 14.3 * sheenRoughness - 9.95;
+            float b = sheenRoughness < 0.25 ? 44.0 * r2 - 23.7 * sheenRoughness + 3.26 : 1.97 * r2 - 3.27 * sheenRoughness + 0.72;
+            float dg = exp(a * NdotV + b) + (sheenRoughness < 0.25 ? 0.0 : 0.1 * (sheenRoughness - 0.25));
+            return clamp(dg * (1.0 / M_PI), 0.0, 1.0);
         }
 
         // Basic Lambertian diffuse
@@ -1210,6 +1864,25 @@ fragmentShader =
 
             baseColor = vec4(v_Color, 1.0) * baseColor;
 
+            if (u_ScenePass == 1 && u_TransmissionFactor > 0.0) {
+                // The scene pass renders what is visible behind transmissive surfaces.
+                // The whole material is excluded: fragments made opaque by a transmission
+                // texture would otherwise be baked into the scene texture on the surface
+                // itself and reappear refracted inside it.
+                discard;
+            }
+
+            float transmission = u_TransmissionFactor;
+            if (u_hasTransmissionSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_TransmissionCoord,
+                    u_TransmissionTransformScale,
+                    u_TransmissionTransformOffset,
+                    u_TransmissionTransformRotation
+                );
+                transmission *= texture2D(u_TransmissionSampler, uvTransformed).r;
+            }
+
             vec3 f0 = vec3(0.04);
             vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
             diffuseColor *= 1.0 - metallic;
@@ -1236,6 +1909,75 @@ fragmentShader =
             float LdotH = clamp(dot(l, h), 0.0, 1.0);
             float VdotH = clamp(dot(v, h), 0.0, 1.0);
 
+            float anisotropy = 0.0;
+            vec3 anisotropicT = vec3(1.0, 0.0, 0.0);
+            vec3 anisotropicB = vec3(0.0, 1.0, 0.0);
+            if (u_AnisotropyStrength > 0.0) {
+                anisotropy = u_AnisotropyStrength;
+                // Direction of the grooves in tangent space, rotated counter-clockwise from the tangent
+                vec2 direction = vec2(cos(u_AnisotropyRotation), sin(u_AnisotropyRotation));
+                if (u_hasAnisotropySampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_AnisotropyCoord,
+                        u_AnisotropyTransformScale,
+                        u_AnisotropyTransformOffset,
+                        u_AnisotropyTransformRotation
+                    );
+                    vec3 anisotropySample = texture2D(u_AnisotropySampler, uvTransformed).rgb;
+                    vec2 textureDirection = anisotropySample.rg * 2.0 - 1.0;
+                    mat2 rotation = mat2(
+                        cos(u_AnisotropyRotation), sin(u_AnisotropyRotation),
+                       -sin(u_AnisotropyRotation), cos(u_AnisotropyRotation)
+                    );
+                    direction = rotation * textureDirection;
+                    anisotropy *= anisotropySample.b;
+                }
+
+                mat3 tbn = getTBN(uvFromCoord(u_AnisotropyCoord));
+                anisotropicT = normalize(tbn * vec3(direction, 0.0));
+                anisotropicB = normalize(cross(tbn[2], anisotropicT));
+
+                // The environment has no anisotropic filtering, so bend the
+                // reflection vector along the grooves instead
+                vec3 bentTangent = cross(anisotropicB, v);
+                vec3 bentAnisotropicNormal = cross(bentTangent, anisotropicB);
+                float bendFactor = 1.0 - anisotropy * (1.0 - perceptualRoughness);
+                float bendFactorPow4 = bendFactor * bendFactor * bendFactor * bendFactor;
+                vec3 bentNormal = normalize(mix(bentAnisotropicNormal, n, bendFactorPow4));
+                reflection = -normalize(reflect(v, bentNormal));
+            }
+
+            float iridescence = u_IridescenceFactor;
+            vec3 iridescenceFresnel = vec3(0.0);
+            if (iridescence > 0.0) {
+                if (u_hasIridescenceSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_IridescenceCoord,
+                        u_IridescenceTransformScale,
+                        u_IridescenceTransformOffset,
+                        u_IridescenceTransformRotation
+                    );
+                    iridescence *= texture2D(u_IridescenceSampler, uvTransformed).r;
+                }
+
+                float iridescenceThickness = u_IridescenceThicknessMax;
+                if (u_hasIridescenceThicknessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_IridescenceThicknessCoord,
+                        u_IridescenceThicknessTransformScale,
+                        u_IridescenceThicknessTransformOffset,
+                        u_IridescenceThicknessTransformRotation
+                    );
+                    iridescenceThickness = mix(
+                        u_IridescenceThicknessMin,
+                        u_IridescenceThicknessMax,
+                        texture2D(u_IridescenceSampler, uvTransformed).g
+                    );
+                }
+
+                iridescenceFresnel = evalIridescence(1.0, u_IridescenceIor, NdotV, iridescenceThickness, specularColor);
+            }
+
             PBRInfo pbrInputs = PBRInfo(
                 NdotL,
                 NdotV,
@@ -1254,18 +1996,124 @@ fragmentShader =
 
             // Calculate the shading terms for the microfacet specular shading model
             vec3 F = specularReflection(pbrInputs);
+            if (iridescence > 0.0) {
+                // The thin film replaces the Fresnel term of the base specular
+                // lobe, for both the analytic light and the environment
+                F = mix(F, iridescenceFresnel, iridescence);
+                pbrInputs.specularColor = mix(specularColor, iridescenceFresnel, iridescence);
+            }
             float G = geometricOcclusion(pbrInputs);
             float D = microfacetDistribution(pbrInputs);
 
             // Calculation of analytical lighting contribution
-            vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
+            vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs) * (1.0 - transmission);
             vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+            if (anisotropy > 0.0) {
+                // Anisotropic GGX: the roughness is stretched along the tangent
+                float at = mix(alphaRoughness, 1.0, anisotropy * anisotropy);
+                float ab = alphaRoughness;
+                float TdotV = dot(anisotropicT, v);
+                float BdotV = dot(anisotropicB, v);
+                float TdotL = dot(anisotropicT, l);
+                float BdotL = dot(anisotropicB, l);
+                float TdotH = dot(anisotropicT, h);
+                float BdotH = dot(anisotropicB, h);
+
+                float a2 = at * ab;
+                vec3 anisoF = vec3(ab * TdotH, at * BdotH, a2 * NdotH);
+                float w2 = a2 / dot(anisoF, anisoF);
+                float anisotropicD = a2 * w2 * w2 / M_PI;
+
+                // Visibility term: includes the 1 / (4 NdotL NdotV) of the microfacet BRDF
+                float GGXV = NdotL * length(vec3(at * TdotV, ab * BdotV, NdotV));
+                float GGXL = NdotV * length(vec3(at * TdotL, ab * BdotL, NdotL));
+                float anisotropicV = clamp(0.5 / (GGXV + GGXL), 0.0, 1.0);
+
+                specContrib = F * anisotropicV * anisotropicD;
+            }
             // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
             vec3 color = NdotL * v_Color * u_LightColor * (diffuseContrib + specContrib);
 
 
             // Calculate lighting contribution from image based lighting source (IBL)
-            color += getIBLContribution(pbrInputs, n, reflection);
+            color += getIBLContribution(pbrInputs, n, reflection, transmission);
+
+            if (transmission > 0.0) {
+                float thickness = u_ThicknessFactor;
+                if (u_hasThicknessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_ThicknessCoord,
+                        u_ThicknessTransformScale,
+                        u_ThicknessTransformOffset,
+                        u_ThicknessTransformRotation
+                    );
+                    thickness *= texture2D(u_ThicknessSampler, uvTransformed).g;
+                }
+
+                vec3 transmitted;
+                if (u_Dispersion > 0.0) {
+                    // dispersion = 20 / Abbe number; spread between red and blue is (ior - 1) / Abbe
+                    float halfSpread = (u_Ior - 1.0) * 0.025 * u_Dispersion;
+                    transmitted = vec3(
+                        sampleTransmission(v, n, u_Ior - halfSpread, thickness, perceptualRoughness).r,
+                        sampleTransmission(v, n, u_Ior, thickness, perceptualRoughness).g,
+                        sampleTransmission(v, n, u_Ior + halfSpread, thickness, perceptualRoughness).b
+                    );
+                } else {
+                    transmitted = sampleTransmission(v, n, u_Ior, thickness, perceptualRoughness);
+                }
+                transmitted *= baseColor.rgb;
+
+                float attenuationLength = length(volumeRay(v, n, u_Ior, thickness));
+                if (u_AttenuationDistance > 0.0 && attenuationLength > 0.0) {
+                    vec3 attenuationCoefficient = -log(clamp(u_AttenuationColor, vec3(0.0001), vec3(1.0))) / u_AttenuationDistance;
+                    transmitted *= exp(-attenuationCoefficient * attenuationLength);
+                }
+
+                vec3 Fv = specularEnvironmentR0 + (specularEnvironmentR90 - specularEnvironmentR0) * pow(clamp(1.0 - NdotV, 0.0, 1.0), 5.0);
+                color += transmission * transmitted * (1.0 - Fv);
+            }
+
+            vec3 sheenColor = u_SheenColorFactor;
+            if (u_hasSheenColorSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_SheenColorCoord,
+                    u_SheenColorTransformScale,
+                    u_SheenColorTransformOffset,
+                    u_SheenColorTransformRotation
+                );
+                sheenColor *= SRGBtoLINEAR(texture2D(u_SheenSampler, uvTransformed)).rgb;
+            }
+
+            float maxSheenColor = max(sheenColor.r, max(sheenColor.g, sheenColor.b));
+            if (maxSheenColor > 0.0) {
+                float sheenRoughness = u_SheenRoughnessFactor;
+                if (u_hasSheenRoughnessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_SheenRoughnessCoord,
+                        u_SheenRoughnessTransformScale,
+                        u_SheenRoughnessTransformOffset,
+                        u_SheenRoughnessTransformRotation
+                    );
+                    sheenRoughness *= texture2D(u_SheenSampler, uvTransformed).a;
+                }
+                sheenRoughness = clamp(sheenRoughness, c_MinRoughness, 1.0);
+
+                // Analytic light: Charlie distribution with the Ashikhmin
+                // visibility term (no Fresnel in the sheen lobe)
+                float sheenD = sheenDistribution(sheenRoughness, NdotH);
+                float sheenV = 1.0 / (4.0 * (NdotL + NdotV - NdotL * NdotV));
+                vec3 sheenAnalytic = NdotL * u_LightColor * sheenColor * sheenD * sheenV;
+
+                // Environment: irradiance scaled by the sheen directional albedo
+                float sheenEnvBrdf = sheenEnvironmentBrdf(sheenRoughness, NdotV);
+                vec3 sheenIbl = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb * sheenColor * sheenEnvBrdf;
+
+                // The sheen layer sits above the base: scale the base down by
+                // the energy the sheen reflects away
+                float sheenAlbedoScaling = 1.0 - maxSheenColor * sheenEnvBrdf;
+                color = color * sheenAlbedoScaling + sheenAnalytic + sheenIbl;
+            }
 
             if (u_hasOcclusionSampler == 1) {
                 vec2 uvTransformed = transformedUv(
@@ -1287,6 +2135,68 @@ fragmentShader =
                 );
                 vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, uvTransformed)).rgb * u_EmissiveFactor;
                 color += emissive;
+            }
+
+            float clearcoat = u_ClearcoatFactor;
+            if (u_hasClearcoatSampler == 1) {
+                vec2 uvTransformed = transformedUv(
+                    u_ClearcoatCoord,
+                    u_ClearcoatTransformScale,
+                    u_ClearcoatTransformOffset,
+                    u_ClearcoatTransformRotation
+                );
+                clearcoat *= texture2D(u_ClearcoatSampler, uvTransformed).r;
+            }
+
+            if (clearcoat > 0.0) {
+                float clearcoatRoughness = u_ClearcoatRoughnessFactor;
+                if (u_hasClearcoatRoughnessSampler == 1) {
+                    vec2 uvTransformed = transformedUv(
+                        u_ClearcoatRoughnessCoord,
+                        u_ClearcoatRoughnessTransformScale,
+                        u_ClearcoatRoughnessTransformOffset,
+                        u_ClearcoatRoughnessTransformRotation
+                    );
+                    clearcoatRoughness *= texture2D(u_ClearcoatSampler, uvTransformed).g;
+                }
+                clearcoatRoughness = clamp(clearcoatRoughness, c_MinRoughness, 1.0);
+
+                // The coat is a dielectric layer with a fixed ior of 1.5 (f0 = 0.04)
+                vec3 nc = getClearcoatNormal();
+                float NcdotL = clamp(dot(nc, l), 0.001, 1.0);
+                float NcdotV = clamp(abs(dot(nc, v)), 0.001, 1.0);
+                float NcdotH = clamp(dot(nc, h), 0.0, 1.0);
+
+                PBRInfo coatInputs = PBRInfo(
+                    NcdotL,
+                    NcdotV,
+                    NcdotH,
+                    LdotH,
+                    VdotH,
+                    clearcoatRoughness,
+                    0.0,
+                    vec3(0.04),
+                    vec3(1.0),
+                    clearcoatRoughness * clearcoatRoughness,
+                    vec3(0.0),
+                    vec3(0.04)
+                );
+
+                vec3 coatF = specularReflection(coatInputs);
+                float coatG = geometricOcclusion(coatInputs);
+                float coatD = microfacetDistribution(coatInputs);
+                vec3 coatColor = NcdotL * u_LightColor * (coatF * coatG * coatD / (4.0 * NcdotL * NcdotV));
+
+                float mipCount = 32.0; // keep in sync with getIBLContribution
+                vec3 coatReflection = -normalize(reflect(v, nc));
+                vec3 coatLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, coatReflection, clearcoatRoughness * (mipCount + 1.0))).rgb;
+                vec3 coatBrdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(NcdotV, 1.0 - clearcoatRoughness))).rgb;
+                coatColor += coatLight * (vec3(0.04) * coatBrdf.x + coatBrdf.y);
+
+                // Layer the coat on top of everything, including emission:
+                // the base is darkened by the coat's Fresnel where the coat reflects
+                float coatFresnel = 0.04 + 0.96 * pow(clamp(1.0 - NcdotV, 0.0, 1.0), 5.0);
+                color = color * (1.0 - clearcoat * coatFresnel) + coatColor * clearcoat;
             }
 
             if (u_AlphaCutoff >= 0.0) {
