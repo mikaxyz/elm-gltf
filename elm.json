@@ -3,7 +3,7 @@
     "name": "mikaxyz/elm-gltf",
     "summary": "Load glTF files (3D scenes/models with animations and materials) into Elm WebGL",
     "license": "BSD-3-Clause",
-    "version": "4.1.0",
+    "version": "5.0.0",
     "exposed-modules": [
         "Gltf",
         "Gltf.Animation",
